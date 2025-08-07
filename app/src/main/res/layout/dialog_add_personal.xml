@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <EditText
+        android:id="@+id/etDni"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="DNI"
+        android:inputType="number"
+        android:layout_marginBottom="8dp"
+        android:padding="12dp"
+        android:background="@drawable/item_background" />
+
+    <EditText
+        android:id="@+id/etNombre"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nombre completo"
+        android:inputType="textPersonName"
+        android:layout_marginBottom="8dp"
+        android:padding="12dp"
+        android:background="@drawable/item_background" />
+
+    <EditText
+        android:id="@+id/etHoraEntrada"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Hora de entrada (HH:mm)"
+        android:inputType="time"
+        android:layout_marginBottom="8dp"
+        android:padding="12dp"
+        android:background="@drawable/item_background" />
+
+    <EditText
+        android:id="@+id/etHoraSalida"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Hora de salida (HH:mm)"
+        android:inputType="time"
+        android:padding="12dp"
+        android:background="@drawable/item_background" />
+
+</LinearLayout>

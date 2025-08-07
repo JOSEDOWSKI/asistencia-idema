@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Información del empleado -->
+        <TextView
+            style="@style/SubtitleText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Configuración de Horarios"
+            android:gravity="center"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Datos básicos -->
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/ModernEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="DNI">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etDni"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:maxLength="8" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/ModernEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Nombre completo">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etNombre"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPersonName|textCapWords" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Tipo de horario -->
+        <TextView
+            style="@style/SecondaryText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tipo de horario:"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp" />
+
+        <RadioGroup
+            android:id="@+id/rgTipoHorario"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <RadioButton
+                android:id="@+id/rbHorarioFijo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Horario Fijo"
+                android:checked="true" />
+
+            <RadioButton
+                android:id="@+id/rbHorarioVariable"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Horario Variable" />
+        </RadioGroup>
+
+        <!-- Horario fijo -->
+        <LinearLayout
+            android:id="@+id/layoutHorarioFijo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="visible">
+
+            <TextView
+                style="@style/SecondaryText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Configurar horario fijo:"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Checkbox para horario partido -->
+            <CheckBox
+                android:id="@+id/cbHorarioPartido"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Horario partido (con descanso)"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Horario continuo -->
+            <LinearLayout
+                android:id="@+id/layoutHorarioContinuo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="visible">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/ModernEditText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:hint="Entrada (HH:mm)">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etHoraEntradaFija"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="time"
+                        android:text="08:00" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/ModernEditText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:hint="Salida (HH:mm)">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etHoraSalidaFija"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="time"
+                        android:text="17:00" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <!-- Horario partido -->
+            <LinearLayout
+                android:id="@+id/layoutHorarioPartidoFijo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    style="@style/SecondaryText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Turno Mañana:"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="4dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/ModernEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        android:hint="Entrada mañana">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etEntradaManana"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="time"
+                            android:text="09:00" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/ModernEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:hint="Salida descanso">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etSalidaDescanso"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="time"
+                            android:text="13:00" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+
+                <TextView
+                    style="@style/SecondaryText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Turno Tarde:"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="4dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/ModernEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        android:hint="Entrada tarde">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etEntradaTarde"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="time"
+                            android:text="15:00" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/ModernEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:hint="Salida final">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etSalidaFinal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="time"
+                            android:text="19:00" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+
+                <CheckBox
+                    android:id="@+id/cbCompensacionTiempo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Aplicar compensación de tiempo (retrasos se recuperan al final)"
+                    android:checked="true"
+                    android:layout_marginTop="8dp" />
+
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Horario variable -->
+        <LinearLayout
+            android:id="@+id/layoutHorarioVariable"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/SecondaryText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Configurar horarios por día:"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Lunes -->
+            <include layout="@layout/item_dia_horario"
+                android:id="@+id/layoutLunes" />
+
+            <!-- Martes -->
+            <include layout="@layout/item_dia_horario"
+                android:id="@+id/layoutMartes" />
+
+            <!-- Miércoles -->
+            <include layout="@layout/item_dia_horario"
+                android:id="@+id/layoutMiercoles" />
+
+            <!-- Jueves -->
+            <include layout="@layout/item_dia_horario"
+                android:id="@+id/layoutJueves" />
+
+            <!-- Viernes -->
+            <include layout="@layout/item_dia_horario"
+                android:id="@+id/layoutViernes" />
+
+            <!-- Sábado -->
+            <include layout="@layout/item_dia_horario"
+                android:id="@+id/layoutSabado" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

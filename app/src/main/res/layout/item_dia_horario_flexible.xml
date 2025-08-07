@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Encabezado del día -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <CheckBox
+                android:id="@+id/cbDiaActivo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true" />
+
+            <TextView
+                android:id="@+id/tvNombreDia"
+                style="@style/BodyText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Lunes"
+                android:textStyle="bold"
+                android:layout_marginStart="8dp" />
+
+            <TextView
+                android:id="@+id/tvHorasCalculadas"
+                style="@style/SecondaryText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="8h 0m"
+                android:textStyle="bold"
+                android:textColor="@color/primary_color" />
+
+        </LinearLayout>
+
+        <!-- Contenedor de horarios -->
+        <LinearLayout
+            android:id="@+id/layoutHorarios"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Tipo de jornada -->
+            <RadioGroup
+                android:id="@+id/rgTipoJornada"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="12dp">
+
+                <RadioButton
+                    android:id="@+id/rbJornadaContinua"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Continua"
+                    android:checked="true" />
+
+                <RadioButton
+                    android:id="@+id/rbJornadaPartida"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Con Break" />
+
+            </RadioGroup>
+
+            <!-- Jornada continua -->
+            <LinearLayout
+                android:id="@+id/layoutJornadaContinua"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="visible">
+
+                <EditText
+                    android:id="@+id/etEntrada"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Entrada"
+                    android:inputType="time"
+                    android:text="08:00"
+                    android:layout_marginEnd="8dp"
+                    android:padding="12dp"
+                    android:background="@drawable/item_background" />
+
+                <EditText
+                    android:id="@+id/etSalida"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Salida"
+                    android:inputType="time"
+                    android:text="17:00"
+                    android:layout_marginStart="8dp"
+                    android:padding="12dp"
+                    android:background="@drawable/item_background" />
+
+            </LinearLayout>
+
+            <!-- Jornada partida -->
+            <LinearLayout
+                android:id="@+id/layoutJornadaPartida"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <!-- Turno mañana -->
+                <TextView
+                    style="@style/SecondaryText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🌅 Turno Mañana:"
+                    android:layout_marginBottom="4dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="12dp">
+
+                    <EditText
+                        android:id="@+id/etEntradaManana"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Entrada"
+                        android:inputType="time"
+                        android:text="09:00"
+                        android:layout_marginEnd="8dp"
+                        android:padding="12dp"
+                        android:background="@drawable/item_background" />
+
+                    <EditText
+                        android:id="@+id/etSalidaManana"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Salida"
+                        android:inputType="time"
+                        android:text="13:00"
+                        android:layout_marginStart="8dp"
+                        android:padding="12dp"
+                        android:background="@drawable/item_background" />
+
+                </LinearLayout>
+
+                <!-- Turno tarde -->
+                <TextView
+                    style="@style/SecondaryText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🌆 Turno Tarde:"
+                    android:layout_marginBottom="4dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <EditText
+                        android:id="@+id/etEntradaTarde"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Entrada"
+                        android:inputType="time"
+                        android:text="15:00"
+                        android:layout_marginEnd="8dp"
+                        android:padding="12dp"
+                        android:background="@drawable/item_background" />
+
+                    <EditText
+                        android:id="@+id/etSalidaTarde"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Salida"
+                        android:inputType="time"
+                        android:text="19:00"
+                        android:layout_marginStart="8dp"
+                        android:padding="12dp"
+                        android:background="@drawable/item_background" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

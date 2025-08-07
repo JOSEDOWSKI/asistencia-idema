@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sistema de Asistencia</string>
+    <string name="registrar_asistencia">Registrar Asistencia</string>
+    <string name="gestion_personal">Gestión de Personal</string>
+    <string name="reportes">Reportes y Exportar</string>
+    <string name="escanear_codigo">Escanear Código de Barras</string>
+    <string name="agregar_personal">Agregar Personal</string>
+    <string name="exportar_csv">Exportar CSV</string>
+    <string name="limpiar_datos">Limpiar Datos</string>
+    
+    <!-- Status Labels -->
+    <string name="entrada">Entrada</string>
+    <string name="salida">Salida</string>
+    <string name="puntual">Puntual</string>
+    <string name="tarde">Tarde</string>
+    
+    <!-- Actions -->
+    <string name="guardar">Guardar</string>
+    <string name="cancelar">Cancelar</string>
+    <string name="eliminar">Eliminar</string>
+    <string name="editar">Editar</string>
+    <string name="ver_historial">Ver Historial</string>
+    
+    <!-- Messages -->
+    <string name="personal_agregado">Personal agregado exitosamente</string>
+    <string name="personal_eliminado">Personal eliminado</string>
+    <string name="asistencia_registrada">Asistencia registrada</string>
+    <string name="llegada_tardia">Llegada tardía</string>
+    <string name="sin_registros">No hay registros disponibles</string>
+    
+    <!-- Hints -->
+    <string name="hint_dni">Ingrese DNI</string>
+    <string name="hint_nombre">Ingrese nombre completo</string>
+    <string name="hint_hora_entrada">Hora de entrada (HH:mm)</string>
+    <string name="hint_hora_salida">Hora de salida (HH:mm)</string>
+    
+    <!-- Scanner -->
+    <string name="scanner_instruction">Apunte la cámara al código QR</string>
+    <string name="scanner_permission">Se necesita permiso de cámara</string>
+    
+    <!-- Empty States -->
+    <string name="empty_personal">No hay personal registrado</string>
+    <string name="empty_reportes">No hay reportes disponibles</string>
+    
+    <!-- Configuración -->
+    <string name="configuracion">Configuración</string>
+    <string name="tolerancia_llegada">Tolerancia de Llegada</string>
+    <string name="limite_tardanzas">Límite de Tardanzas</string>
+    <string name="estadisticas_tardanzas">Estadísticas de Tardanzas</string>
+    <string name="contar_tardanzas">Contar tardanzas</string>
+    <string name="notificar_tardanzas">Notificar límites</string>
+    <string name="guardar_configuracion">Guardar Configuración</string>
+    <string name="restaurar_defecto">Restaurar por Defecto</string>
+    
+    <!-- Mensajes de tardanzas -->
+    <string name="llegada_tardia_con_minutos">Llegada tardía (%d min de retraso)</string>
+    <string name="puntual_con_tolerancia">Puntual (dentro de tolerancia de %d min)</string>
+    <string name="limite_excedido">LÍMITE EXCEDIDO</string>
+    <string name="advertencia_limite">ADVERTENCIA - Cerca del límite</string>
+    
+    <!-- Configuración por defecto -->
+    <string name="tolerancia_defecto">15 minutos de tolerancia</string>
+    <string name="limite_defecto">3 tardanzas máximo por mes</string>
+    <string name="sin_tolerancia">Sin tolerancia - Puntualidad estricta</string>
+    <string name="sin_limite">Sin límite de tardanzas</string>
+</resources>

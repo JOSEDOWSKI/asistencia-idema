@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Información del empleado -->
+        <TextView
+            style="@style/SubtitleText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📅 Configuración de Horarios Flexibles"
+            android:gravity="center"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Datos básicos -->
+        <EditText
+            android:id="@+id/etDni"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="DNI (8 dígitos)"
+            android:inputType="number"
+            android:maxLength="8"
+            android:layout_marginBottom="8dp"
+            android:padding="12dp"
+            android:background="@drawable/item_background" />
+
+        <EditText
+            android:id="@+id/etNombre"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Nombre completo"
+            android:inputType="textPersonName"
+            android:layout_marginBottom="16dp"
+            android:padding="12dp"
+            android:background="@drawable/item_background" />
+
+        <!-- Días de la semana -->
+        <TextView
+            style="@style/SecondaryText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Configurar horarios por día:"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Lunes -->
+        <include layout="@layout/item_dia_horario_flexible"
+            android:id="@+id/layoutLunes" />
+
+        <!-- Martes -->
+        <include layout="@layout/item_dia_horario_flexible"
+            android:id="@+id/layoutMartes" />
+
+        <!-- Miércoles -->
+        <include layout="@layout/item_dia_horario_flexible"
+            android:id="@+id/layoutMiercoles" />
+
+        <!-- Jueves -->
+        <include layout="@layout/item_dia_horario_flexible"
+            android:id="@+id/layoutJueves" />
+
+        <!-- Viernes -->
+        <include layout="@layout/item_dia_horario_flexible"
+            android:id="@+id/layoutViernes" />
+
+        <!-- Sábado -->
+        <include layout="@layout/item_dia_horario_flexible"
+            android:id="@+id/layoutSabado" />
+
+    </LinearLayout>
+</ScrollView>

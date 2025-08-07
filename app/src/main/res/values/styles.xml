@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base App Theme -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="colorPrimary">@color/primary_color</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent_color</item>
+        <item name="android:colorBackground">@color/background_color</item>
+        <item name="android:statusBarColor">@color/primary_color</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <!-- Modern Card Style -->
+    <style name="ModernCard">
+        <item name="android:background">@color/card_background</item>
+        <item name="android:layout_margin">8dp</item>
+        <item name="android:padding">16dp</item>
+        <item name="android:elevation">4dp</item>
+    </style>
+
+    <!-- Primary Button Style -->
+    <style name="PrimaryButton" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/button_primary_selector</item>
+        <item name="android:textColor">@color/text_on_primary</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:paddingTop">16dp</item>
+        <item name="android:paddingBottom">16dp</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+        <item name="android:layout_margin">8dp</item>
+        <item name="android:elevation">2dp</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
+
+    <!-- Secondary Button Style -->
+    <style name="SecondaryButton" parent="Widget.AppCompat.Button">
+        <item name="android:background">@color/button_secondary</item>
+        <item name="android:textColor">@color/primary_color</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:paddingTop">16dp</item>
+        <item name="android:paddingBottom">16dp</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+        <item name="android:layout_margin">8dp</item>
+    </style>
+
+    <!-- Outlined Button Style -->
+    <style name="OutlinedButton" parent="Widget.AppCompat.Button.Borderless">
+        <item name="android:textColor">@color/primary_color</item>
+        <item name="android:background">@drawable/item_background</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:paddingTop">16dp</item>
+        <item name="android:paddingBottom">16dp</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+        <item name="android:layout_margin">8dp</item>
+    </style>
+
+    <!-- Modern EditText Style -->
+    <style name="ModernEditText" parent="Widget.AppCompat.EditText">
+        <item name="android:background">@drawable/item_background</item>
+        <item name="android:layout_margin">8dp</item>
+        <item name="android:padding">12dp</item>
+        <item name="android:textColorHint">@color/text_secondary</item>
+    </style>
+
+    <!-- Form EditText Style - Mejorado para mejor legibilidad -->
+    <style name="FormEditText" parent="Widget.AppCompat.EditText">
+        <item name="android:background">@drawable/edittext_background</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textColorHint">@color/text_secondary</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:padding">16dp</item>
+        <item name="android:layout_margin">4dp</item>
+        <item name="android:elevation">1dp</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <!-- Form EditText Small - Para campos más compactos -->
+    <style name="FormEditTextSmall" parent="FormEditText">
+        <item name="android:textSize">14sp</item>
+        <item name="android:padding">12dp</item>
+    </style>
+
+    <!-- Title Text Style -->
+    <style name="TitleText">
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:layout_marginBottom">16dp</item>
+        <item name="android:gravity">center</item>
+    </style>
+
+    <!-- Subtitle Text Style -->
+    <style name="SubtitleText">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:layout_marginBottom">8dp</item>
+    </style>
+
+    <!-- Body Text Style -->
+    <style name="BodyText">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:lineSpacingExtra">4dp</item>
+    </style>
+
+    <!-- Secondary Text Style -->
+    <style name="SecondaryText">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:lineSpacingExtra">2dp</item>
+    </style>
+
+    <!-- Status Badge Styles -->
+    <style name="StatusBadge">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:paddingTop">6dp</item>
+        <item name="android:paddingBottom">6dp</item>
+        <item name="android:layout_margin">4dp</item>
+        <item name="android:gravity">center</item>
+    </style>
+
+    <style name="StatusBadge.Entrada" parent="StatusBadge">
+        <item name="android:background">@drawable/badge_entrada</item>
+        <item name="android:textColor">@color/success_color</item>
+    </style>
+
+    <style name="StatusBadge.Salida" parent="StatusBadge">
+        <item name="android:background">@drawable/badge_salida</item>
+        <item name="android:textColor">@color/warning_color</item>
+    </style>
+
+    <style name="StatusBadge.Tarde" parent="StatusBadge">
+        <item name="android:background">@drawable/badge_tarde</item>
+        <item name="android:textColor">@color/error_color</item>
+    </style>
+
+    <style name="StatusBadge.Puntual" parent="StatusBadge">
+        <item name="android:background">@drawable/badge_puntual</item>
+        <item name="android:textColor">@color/success_color</item>
+    </style>
+
+    <!-- RecyclerView Item Style -->
+    <style name="RecyclerViewItem">
+        <item name="android:background">@drawable/item_background</item>
+        <item name="android:layout_margin">8dp</item>
+        <item name="android:padding">16dp</item>
+        <item name="android:elevation">2dp</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:foreground">?android:attr/selectableItemBackground</item>
+    </style>
+
+    <!-- Floating Action Button Style -->
+    <style name="ModernFAB" parent="Widget.AppCompat.Button">
+        <item name="android:background">@color/primary_color</item>
+        <item name="android:textColor">@color/text_on_primary</item>
+        <item name="android:layout_margin">16dp</item>
+        <item name="android:elevation">6dp</item>
+    </style>
+
+    <!-- Toolbar Style -->
+    <style name="ModernToolbar" parent="Widget.AppCompat.Toolbar">
+        <item name="android:background">@color/primary_color</item>
+        <item name="titleTextColor">@color/text_on_primary</item>
+        <item name="android:elevation">4dp</item>
+    </style>
+
+    <!-- Dialog Style -->
+    <style name="ModernDialog" parent="Theme.AppCompat.Light.Dialog">
+        <item name="android:windowBackground">@drawable/dialog_background</item>
+    </style>
+
+    <!-- Scanner Overlay Style -->
+    <style name="ScannerOverlay">
+        <item name="android:background">@drawable/scanner_overlay</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+    </style>
+
+    <!-- Main Activity Button Styles -->
+    <style name="MainMenuButton" parent="PrimaryButton">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">@dimen/button_height_large</item>
+        <item name="android:layout_marginStart">@dimen/spacing_lg</item>
+        <item name="android:layout_marginEnd">@dimen/spacing_lg</item>
+        <item name="android:layout_marginTop">@dimen/spacing_md</item>
+        <item name="android:layout_marginBottom">@dimen/spacing_md</item>
+        <item name="android:drawablePadding">@dimen/spacing_md</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:background">@drawable/gradient_primary</item>
+    </style>
+
+    <!-- Scanner Button Styles -->
+    <style name="ScannerButton" parent="MainMenuButton">
+        <item name="android:textSize">@dimen/text_size_lg</item>
+        <item name="android:drawableStart">@drawable/ic_qr_scan</item>
+    </style>
+
+    <!-- Personal Management Button -->
+    <style name="PersonalButton" parent="MainMenuButton">
+        <item name="android:textSize">@dimen/text_size_lg</item>
+        <item name="android:drawableStart">@drawable/ic_person_add</item>
+    </style>
+
+    <!-- Reports Button -->
+    <style name="ReportsButton" parent="MainMenuButton">
+        <item name="android:textSize">@dimen/text_size_lg</item>
+        <item name="android:drawableStart">@drawable/ic_reports</item>
+    </style>
+
+    <!-- List Item Styles -->
+    <style name="ListItemContainer">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/item_background</item>
+        <item name="android:layout_margin">@dimen/card_margin</item>
+        <item name="android:padding">@dimen/card_padding</item>
+        <item name="android:elevation">@dimen/elevation_sm</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:foreground">?android:attr/selectableItemBackground</item>
+    </style>
+
+    <!-- Personal Item Styles -->
+    <style name="PersonalItemName">
+        <item name="android:textSize">@dimen/text_size_lg</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:layout_marginBottom">@dimen/spacing_xs</item>
+    </style>
+
+    <style name="PersonalItemDni">
+        <item name="android:textSize">@dimen/text_size_sm</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:layout_marginBottom">@dimen/spacing_xs</item>
+    </style>
+
+    <style name="PersonalItemSchedule">
+        <item name="android:textSize">@dimen/text_size_sm</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:drawablePadding">@dimen/spacing_xs</item>
+    </style>
+
+    <!-- Report Item Styles -->
+    <style name="ReportItemDate">
+        <item name="android:textSize">@dimen/text_size_sm</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:layout_marginBottom">@dimen/spacing_xs</item>
+    </style>
+
+    <style name="ReportItemTime">
+        <item name="android:textSize">@dimen/text_size_md</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:layout_marginBottom">@dimen/spacing_xs</item>
+    </style>
+
+    <!-- Empty State Style -->
+    <style name="EmptyStateText">
+        <item name="android:textSize">@dimen/text_size_lg</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:gravity">center</item>
+        <item name="android:layout_margin">@dimen/spacing_xl</item>
+        <item name="android:drawablePadding">@dimen/spacing_md</item>
+    </style>
+
+    <!-- Loading Style -->
+    <style name="LoadingContainer">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:gravity">center</item>
+        <item name="android:background">@color/background_color</item>
+    </style>
+
+    <!-- Scanner Frame Style -->
+    <style name="ScannerFrame">
+        <item name="android:layout_width">250dp</item>
+        <item name="android:layout_height">250dp</item>
+        <item name="android:layout_centerInParent">true</item>
+        <item name="android:background">@drawable/scanner_overlay</item>
+    </style>
+
+    <!-- Success Message Style -->
+    <style name="SuccessMessage">
+        <item name="android:textSize">@dimen/text_size_md</item>
+        <item name="android:textColor">@color/success_color</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:padding">@dimen/spacing_md</item>
+        <item name="android:background">@color/badge_entrada</item>
+        <item name="android:layout_margin">@dimen/spacing_md</item>
+    </style>
+
+    <!-- Error Message Style -->
+    <style name="ErrorMessage">
+        <item name="android:textSize">@dimen/text_size_md</item>
+        <item name="android:textColor">@color/error_color</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:padding">@dimen/spacing_md</item>
+        <item name="android:background">@color/badge_tarde</item>
+        <item name="android:layout_margin">@dimen/spacing_md</item>
+    </style>
+</resources>

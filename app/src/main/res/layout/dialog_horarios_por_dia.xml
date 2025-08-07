@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Información del empleado -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@color/info_background">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tvNombreEmpleado"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Nombre del Empleado"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:id="@+id/tvDniEmpleado"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="DNI: 12345678"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Switch para horario variable -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="⏰ Horario Variable por Día"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Configurar horarios diferentes para cada día de la semana"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_secondary" />
+
+                </LinearLayout>
+
+                <Switch
+                    android:id="@+id/switchHorarioVariable"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:thumbTint="@color/primary_color"
+                    android:trackTint="@color/outline_color"
+                    android:scaleX="1.2"
+                    android:scaleY="1.2"
+                    android:padding="8dp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Horario Fijo -->
+        <LinearLayout
+            android:id="@+id/layoutHorarioFijo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="16dp">
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="📅 Horario Fijo (Todos los días)"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginBottom="12dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp">
+
+                        <EditText
+                            android:id="@+id/etHoraEntradaFijo"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:hint="Entrada (ej: 08:00)"
+                            android:inputType="time"
+                            android:layout_marginEnd="8dp"
+                            android:padding="12dp"
+                            android:background="@drawable/item_background" />
+
+                        <EditText
+                            android:id="@+id/etHoraSalidaFijo"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:hint="Salida (ej: 17:00)"
+                            android:inputType="time"
+                            android:layout_marginStart="8dp"
+                            android:padding="12dp"
+                            android:background="@drawable/item_background" />
+
+                    </LinearLayout>
+
+                    <!-- Refrigerio para horario fijo -->
+                    <CheckBox
+                        android:id="@+id/cbRefrigerioFijo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="🍽️ Tiene refrigerio/almuerzo"
+                        android:layout_marginBottom="8dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <EditText
+                            android:id="@+id/etInicioRefrigerioFijo"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:hint="Inicio (ej: 12:00)"
+                            android:inputType="time"
+                            android:layout_marginEnd="8dp"
+                            android:padding="12dp"
+                            android:background="@drawable/item_background" />
+
+                        <EditText
+                            android:id="@+id/etFinRefrigerioFijo"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:hint="Fin (ej: 13:00)"
+                            android:inputType="time"
+                            android:layout_marginStart="8dp"
+                            android:padding="12dp"
+                            android:background="@drawable/item_background" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+        </LinearLayout>
+
+        <!-- Horario Variable -->
+        <LinearLayout
+            android:id="@+id/layoutHorarioVariable"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- Lunes -->
+            <include
+                layout="@layout/item_dia_horario_personalizado"
+                android:id="@+id/layoutLunes" />
+
+            <!-- Martes -->
+            <include
+                layout="@layout/item_dia_horario_personalizado"
+                android:id="@+id/layoutMartes" />
+
+            <!-- Miércoles -->
+            <include
+                layout="@layout/item_dia_horario_personalizado"
+                android:id="@+id/layoutMiercoles" />
+
+            <!-- Jueves -->
+            <include
+                layout="@layout/item_dia_horario_personalizado"
+                android:id="@+id/layoutJueves" />
+
+            <!-- Viernes -->
+            <include
+                layout="@layout/item_dia_horario_personalizado"
+                android:id="@+id/layoutViernes" />
+
+            <!-- Sábado -->
+            <include
+                layout="@layout/item_dia_horario_personalizado"
+                android:id="@+id/layoutSabado" />
+
+            <!-- Domingo -->
+            <include
+                layout="@layout/item_dia_horario_personalizado"
+                android:id="@+id/layoutDomingo" />
+
+        </LinearLayout>
+
+        <!-- Resumen semanal -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@color/success_background">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="📊 Resumen Semanal"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tvResumenSemanal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Total semanal: 40h 0m (5 días activos)"
+                    android:textSize="14sp"
+                    android:textColor="@color/success_color"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+    </LinearLayout>
+
+</ScrollView>

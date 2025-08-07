@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Encabezado del día -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <CheckBox
+                android:id="@+id/cbDiaActivo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:id="@+id/tvNombreDia"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Lunes"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:layout_marginStart="8dp" />
+
+            <TextView
+                android:id="@+id/tvHorasCalculadas"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="8h 0m"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/success_color"
+                android:background="@drawable/item_background"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp" />
+
+        </LinearLayout>
+
+        <!-- Configuración de horarios -->
+        <LinearLayout
+            android:id="@+id/layoutHorarios"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Horarios de entrada y salida -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="12dp">
+
+                <EditText
+                    android:id="@+id/etEntrada"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Entrada (ej: 08:00)"
+                    android:inputType="time"
+                    android:layout_marginEnd="8dp"
+                    android:padding="12dp"
+                    android:background="@drawable/item_background" />
+
+                <EditText
+                    android:id="@+id/etSalida"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Salida (ej: 17:00)"
+                    android:inputType="time"
+                    android:layout_marginStart="8dp"
+                    android:padding="12dp"
+                    android:background="@drawable/item_background" />
+
+            </LinearLayout>
+
+            <!-- Configuración de refrigerio -->
+            <CheckBox
+                android:id="@+id/cbTieneRefrigerio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🍽️ Tiene refrigerio este día"
+                android:layout_marginBottom="8dp" />
+
+            <LinearLayout
+                android:id="@+id/layoutRefrigerio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <EditText
+                    android:id="@+id/etInicioRefrigerio"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Inicio (ej: 12:00)"
+                    android:inputType="time"
+                    android:layout_marginEnd="8dp"
+                    android:padding="12dp"
+                    android:background="@drawable/item_background" />
+
+                <EditText
+                    android:id="@+id/etFinRefrigerio"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Fin (ej: 13:00)"
+                    android:inputType="time"
+                    android:layout_marginStart="8dp"
+                    android:padding="12dp"
+                    android:background="@drawable/item_background" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>
