@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_color"
+    android:background="#F5F5F5"
     android:padding="16dp">
 
     <LinearLayout
@@ -12,18 +13,21 @@
 
         <!-- Título -->
         <TextView
-            style="@style/TitleText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="⚙️ Configuración de Asistencia"
+            android:text="⚙️ Configuración del Sistema"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#2C3E50"
             android:layout_marginBottom="24dp" />
 
-        <!-- Sección Tolerancia -->
+        <!-- Sección Modo de Lectura -->
         <androidx.cardview.widget.CardView
-            style="@style/ModernCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -32,47 +36,37 @@
                 android:padding="16dp">
 
                 <TextView
-                    style="@style/SubtitleText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="⏰ Tolerancia de Llegada"
-                    android:drawableStart="@drawable/ic_schedule"
+                    android:text="📱 Modo de Lectura"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#2C3E50"
                     android:drawablePadding="8dp" />
 
                 <TextView
-                    style="@style/SecondaryText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Minutos de tolerancia antes de considerar una llegada como tardía"
+                    android:text="Seleccione el tipo de código a escanear"
+                    android:textSize="14sp"
+                    android:textColor="#7F8C8D"
                     android:layout_marginBottom="16dp" />
 
-                <SeekBar
-                    android:id="@+id/seekBarTolerancia"
+                <Spinner
+                    android:id="@+id/spinner_modo_lectura"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:max="60"
-                    android:progress="15" />
-
-                <TextView
-                    android:id="@+id/tvToleranciaValor"
-                    style="@style/BodyText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="15 minutos de tolerancia"
-                    android:gravity="center"
-                    android:layout_marginTop="8dp"
-                    android:textStyle="bold"
-                    android:textColor="@color/primary_color" />
+                    android:layout_height="48dp" />
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Sección Límite de Tardanzas -->
+        <!-- Sección Modo de Operación -->
         <androidx.cardview.widget.CardView
-            style="@style/ModernCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -81,47 +75,37 @@
                 android:padding="16dp">
 
                 <TextView
-                    style="@style/SubtitleText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="📊 Límite de Tardanzas"
-                    android:drawableStart="@drawable/ic_warning"
+                    android:text="👥 Modo de Operación"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#2C3E50"
                     android:drawablePadding="8dp" />
 
                 <TextView
-                    style="@style/SecondaryText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Número máximo de tardanzas permitidas por mes"
+                    android:text="Configurar si es puesto fijo o autoservicio"
+                    android:textSize="14sp"
+                    android:textColor="#7F8C8D"
                     android:layout_marginBottom="16dp" />
 
-                <SeekBar
-                    android:id="@+id/seekBarLimite"
+                <Spinner
+                    android:id="@+id/spinner_modo_operacion"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:max="10"
-                    android:progress="3" />
-
-                <TextView
-                    android:id="@+id/tvLimiteValor"
-                    style="@style/BodyText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="3 tardanzas máximo por mes"
-                    android:gravity="center"
-                    android:layout_marginTop="8dp"
-                    android:textStyle="bold"
-                    android:textColor="@color/warning_color" />
+                    android:layout_height="48dp" />
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Sección Opciones -->
+        <!-- Sección Opciones del Sistema -->
         <androidx.cardview.widget.CardView
-            style="@style/ModernCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -130,13 +114,15 @@
                 android:padding="16dp">
 
                 <TextView
-                    style="@style/SubtitleText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="🔧 Opciones Avanzadas"
+                    android:text="🔧 Opciones del Sistema"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#2C3E50"
                     android:layout_marginBottom="16dp" />
 
-                <!-- Contar tardanzas -->
+                <!-- Captura de Ubicación -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -151,29 +137,30 @@
                         android:orientation="vertical">
 
                         <TextView
-                            style="@style/BodyText"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Contar tardanzas"
-                            android:textStyle="bold" />
+                            android:text="📍 Captura de Ubicación (GPS)"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="#2C3E50" />
 
                         <TextView
-                            style="@style/SecondaryText"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Llevar registro del número de tardanzas por empleado" />
+                            android:text="Registrar coordenadas GPS en cada marcación"
+                            android:textSize="14sp"
+                            android:textColor="#7F8C8D" />
 
                     </LinearLayout>
 
                     <Switch
-                        android:id="@+id/switchContarTardanzas"
+                        android:id="@+id/switch_captura_ubicacion"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="true" />
+                        android:layout_height="wrap_content" />
 
                 </LinearLayout>
 
-                <!-- Notificar tardanzas -->
+                <!-- Modo Offline -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -187,22 +174,24 @@
                         android:orientation="vertical">
 
                         <TextView
-                            style="@style/BodyText"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Notificar límites"
-                            android:textStyle="bold" />
+                            android:text="📱 Modo Offline"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="#2C3E50" />
 
                         <TextView
-                            style="@style/SecondaryText"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Mostrar alertas cuando se acerque al límite de tardanzas" />
+                            android:text="Funcionar sin conexión a internet"
+                            android:textSize="14sp"
+                            android:textColor="#7F8C8D" />
 
                     </LinearLayout>
 
                     <Switch
-                        android:id="@+id/switchNotificarTardanzas"
+                        android:id="@+id/switch_modo_offline"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:checked="true" />
@@ -212,7 +201,120 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Botones de acción -->
+        <!-- Sección Configuración de API -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🌐 Configuración de API"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#2C3E50"
+                    android:layout_marginBottom="16dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Endpoint del Servidor"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#2C3E50"
+                    android:layout_marginBottom="8dp" />
+
+                <EditText
+                    android:id="@+id/et_api_endpoint"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:hint="https://api.ejemplo.com"
+                    android:inputType="textUri"
+                    android:padding="12dp"
+                    android:layout_marginBottom="16dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Token de Autenticación"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#2C3E50"
+                    android:layout_marginBottom="8dp" />
+
+                <EditText
+                    android:id="@+id/et_api_token"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:hint="Bearer token..."
+                    android:inputType="textPassword"
+                    android:padding="12dp"
+                    android:layout_marginBottom="16dp" />
+
+                <Button
+                    android:id="@+id/btn_test_conexion"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="🔍 Probar Conexión"
+                    android:textColor="@android:color/white"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Sección Estado de Sincronización -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🔄 Estado de Sincronización"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#2C3E50"
+                    android:layout_marginBottom="16dp" />
+
+                <TextView
+                    android:id="@+id/tv_estado_sync"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="⏳ Cargando estado..."
+                    android:textSize="14sp"
+                    android:textColor="#7F8C8D"
+                    android:layout_marginBottom="16dp" />
+
+                <Button
+                    android:id="@+id/btn_sincronizar_ahora"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="🚀 Sincronizar Ahora"
+                    android:textColor="@android:color/white"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Botones de Acción -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -220,31 +322,22 @@
             android:layout_marginTop="16dp">
 
             <Button
-                android:id="@+id/btnGuardarConfiguracion"
-                style="@style/PrimaryButton"
+                android:id="@+id/btn_guardar_config"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="56dp"
                 android:text="💾 Guardar Configuración"
-                android:drawableStart="@drawable/ic_save"
-                android:drawablePadding="8dp" />
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:layout_marginBottom="12dp" />
 
             <Button
-                android:id="@+id/btnVerEstadisticas"
-                style="@style/SecondaryButton"
+                android:id="@+id/btn_configuracion_avanzada"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="📊 Ver Estadísticas de Tardanzas"
-                android:drawableStart="@drawable/ic_chart"
-                android:drawablePadding="8dp" />
-
-            <Button
-                android:id="@+id/btnRestaurarDefecto"
-                style="@style/OutlinedButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="🔄 Restaurar por Defecto"
-                android:drawableStart="@drawable/ic_restore"
-                android:drawablePadding="8dp" />
+                android:layout_height="48dp"
+                android:text="⚙️ Configuración Avanzada"
+                android:textColor="#2C3E50"
+                android:textStyle="bold" />
 
         </LinearLayout>
 

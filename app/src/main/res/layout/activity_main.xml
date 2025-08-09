@@ -4,62 +4,126 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="24dp"
-    android:gravity="center">
+    android:gravity="center"
+    android:background="#F5F5F5">
 
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_marginBottom="48dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📱"
+            android:textSize="48sp"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Control de Asistencias"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#2C3E50"
+            android:gravity="center" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sistema MVP con detección automática"
+            android:textSize="14sp"
+            android:textColor="#7F8C8D"
+            android:layout_marginTop="8dp" />
+
+    </LinearLayout>
+
+    <!-- Main Actions -->
+    <androidx.cardview.widget.CardView
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <Button
+                android:id="@+id/btnScanner"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:text="📱 Escanear Asistencia"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:background="@drawable/button_primary_selector"
+                android:layout_marginBottom="16dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="• Detección automática del próximo evento\n• Soporte para QR, DNI (PDF417) y Code128\n• Cálculo automático de tardanzas y recuperaciones"
+                android:textSize="12sp"
+                android:textColor="#7F8C8D"
+                android:lineSpacingExtra="2dp" />
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
+    <!-- Management Actions -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <Button
+            android:id="@+id/btnGestionEmpleados"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="👥 Gestión de Empleados"
+            android:textSize="16sp"
+            android:textColor="#2C3E50"
+            android:background="@drawable/edittext_background"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/btnReportes"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="📊 Reportes y Estadísticas"
+            android:textSize="16sp"
+            android:textColor="#2C3E50"
+            android:background="@drawable/edittext_background"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/btnConfiguracion"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="⚙️ Configuración del Sistema"
+            android:textSize="16sp"
+            android:textColor="#2C3E50"
+            android:background="@drawable/edittext_background" />
+
+    </LinearLayout>
+
+    <!-- Footer -->
     <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Sistema de Asistencia"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="48dp"
-        android:textColor="@color/primary_color" />
-
-    <Button
-        android:id="@+id/btnRegistrarEntrada"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="📥 Registrar Entrada"
-        android:textSize="18sp"
-        android:layout_marginBottom="8dp"
-        android:padding="16dp"
-        android:backgroundTint="@android:color/holo_green_dark" />
-
-    <Button
-        android:id="@+id/btnRegistrarSalida"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="📤 Registrar Salida"
-        android:textSize="18sp"
-        android:layout_marginBottom="16dp"
-        android:padding="16dp"
-        android:backgroundTint="@android:color/holo_orange_dark" />
-
-    <Button
-        android:id="@+id/btnGestionPersonal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Gestión de Personal"
-        android:textSize="18sp"
-        android:layout_marginBottom="16dp"
-        android:padding="16dp" />
-
-    <Button
-        android:id="@+id/btnReportes"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Reportes y Exportar"
-        android:textSize="18sp"
-        android:layout_marginBottom="16dp"
-        android:padding="16dp" />
-
-    <Button
-        android:id="@+id/btnConfiguracion"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="⚙️ Configuración"
-        android:textSize="18sp"
-        android:padding="16dp"
-        android:backgroundTint="@color/secondary_color" />
+        android:text="v2.0 - Sistema MVP Completo"
+        android:textSize="12sp"
+        android:textColor="#BDC3C7"
+        android:gravity="center"
+        android:layout_marginTop="32dp" />
 
 </LinearLayout>

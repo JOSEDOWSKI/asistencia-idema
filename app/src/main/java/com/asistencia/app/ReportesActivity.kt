@@ -3,8 +3,8 @@ package com.asistencia.app
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.widget.Button
-import android.widget.Toast
+import android.view.View
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -15,484 +15,606 @@ import java.util.*
 
 class ReportesActivity : AppCompatActivity() {
     
-    private lateinit var reportesAdapter: ReportesAdapter
-    private lateinit var asistenciaManager: AsistenciaManager
-    private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var mainLayout: LinearLayout
+    private lateinit var registrosList: LinearLayout
     private val gson = Gson()
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_reportes)
         
-        asistenciaManager = AsistenciaManager(this)
-        sharedPreferences = getSharedPreferences("AsistenciaApp", Context.MODE_PRIVATE)
-        
-        setupViews()
-        setupRecyclerView()
-        loadReportesData()
-    }
-    
-    private fun setupViews() {
-        findViewById<Button>(R.id.btnExportarCSV).setOnClickListener {
-            exportarDatosCSV()
-        }
-        
-        findViewById<Button>(R.id.btnLimpiarDatos).setOnClickListener {
-            limpiarDatos()
-        }
-        
-        findViewById<Button>(R.id.btnEstadisticasTardanzas).setOnClickListener {
-            mostrarEstadisticasTardanzas()
-        }
-    }
-    
-    private fun setupRecyclerView() {
-        reportesAdapter = ReportesAdapter()
-        
-        findViewById<RecyclerView>(R.id.recyclerViewReportes).apply {
-            layoutManager = LinearLayoutManager(this@ReportesActivity)
-            adapter = reportesAdapter
-        }
-    }
-    
-    private fun loadReportesData() {
-        val registros = asistenciaManager.getRegistrosAsistencia()
-        
-        // Obtener lista de personal para mostrar nombres
-        val personalJson = sharedPreferences.getString("personal_list", "[]")
-        val type = object : TypeToken<List<Personal>>() {}.type
-        val personalList: List<Personal> = gson.fromJson(personalJson, type) ?: emptyList()
-        
-        // Convertir registros a ReporteItem
-        val reportes = registros.map { registro ->
-            val personal = personalList.find { it.dni == registro.dni }
-            ReporteItem(
-                nombre = personal?.nombre ?: "Desconocido",
-                dni = registro.dni,
-                fecha = "${registro.diaSemana}, ${registro.fecha}",
-                hora = registro.hora,
-                tipo = registro.tipo,
-                llegadaTarde = registro.llegadaTarde,
-                observaciones = if (registro.llegadaTarde) "Llegada tardía" else ""
-            )
-        }.sortedByDescending { "${it.fecha} ${it.hora}" }
-        
-        reportesAdapter.submitList(reportes)
-        
-        // Mostrar mensaje si no hay datos
-        if (reportes.isEmpty()) {
-            Toast.makeText(this, "No hay registros de asistencia para mostrar", Toast.LENGTH_SHORT).show()
-        }
-    }
-    
-    private fun exportarDatosCSV() {
-        val registros = asistenciaManager.getRegistrosAsistencia()
-        
-        if (registros.isEmpty()) {
-            Toast.makeText(this, "No hay datos para exportar", Toast.LENGTH_SHORT).show()
-            return
-        }
-        
-        // Mostrar opciones de exportación
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("📊 Opciones de Exportación")
-            .setMessage("Seleccione el formato de exportación:")
-            .setPositiveButton("📋 Hoja General") { _, _ ->
-                exportarHojaGeneral(registros)
-            }
-            .setNeutralButton("👥 Hojas por Empleado") { _, _ ->
-                exportarHojasPorEmpleado(registros)
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
-    }
-    
-    private fun exportarHojaGeneral(registros: List<RegistroAsistencia>) {
         try {
-            // Obtener lista de personal
-            val personalJson = sharedPreferences.getString("personal_list", "[]")
-            val type = object : TypeToken<List<Personal>>() {}.type
-            val personalList: List<Personal> = gson.fromJson(personalJson, type) ?: emptyList()
-            
-            // Crear contenido CSV mejorado
-            val csvContent = StringBuilder()
-            
-            // Encabezados mejorados con información de horarios
-            csvContent.append("DNI,Nombre,Fecha,Día,Hora,Tipo,Estado,")
-            csvContent.append("Horario_Entrada,Horario_Salida,Tiene_Refrigerio,")
-            csvContent.append("Inicio_Refrigerio,Fin_Refrigerio,Horas_Trabajadas_Teoricas,Observaciones\n")
-            
-            // Agregar datos con información completa
-            registros.forEach { registro ->
-                val personal = personalList.find { it.dni == registro.dni }
-                val nombre = personal?.nombre ?: "Desconocido"
-                val estado = if (registro.llegadaTarde) "TARDE" else "PUNTUAL"
-                val observaciones = if (registro.llegadaTarde) "Llegada tardía" else ""
-                
-                // Información de horarios
-                val horarioEntrada = personal?.horaEntrada ?: ""
-                val horarioSalida = personal?.horaSalida ?: ""
-                val tieneRefrigerio = if (personal?.tieneRefrigerio == true) "SÍ" else "NO"
-                val inicioRefrigerio = if (personal?.tieneRefrigerio == true) personal.inicioRefrigerio else ""
-                val finRefrigerio = if (personal?.tieneRefrigerio == true) personal.finRefrigerio else ""
-                
-                // Calcular horas trabajadas teóricas
-                val horasTrabajadasTeorica = personal?.let {
-                    val (horas, minutos) = it.calcularHorasTrabajadasConRefrigerio()
-                    "${horas}h ${minutos}m"
-                } ?: ""
-                
-                csvContent.append("${registro.dni},")
-                csvContent.append("\"$nombre\",")
-                csvContent.append("${registro.fecha},")
-                csvContent.append("\"${registro.diaSemana}\",")
-                csvContent.append("${registro.hora},")
-                csvContent.append("${registro.tipo},")
-                csvContent.append("$estado,")
-                csvContent.append("$horarioEntrada,")
-                csvContent.append("$horarioSalida,")
-                csvContent.append("$tieneRefrigerio,")
-                csvContent.append("$inicioRefrigerio,")
-                csvContent.append("$finRefrigerio,")
-                csvContent.append("\"$horasTrabajadasTeorica\",")
-                csvContent.append("\"$observaciones\"\n")
-            }
-            
-            // Guardar archivo
-            val fileName = "asistencias_general_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}.csv"
-            guardarArchivoCSV(fileName, csvContent.toString(), registros.size)
-                
+            createLayout()
+            loadRegistros()
         } catch (e: Exception) {
-            mostrarErrorExportacion(e)
+            showError("Error al inicializar reportes: ${e.message}")
         }
     }
     
-    private fun exportarHojasPorEmpleado(registros: List<RegistroAsistencia>) {
+    private fun createLayout() {
+        mainLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(32, 32, 32, 32)
+            setBackgroundColor(android.graphics.Color.WHITE)
+        }
+        
+        // Título
+        val title = TextView(this).apply {
+            text = "📊 Reportes de Asistencia"
+            textSize = 24f
+            setPadding(0, 0, 0, 32)
+            setTextColor(android.graphics.Color.BLACK)
+            gravity = android.view.Gravity.CENTER
+        }
+        mainLayout.addView(title)
+        
+        // Botones de acción
+        val buttonsLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+        
+        val btnRefresh = Button(this).apply {
+            text = "🔄 Actualizar"
+            textSize = 14f
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                setMargins(0, 0, 4, 0)
+            }
+            setOnClickListener { loadRegistros() }
+        }
+        buttonsLayout.addView(btnRefresh)
+        
+        val btnExportar = Button(this).apply {
+            text = "📤 Exportar"
+            textSize = 14f
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                setMargins(4, 0, 4, 0)
+            }
+            setBackgroundColor(android.graphics.Color.parseColor("#28A745"))
+            setTextColor(android.graphics.Color.WHITE)
+            setOnClickListener { exportarDatos() }
+        }
+        buttonsLayout.addView(btnExportar)
+        
+        val btnLimpiar = Button(this).apply {
+            text = "🗑️ Limpiar"
+            textSize = 14f
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                setMargins(4, 0, 0, 0)
+            }
+            setBackgroundColor(android.graphics.Color.RED)
+            setTextColor(android.graphics.Color.WHITE)
+            setOnClickListener { limpiarRegistros() }
+        }
+        buttonsLayout.addView(btnLimpiar)
+        
+        mainLayout.addView(buttonsLayout)
+        
+        // Separador
+        val separator = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 
+                3
+            ).apply {
+                setMargins(0, 32, 0, 32)
+            }
+            setBackgroundColor(android.graphics.Color.GRAY)
+        }
+        mainLayout.addView(separator)
+        
+        // Sección de estadísticas
+        val estadisticasLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16, 16, 16, 16)
+            setBackgroundColor(android.graphics.Color.parseColor("#E8F5E8"))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, 16)
+            }
+        }
+        
+        val estadisticasTitle = TextView(this).apply {
+            text = "📈 Estadísticas del Día"
+            textSize = 16f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setPadding(0, 0, 0, 8)
+        }
+        estadisticasLayout.addView(estadisticasTitle)
+        
+        // Aquí se mostrarán las estadísticas calculadas
+        val estadisticasContent = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            tag = "estadisticas_content" // Para poder encontrarlo después
+        }
+        estadisticasLayout.addView(estadisticasContent)
+        
+        mainLayout.addView(estadisticasLayout)
+        
+        // Título de registros
+        val registrosTitle = TextView(this).apply {
+            text = "📋 Registros de Asistencia:"
+            textSize = 18f
+            setPadding(0, 0, 0, 16)
+            setTextColor(android.graphics.Color.BLACK)
+        }
+        mainLayout.addView(registrosTitle)
+        
+        // Lista de registros
+        registrosList = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        mainLayout.addView(registrosList)
+        
+        setContentView(mainLayout)
+        
+        // Configurar action bar
         try {
-            // Obtener lista de personal
-            val personalJson = sharedPreferences.getString("personal_list", "[]")
-            val type = object : TypeToken<List<Personal>>() {}.type
-            val personalList: List<Personal> = gson.fromJson(personalJson, type) ?: emptyList()
+            supportActionBar?.title = "Reportes de Asistencia"
+            supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        } catch (e: Exception) {
+            // Ignorar si no hay action bar
+        }
+    }
+    
+    private fun loadRegistros() {
+        try {
+            // Cargar registros del sistema simple (donde se guardan los nuevos)
+            val sharedPreferences = getSharedPreferences("RegistrosApp", Context.MODE_PRIVATE)
+            val registrosJson = sharedPreferences.getString("registros_list", "[]")
+            val type = object : TypeToken<List<Map<String, String>>>() {}.type
+            val registros: List<Map<String, String>> = gson.fromJson(registrosJson, type) ?: emptyList()
             
-            // Agrupar registros por empleado
-            val registrosPorEmpleado = registros.groupBy { it.dni }
+            updateRegistrosList(registros)
             
-            if (registrosPorEmpleado.isEmpty()) {
-                Toast.makeText(this, "No hay registros para exportar", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            showError("Error al cargar registros: ${e.message}")
+            updateRegistrosList(emptyList())
+        }
+    }
+    
+    private fun updateRegistrosList(registros: List<Map<String, String>>) {
+        try {
+            registrosList.removeAllViews()
+            
+            // Actualizar estadísticas
+            updateEstadisticas(registros)
+            
+            if (registros.isEmpty()) {
+                val emptyText = TextView(this).apply {
+                    text = "No hay registros de asistencia\n\nLos registros aparecerán aquí después de escanear empleados"
+                    textSize = 14f
+                    setPadding(16, 16, 16, 16)
+                    setTextColor(android.graphics.Color.GRAY)
+                    gravity = android.view.Gravity.CENTER
+                }
+                registrosList.addView(emptyText)
+            } else {
+                // Ordenar por timestamp (más reciente primero)
+                val registrosOrdenados = registros.sortedByDescending { 
+                    it["timestamp"]?.toLongOrNull() ?: 0L 
+                }
+                
+                registrosOrdenados.forEach { registro ->
+                    val registroView = createRegistroView(registro)
+                    registrosList.addView(registroView)
+                }
+                
+                // Mostrar contador
+                val contador = TextView(this).apply {
+                    text = "Total: ${registros.size} registros"
+                    textSize = 12f
+                    setPadding(0, 16, 0, 0)
+                    setTextColor(android.graphics.Color.GRAY)
+                    gravity = android.view.Gravity.CENTER
+                }
+                registrosList.addView(contador)
+            }
+            
+        } catch (e: Exception) {
+            showError("Error al mostrar registros: ${e.message}")
+        }
+    }
+    
+    private fun createRegistroView(registro: Map<String, String>): LinearLayout {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16, 16, 16, 16)
+            setBackgroundColor(android.graphics.Color.parseColor("#F8F9FA"))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, 8)
+            }
+        }
+        
+        // Header con nombre y tipo de evento
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+        
+        val nombre = TextView(this).apply {
+            text = registro["nombre"] ?: "Empleado"
+            textSize = 16f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        header.addView(nombre)
+        
+        val tipoEvento = TextView(this).apply {
+            text = registro["tipoEvento"] ?: ""
+            textSize = 14f
+            setTextColor(
+                if (registro["tipoEvento"]?.contains("ENTRADA") == true) 
+                    android.graphics.Color.parseColor("#28A745")
+                else 
+                    android.graphics.Color.parseColor("#DC3545")
+            )
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        header.addView(tipoEvento)
+        
+        layout.addView(header)
+        
+        // DNI
+        val dni = TextView(this).apply {
+            text = "🆔 DNI: ${registro["dni"]}"
+            textSize = 14f
+            setTextColor(android.graphics.Color.GRAY)
+        }
+        layout.addView(dni)
+        
+        // Fecha y hora
+        val fechaHora = TextView(this).apply {
+            text = "📅 ${registro["fecha"]} - 🕐 ${registro["hora"]}"
+            textSize = 14f
+            setTextColor(android.graphics.Color.GRAY)
+        }
+        layout.addView(fechaHora)
+        
+        // Estado
+        val estado = TextView(this).apply {
+            text = "📊 ${registro["estado"]}"
+            textSize = 14f
+            setTextColor(
+                when {
+                    registro["estado"]?.contains("PUNTUAL") == true -> android.graphics.Color.GREEN
+                    registro["estado"]?.contains("RETRASO") == true -> android.graphics.Color.parseColor("#FF8C00")
+                    registro["estado"]?.contains("TARDANZA") == true -> android.graphics.Color.RED
+                    else -> android.graphics.Color.GRAY
+                }
+            )
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        layout.addView(estado)
+        
+        // Timestamp para debug
+        val timestamp = registro["timestamp"]?.toLongOrNull()
+        if (timestamp != null) {
+            val fechaCompleta = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault()).format(Date(timestamp))
+            val timestampView = TextView(this).apply {
+                text = "⏰ Registrado: $fechaCompleta"
+                textSize = 12f
+                setTextColor(android.graphics.Color.LTGRAY)
+                setPadding(0, 4, 0, 0)
+            }
+            layout.addView(timestampView)
+        }
+        
+        return layout
+    }
+    
+    private fun limpiarRegistros() {
+        try {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("⚠️ Confirmar Limpieza")
+                .setMessage("¿Está seguro de eliminar TODOS los registros de asistencia?\n\nEsta acción no se puede deshacer.")
+                .setPositiveButton("Eliminar") { _, _ ->
+                    val sharedPreferences = getSharedPreferences("RegistrosApp", Context.MODE_PRIVATE)
+                    sharedPreferences.edit().remove("registros_list").apply()
+                    showMessage("🗑️ Todos los registros eliminados")
+                    loadRegistros()
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        } catch (e: Exception) {
+            showError("Error al limpiar: ${e.message}")
+        }
+    }
+    
+    private fun updateEstadisticas(registros: List<Map<String, String>>) {
+        try {
+            val estadisticasContent = mainLayout.findViewWithTag<LinearLayout>("estadisticas_content")
+            estadisticasContent?.removeAllViews()
+            
+            if (registros.isEmpty()) {
+                val noDataText = TextView(this).apply {
+                    text = "No hay datos para mostrar estadísticas"
+                    textSize = 14f
+                    setTextColor(android.graphics.Color.GRAY)
+                }
+                estadisticasContent?.addView(noDataText)
                 return
             }
             
-            // Crear contenido CSV con múltiples hojas (separadas por líneas vacías)
-            val csvContent = StringBuilder()
-            var totalRegistrosExportados = 0
+            // Agrupar registros por empleado y fecha
+            val registrosPorEmpleado = registros.groupBy { "${it["dni"]}_${it["fecha"]}" }
             
-            registrosPorEmpleado.forEach { (dni, registrosEmpleado) ->
-                val personal = personalList.find { it.dni == dni }
-                val nombreEmpleado = personal?.nombre ?: "Empleado Desconocido"
+            var totalEmpleados = 0
+            var totalHorasTrabajadas = 0
+            var totalMinutosTrabajados = 0
+            var empleadosPuntuales = 0
+            var empleadosConTardanza = 0
+            
+            val detalleEmpleados = mutableListOf<String>()
+            
+            registrosPorEmpleado.forEach { (key, registrosEmpleado) ->
+                val dni = registrosEmpleado.first()["dni"] ?: ""
+                val nombre = registrosEmpleado.first()["nombre"] ?: ""
+                val fecha = registrosEmpleado.first()["fecha"] ?: ""
                 
-                // Separador de hoja (para Excel/Sheets que soporten múltiples hojas en CSV)
-                csvContent.append("\n")
-                csvContent.append("=== HOJA: $nombreEmpleado (DNI: $dni) ===\n")
-                csvContent.append("\n")
+                totalEmpleados++
                 
-                // Información del empleado
-                csvContent.append("INFORMACIÓN DEL EMPLEADO\n")
-                csvContent.append("Nombre,\"$nombreEmpleado\"\n")
-                csvContent.append("DNI,$dni\n")
-                csvContent.append("Horario_Entrada,${personal?.horaEntrada ?: "No definido"}\n")
-                csvContent.append("Horario_Salida,${personal?.horaSalida ?: "No definido"}\n")
-                csvContent.append("Tiene_Refrigerio,${if (personal?.tieneRefrigerio == true) "SÍ" else "NO"}\n")
+                // Calcular horas trabajadas para este empleado
+                val horasTrabajadas = calcularHorasTrabajadasEmpleado(registrosEmpleado, dni)
+                totalHorasTrabajadas += horasTrabajadas.first
+                totalMinutosTrabajados += horasTrabajadas.second
                 
-                if (personal?.tieneRefrigerio == true) {
-                    csvContent.append("Inicio_Refrigerio,${personal.inicioRefrigerio}\n")
-                    csvContent.append("Fin_Refrigerio,${personal.finRefrigerio}\n")
-                    csvContent.append("Duración_Refrigerio,${personal.minutosRefrigerio} minutos\n")
+                // Verificar puntualidad
+                val tieneTardanza = registrosEmpleado.any { 
+                    it["estado"]?.contains("TARDANZA") == true || 
+                    it["estado"]?.contains("RETRASO") == true 
                 }
                 
-                val (horas, minutos) = personal?.calcularHorasTrabajadasConRefrigerio() ?: Pair(0, 0)
-                csvContent.append("Horas_Trabajadas_Diarias,\"${horas}h ${minutos}m\"\n")
-                csvContent.append("\n")
-                
-                // Encabezados de registros
-                csvContent.append("REGISTROS DE ASISTENCIA\n")
-                csvContent.append("Fecha,Día,Hora,Tipo,Estado,Minutos_Tarde,Observaciones\n")
-                
-                // Registros del empleado ordenados por fecha
-                registrosEmpleado.sortedBy { "${it.fecha} ${it.hora}" }.forEach { registro ->
-                    val estado = if (registro.llegadaTarde) "TARDE" else "PUNTUAL"
-                    val minutosLlegadaTarde = if (registro.llegadaTarde) {
-                        calcularMinutosTarde(personal, registro)
-                    } else 0
-                    
-                    val observaciones = when {
-                        registro.llegadaTarde -> "Llegada tardía ($minutosLlegadaTarde min)"
-                        else -> "Registro normal"
-                    }
-                    
-                    csvContent.append("${registro.fecha},")
-                    csvContent.append("\"${registro.diaSemana}\",")
-                    csvContent.append("${registro.hora},")
-                    csvContent.append("${registro.tipo},")
-                    csvContent.append("$estado,")
-                    csvContent.append("$minutosLlegadaTarde,")
-                    csvContent.append("\"$observaciones\"\n")
+                if (tieneTardanza) {
+                    empleadosConTardanza++
+                } else {
+                    empleadosPuntuales++
                 }
                 
-                // Estadísticas del empleado
-                csvContent.append("\n")
-                csvContent.append("ESTADÍSTICAS DEL EMPLEADO\n")
-                val totalRegistros = registrosEmpleado.size
-                val registrosTarde = registrosEmpleado.count { it.llegadaTarde }
-                val porcentajePuntualidad = if (totalRegistros > 0) {
-                    ((totalRegistros - registrosTarde) * 100.0 / totalRegistros)
-                } else 0.0
+                // Agregar detalle del empleado
+                val horasTexto = if (horasTrabajadas.first > 0 || horasTrabajadas.second > 0) {
+                    "${horasTrabajadas.first}h ${horasTrabajadas.second}m"
+                } else {
+                    "Sin jornada completa"
+                }
                 
-                csvContent.append("Total_Registros,$totalRegistros\n")
-                csvContent.append("Registros_Tarde,$registrosTarde\n")
-                csvContent.append("Registros_Puntuales,${totalRegistros - registrosTarde}\n")
-                csvContent.append("Porcentaje_Puntualidad,\"${String.format("%.1f", porcentajePuntualidad)}%\"\n")
-                
-                // Separador entre empleados
-                csvContent.append("\n")
-                csvContent.append("=" .repeat(50))
-                csvContent.append("\n")
-                
-                totalRegistrosExportados += registrosEmpleado.size
+                val estadoTexto = if (tieneTardanza) "⚠️ Con tardanza" else "✅ Puntual"
+                detalleEmpleados.add("• $nombre: $horasTexto - $estadoTexto")
             }
             
-            // Resumen general al final
-            csvContent.append("\n")
-            csvContent.append("=== RESUMEN GENERAL ===\n")
-            csvContent.append("Total_Empleados,${registrosPorEmpleado.size}\n")
-            csvContent.append("Total_Registros,$totalRegistrosExportados\n")
-            csvContent.append("Fecha_Exportación,\"${SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault()).format(Date())}\"\n")
+            // Convertir minutos extra a horas
+            val horasExtra = totalMinutosTrabajados / 60
+            totalHorasTrabajadas += horasExtra
+            totalMinutosTrabajados %= 60
             
-            // Guardar archivo
-            val fileName = "asistencias_por_empleado_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}.csv"
-            guardarArchivoCSV(fileName, csvContent.toString(), totalRegistrosExportados)
+            // Mostrar estadísticas generales
+            val statsGenerales = TextView(this).apply {
+                text = buildString {
+                    append("👥 Empleados registrados: $totalEmpleados\n")
+                    append("⏰ Total horas trabajadas: ${totalHorasTrabajadas}h ${totalMinutosTrabajados}m\n")
+                    append("✅ Empleados puntuales: $empleadosPuntuales\n")
+                    append("⚠️ Empleados con tardanza: $empleadosConTardanza\n")
+                    append("📊 Promedio por empleado: ${if (totalEmpleados > 0) "${(totalHorasTrabajadas * 60 + totalMinutosTrabajados) / totalEmpleados / 60}h ${((totalHorasTrabajadas * 60 + totalMinutosTrabajados) / totalEmpleados) % 60}m" else "0h 0m"}")
+                }
+                textSize = 14f
+                setTextColor(android.graphics.Color.BLACK)
+                setPadding(0, 0, 0, 16)
+            }
+            estadisticasContent?.addView(statsGenerales)
+            
+            // Mostrar detalle por empleado si hay pocos empleados
+            if (totalEmpleados <= 5 && detalleEmpleados.isNotEmpty()) {
+                val detalleTitle = TextView(this).apply {
+                    text = "📋 Detalle por empleado:"
+                    textSize = 14f
+                    setTextColor(android.graphics.Color.BLACK)
+                    setTypeface(null, android.graphics.Typeface.BOLD)
+                    setPadding(0, 8, 0, 4)
+                }
+                estadisticasContent?.addView(detalleTitle)
                 
+                val detalleText = TextView(this).apply {
+                    text = detalleEmpleados.joinToString("\n")
+                    textSize = 12f
+                    setTextColor(android.graphics.Color.GRAY)
+                }
+                estadisticasContent?.addView(detalleText)
+            }
+            
         } catch (e: Exception) {
-            mostrarErrorExportacion(e)
+            showError("Error al calcular estadísticas: ${e.message}")
         }
     }
     
-    private fun calcularMinutosTarde(personal: Personal?, registro: RegistroAsistencia): Int {
-        if (personal == null || !registro.llegadaTarde) return 0
-        
+    private fun calcularHorasTrabajadasEmpleado(registrosEmpleado: List<Map<String, String>>, dni: String): Pair<Int, Int> {
+        try {
+            // Buscar entrada y salida del empleado
+            val entrada = registrosEmpleado.find { it["tipoEvento"]?.contains("ENTRADA") == true }
+            val salida = registrosEmpleado.find { it["tipoEvento"]?.contains("SALIDA") == true }
+            
+            if (entrada == null || salida == null) {
+                return Pair(0, 0) // No hay jornada completa
+            }
+            
+            val horaEntrada = entrada["hora"] ?: return Pair(0, 0)
+            val horaSalida = salida["hora"] ?: return Pair(0, 0)
+            
+            // Calcular diferencia en minutos
+            val minutosTotal = calcularDiferenciaMinutos(horaEntrada, horaSalida)
+            
+            // Descontar tiempo de refrigerio (asumimos 1 hora estándar si no hay registros específicos)
+            val minutosRefrigerio = obtenerMinutosRefrigerio(dni)
+            val minutosTrabajadasNeto = maxOf(0, minutosTotal - minutosRefrigerio)
+            
+            val horas = minutosTrabajadasNeto / 60
+            val minutos = minutosTrabajadasNeto % 60
+            
+            return Pair(horas, minutos)
+            
+        } catch (e: Exception) {
+            return Pair(0, 0)
+        }
+    }
+    
+    private fun calcularDiferenciaMinutos(hora1: String, hora2: String): Int {
         return try {
             val formato = SimpleDateFormat("HH:mm", Locale.getDefault())
-            val horaLlegada = formato.parse(registro.hora.substring(0, 5))
-            val horaEntrada = formato.parse(personal.horaEntrada)
+            val time1 = formato.parse(hora1)
+            val time2 = formato.parse(hora2)
             
-            if (horaLlegada != null && horaEntrada != null) {
-                val diferencia = horaLlegada.time - horaEntrada.time
+            if (time1 != null && time2 != null) {
+                val diferencia = time2.time - time1.time
                 (diferencia / (1000 * 60)).toInt()
-            } else 0
+            } else {
+                0
+            }
         } catch (e: Exception) {
             0
         }
     }
     
-    private fun guardarArchivoCSV(fileName: String, content: String, recordCount: Int) {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            // Android 10+ - usar MediaStore
-            val resolver = contentResolver
-            val contentValues = android.content.ContentValues().apply {
-                put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "text/csv")
-                put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS)
+    private fun obtenerMinutosRefrigerio(dni: String): Int {
+        try {
+            // Buscar el empleado en la lista para obtener su horario de refrigerio
+            val sharedPreferences = getSharedPreferences("EmpleadosApp", Context.MODE_PRIVATE)
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<List<EmpleadoSimple>>() {}.type
+            val empleados: List<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: emptyList()
+            
+            val empleado = empleados.find { it.dni == dni }
+            
+            // Por ahora, asumimos 60 minutos de refrigerio estándar
+            // En el futuro, esto se puede configurar por empleado
+            return 60 // 1 hora de refrigerio estándar
+            
+        } catch (e: Exception) {
+            return 60 // Valor por defecto
+        }
+    }
+    
+    private fun exportarDatos() {
+        try {
+            // Cargar registros
+            val sharedPreferences = getSharedPreferences("RegistrosApp", Context.MODE_PRIVATE)
+            val registrosJson = sharedPreferences.getString("registros_list", "[]")
+            val type = object : TypeToken<List<Map<String, String>>>() {}.type
+            val registros: List<Map<String, String>> = gson.fromJson(registrosJson, type) ?: emptyList()
+            
+            if (registros.isEmpty()) {
+                showMessage("No hay datos para exportar")
+                return
             }
             
-            val uri = resolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
-            uri?.let { fileUri ->
-                resolver.openOutputStream(fileUri)?.use { outputStream ->
-                    outputStream.write(content.toByteArray())
+            // Generar CSV
+            val csvContent = generarCSV(registros)
+            
+            // Mostrar opciones de exportación
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("📤 Exportar Datos")
+                .setMessage("Seleccione el formato de exportación:")
+                .setPositiveButton("📄 CSV") { _, _ ->
+                    exportarCSV(csvContent)
                 }
+                .setNeutralButton("📋 Copiar") { _, _ ->
+                    copiarAlPortapapeles(csvContent)
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
                 
-                // Mostrar mensaje de éxito mejorado
-                showExportSuccessDialog(fileName, recordCount, fileUri)
-            }
-        } else {
-            // Android 9 y anteriores
-            val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
-            val file = java.io.File(downloadsDir, fileName)
+        } catch (e: Exception) {
+            showError("Error al exportar: ${e.message}")
+        }
+    }
+    
+    private fun generarCSV(registros: List<Map<String, String>>): String {
+        val csv = StringBuilder()
+        
+        // Encabezados
+        csv.append("Fecha,Hora,DNI,Nombre,Tipo_Evento,Estado,Timestamp\n")
+        
+        // Datos
+        registros.sortedBy { it["timestamp"]?.toLongOrNull() ?: 0L }.forEach { registro ->
+            csv.append("${registro["fecha"]},")
+            csv.append("${registro["hora"]},")
+            csv.append("${registro["dni"]},")
+            csv.append("\"${registro["nombre"]}\",")
+            csv.append("${registro["tipoEvento"]},")
+            csv.append("\"${registro["estado"]}\",")
+            csv.append("${registro["timestamp"]}\n")
+        }
+        
+        return csv.toString()
+    }
+    
+    private fun exportarCSV(csvContent: String) {
+        try {
+            // Crear nombre de archivo con fecha
+            val fechaActual = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val nombreArchivo = "asistencia_$fechaActual.csv"
             
-            file.writeText(content)
+            // Por simplicidad, mostrar el contenido en un diálogo
+            // En una implementación completa, se guardaría en almacenamiento externo
+            val scrollView = ScrollView(this)
+            val textView = TextView(this).apply {
+                text = "Archivo: $nombreArchivo\n\n$csvContent"
+                textSize = 12f
+                setPadding(16, 16, 16, 16)
+                setTextIsSelectable(true)
+            }
+            scrollView.addView(textView)
             
-            // Mostrar mensaje de éxito
-            showExportSuccessDialog(fileName, recordCount, android.net.Uri.fromFile(file))
-        }
-    }
-    
-    private fun mostrarErrorExportacion(e: Exception) {
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("❌ Error de Exportación")
-            .setMessage("No se pudo exportar el archivo:\n\n${e.message}\n\nVerifique que la aplicación tenga permisos de escritura.")
-            .setPositiveButton("OK", null)
-            .show()
-    }
-    
-    private fun showExportSuccessDialog(fileName: String, recordCount: Int, fileUri: android.net.Uri) {
-        val tipoExportacion = if (fileName.contains("por_empleado")) {
-            "📋 Hojas separadas por empleado"
-        } else {
-            "📊 Hoja general consolidada"
-        }
-        
-        val mensaje = StringBuilder()
-        mensaje.append("🎉 ¡Exportación completada exitosamente!\n\n")
-        mensaje.append("📁 Archivo: $fileName\n")
-        mensaje.append("📂 Ubicación: Carpeta Descargas\n")
-        mensaje.append("📊 Registros exportados: $recordCount\n")
-        mensaje.append("📋 Formato: $tipoExportacion\n\n")
-        mensaje.append("✨ CARACTERÍSTICAS INCLUIDAS:\n")
-        mensaje.append("• Información completa de horarios\n")
-        mensaje.append("• Datos de refrigerio/almuerzo\n")
-        mensaje.append("• Cálculo de horas trabajadas\n")
-        mensaje.append("• Estados de puntualidad\n")
-        mensaje.append("• Estadísticas por empleado\n\n")
-        mensaje.append("📱 Compatible con Excel, Google Sheets y editores de texto")
-        
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("✅ Exportación Exitosa")
-            .setMessage(mensaje.toString())
-            .setPositiveButton("📤 Compartir") { _, _ ->
-                // Compartir archivo
-                try {
-                    val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                        type = "text/csv"
-                        putExtra(android.content.Intent.EXTRA_STREAM, fileUri)
-                        putExtra(android.content.Intent.EXTRA_TEXT, "Reporte de asistencias generado desde la app de control de asistencia")
-                        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-                    startActivity(android.content.Intent.createChooser(shareIntent, "Compartir reporte de asistencias"))
-                } catch (e: Exception) {
-                    Toast.makeText(this, "No se pudo compartir el archivo", Toast.LENGTH_SHORT).show()
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("📄 Datos CSV Generados")
+                .setView(scrollView)
+                .setPositiveButton("Copiar") { _, _ ->
+                    copiarAlPortapapeles(csvContent)
                 }
-            }
-            .setNeutralButton("👁️ Ver Archivo") { _, _ ->
-                // Intentar abrir el archivo
-                try {
-                    val viewIntent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                        setDataAndType(fileUri, "text/csv")
-                        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-                    if (viewIntent.resolveActivity(packageManager) != null) {
-                        startActivity(viewIntent)
-                    } else {
-                        Toast.makeText(this, "No hay aplicación disponible para abrir archivos CSV", Toast.LENGTH_SHORT).show()
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(this, "No se pudo abrir el archivo", Toast.LENGTH_SHORT).show()
-                }
-            }
-            .setNegativeButton("Cerrar", null)
-            .show()
+                .setNegativeButton("Cerrar", null)
+                .show()
+                
+            showMessage("✅ CSV generado correctamente")
+            
+        } catch (e: Exception) {
+            showError("Error al generar CSV: ${e.message}")
+        }
     }
     
-    private fun limpiarDatos() {
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Limpiar Datos")
-            .setMessage("¿Está seguro de eliminar todos los registros de asistencia?\n\nEsta acción no se puede deshacer.")
-            .setPositiveButton("Eliminar") { _, _ ->
-                asistenciaManager.limpiarRegistros()
-                loadReportesData() // Recargar la lista vacía
-                Toast.makeText(this, "✅ Todos los registros han sido eliminados", Toast.LENGTH_SHORT).show()
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
+    private fun copiarAlPortapapeles(texto: String) {
+        try {
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val clip = android.content.ClipData.newPlainText("Datos de Asistencia", texto)
+            clipboard.setPrimaryClip(clip)
+            showMessage("📋 Datos copiados al portapapeles")
+        } catch (e: Exception) {
+            showError("Error al copiar: ${e.message}")
+        }
     }
     
-    override fun onResume() {
-        super.onResume()
-        // Recargar datos cuando se regresa a la actividad
-        loadReportesData()
+    private fun showError(message: String) {
+        Toast.makeText(this, "❌ $message", Toast.LENGTH_LONG).show()
     }
     
-    private fun mostrarEstadisticasTardanzas() {
-        // Obtener lista de personal
-        val personalJson = sharedPreferences.getString("personal_list", "[]")
-        val type = object : TypeToken<List<Personal>>() {}.type
-        val personalList: List<Personal> = gson.fromJson(personalJson, type) ?: emptyList()
-        
-        if (personalList.isEmpty()) {
-            Toast.makeText(this, "No hay personal registrado para mostrar estadísticas", Toast.LENGTH_SHORT).show()
-            return
-        }
-        
-        val tardanzasManager = TardanzasManager(this)
-        val configuracionManager = ConfiguracionManager(this)
-        val estadisticas = tardanzasManager.getEstadisticasTardanzas(personalList)
-        val personalConProblemas = tardanzasManager.getPersonalQueExcedeLimite(personalList)
-        
-        val mensaje = StringBuilder()
-        mensaje.append("📊 ESTADÍSTICAS DE TARDANZAS\n\n")
-        
-        // Configuración actual
-        mensaje.append("⚙️ CONFIGURACIÓN ACTUAL:\n")
-        mensaje.append("• ${configuracionManager.getDescripcionTolerancia()}\n")
-        mensaje.append("• ${configuracionManager.getDescripcionLimite()}\n\n")
-        
-        // Personal que excede límite
-        if (personalConProblemas.isNotEmpty()) {
-            mensaje.append("⚠️ PERSONAL QUE EXCEDE LÍMITE:\n")
-            personalConProblemas.forEach { stat ->
-                mensaje.append("• ${stat.nombre}: ${stat.tardanzasEsteMes} tardanzas este mes\n")
-                stat.ultimaTardanza?.let { fecha ->
-                    mensaje.append("  Última tardanza: $fecha\n")
-                }
-            }
-            mensaje.append("\n")
-        }
-        
-        // Resumen general
-        val totalTardanzasEsteMes = estadisticas.sumOf { it.tardanzasEsteMes }
-        val totalTardanzasGeneral = estadisticas.sumOf { it.tardanzasTotal }
-        val personalConTardanzas = estadisticas.count { it.tardanzasTotal > 0 }
-        
-        mensaje.append("📈 RESUMEN GENERAL:\n")
-        mensaje.append("• Total tardanzas este mes: $totalTardanzasEsteMes\n")
-        mensaje.append("• Total tardanzas históricas: $totalTardanzasGeneral\n")
-        mensaje.append("• Personal con tardanzas: $personalConTardanzas/${personalList.size}\n\n")
-        
-        // Top 5 con más tardanzas
-        mensaje.append("🏆 TOP 5 CON MÁS TARDANZAS ESTE MES:\n")
-        estadisticas.take(5).forEachIndexed { index, stat ->
-            val posicion = when (index) {
-                0 -> "🥇"
-                1 -> "🥈" 
-                2 -> "🥉"
-                else -> "${index + 1}."
-            }
-            val indicador = when {
-                stat.excedeLimite -> "⚠️"
-                stat.tardanzasEsteMes > 0 -> "📊"
-                else -> "✅"
-            }
-            mensaje.append("$posicion $indicador ${stat.nombre}: ${stat.tardanzasEsteMes} este mes (${stat.tardanzasTotal} total)\n")
-        }
-        
-        if (estadisticas.all { it.tardanzasTotal == 0 }) {
-            mensaje.append("✅ ¡Excelente! No hay tardanzas registradas")
-        }
-        
-        // Crear ScrollView para el diálogo
-        val scrollView = android.widget.ScrollView(this)
-        val textView = android.widget.TextView(this).apply {
-            text = mensaje.toString()
-            setPadding(50, 30, 50, 30)
-            textSize = 14f
-            typeface = android.graphics.Typeface.MONOSPACE
-        }
-        scrollView.addView(textView)
-        
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("📊 Estadísticas de Tardanzas")
-            .setView(scrollView)
-            .setPositiveButton("Cerrar", null)
-            .setNeutralButton("Configurar") { _, _ ->
-                // Abrir configuración
-                startActivity(android.content.Intent(this, ConfiguracionActivity::class.java))
-            }
-            .show()
-    }}
+    private fun showMessage(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+    
+    override fun onSupportNavigateUp(): Boolean {
+        finish()
+        return true
+    }
+    
+    override fun onBackPressed() {
+        finish()
+    }
+}

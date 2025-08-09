@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <item
+        android:id="@+id/menu_ver_detalle"
+        android:title="👁️ Ver Detalle"
+        android:icon="@drawable/ic_person_add" />
+    
+    <item
+        android:id="@+id/menu_editar"
+        android:title="✏️ Editar"
+        android:icon="@drawable/ic_settings" />
+    
+    <item
+        android:id="@+id/menu_generar_qr"
+        android:title="📱 Generar QR"
+        android:icon="@drawable/ic_qr_scan" />
+    
+    <item
+        android:id="@+id/menu_activar_desactivar"
+        android:title="🔄 Activar/Desactivar"
+        android:icon="@drawable/ic_restore" />
+    
+    <item
+        android:id="@+id/menu_eliminar"
+        android:title="🗑️ Eliminar"
+        android:icon="@drawable/ic_warning" />
+    
+</menu>
