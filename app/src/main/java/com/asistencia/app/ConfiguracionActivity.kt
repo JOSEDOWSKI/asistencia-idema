@@ -80,8 +80,9 @@ class ConfiguracionActivity : AppCompatActivity() {
             "Código de Barras (Code128)"
         )
         
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, modos)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        // Usar layouts personalizados con mejor contraste
+        val adapter = ArrayAdapter(this, R.layout.spinner_item, modos)
+        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item)
         spinnerModoLectura.adapter = adapter
     }
     
@@ -91,8 +92,9 @@ class ConfiguracionActivity : AppCompatActivity() {
             "Autoservicio"
         )
         
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, modos)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        // Usar layouts personalizados con mejor contraste
+        val adapter = ArrayAdapter(this, R.layout.spinner_item, modos)
+        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item)
         spinnerModoOperacion.adapter = adapter
     }
     

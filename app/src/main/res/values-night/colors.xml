@@ -1,48 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Material Design 3 Dark Colors -->
-    <color name="primary_color">#D0BCFF</color>
-    <color name="primary_dark">#B69DF8</color>
-    <color name="accent_color">#B69DF8</color>
-    <color name="secondary_color">#CCC2DC</color>
-    <color name="tertiary_color">#EFB8C8</color>
+    <!-- FORZAR COLORES CLAROS INCLUSO EN MODO NOCTURNO -->
+    <!-- Promesa Brand Colors - Colores reales del logo MÁS SATURADOS -->
+    <color name="promesa_green">#1a8a7a</color>
+    <color name="promesa_dark">#0f2d32</color>
+    <color name="promesa_light">#2db5a5</color>
+    <color name="promesa_accent">#1a8a7a</color>
+    <color name="promesa_secondary">#64748B</color>
     
-    <!-- Surface Colors -->
-    <color name="surface_color">#1C1B1F</color>
-    <color name="surface_variant">#49454F</color>
-    <color name="background_color">#1C1B1F</color>
-    <color name="background_secondary">#211F26</color>
+    <!-- Material Design 3 Colors - Updated with SATURATED Promesa palette -->
+    <color name="primary_color">#1a8a7a</color>
+    <color name="primary_dark">#0f2d32</color>
+    <color name="accent_color">#1a8a7a</color>
+    <color name="secondary_color">#1a8a7a</color>
+    <color name="tertiary_color">#2db5a5</color>
     
-    <!-- Text Colors -->
-    <color name="text_primary">#E6E1E5</color>
-    <color name="text_secondary">#CAC4D0</color>
-    <color name="text_on_primary">#381E72</color>
-    <color name="text_on_surface">#E6E1E5</color>
+    <!-- FONDO BLANCO FORZADO -->
+    <color name="surface_color">#FFFFFF</color>
+    <color name="surface_variant">#F0F9F8</color>
+    <color name="background_color">#FFFFFF</color>
+    <color name="background_secondary">#F0F9F8</color>
     
-    <!-- Status Colors -->
-    <color name="success_color">#81C784</color>
-    <color name="warning_color">#FFB74D</color>
-    <color name="error_color">#EF5350</color>
-    <color name="info_color">#64B5F6</color>
-    
-    <!-- Card and Component Colors -->
-    <color name="card_background">#2B2930</color>
-    <color name="divider_color">#49454F</color>
-    <color name="outline_color">#938F99</color>
-    <color name="outline_variant">#49454F</color>
+    <!-- Text Colors - TEXTO OSCURO SOBRE FONDO BLANCO -->
+    <color name="text_primary">#1C1B1F</color>
+    <color name="text_secondary">#49454F</color>
+    <color name="text_tertiary">#6B6B6B</color>
+    <color name="text_on_primary">#FFFFFF</color>
+    <color name="text_on_surface">#1C1B1F</color>
+    <color name="text_on_background">#1C1B1F</color>
     
     <!-- Button Colors -->
-    <color name="button_primary">#D0BCFF</color>
-    <color name="button_secondary">#4F378B</color>
-    <color name="button_surface">#2B2930</color>
+    <color name="button_primary">#1a8a7a</color>
+    <color name="button_secondary">#E8F5F4</color>
+    <color name="button_surface">#FFFFFF</color>
     
-    <!-- Scanner Colors -->
-    <color name="scanner_overlay">#80000000</color>
-    <color name="scanner_frame">#D0BCFF</color>
-    
-    <!-- Status Badge Colors -->
-    <color name="badge_entrada">#1B5E20</color>
-    <color name="badge_salida">#E65100</color>
-    <color name="badge_tarde">#B71C1C</color>
-    <color name="badge_puntual">#1B5E20</color>
+    <!-- Card and Component Colors -->
+    <color name="card_background">#FFFFFF</color>
+    <color name="background_primary">#FFFFFF</color>
+    <color name="divider_color">#B8E6E1</color>
+    <color name="outline_color">#1a8a7a</color>
+    <color name="outline_variant">#B8E6E1</color>
 </resources>

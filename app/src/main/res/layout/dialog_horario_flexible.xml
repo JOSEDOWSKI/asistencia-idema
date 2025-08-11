@@ -47,6 +47,8 @@
                         android:hint="Entrada base"
                         android:inputType="time"
                         android:background="@drawable/edittext_background"
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/text_secondary"
                         android:padding="12dp"
                         android:layout_marginEnd="8dp" />
 
@@ -58,6 +60,8 @@
                         android:hint="Salida base"
                         android:inputType="time"
                         android:background="@drawable/edittext_background"
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/text_secondary"
                         android:padding="12dp"
                         android:layout_marginStart="8dp" />
 
@@ -124,16 +128,17 @@
                 android:layout_marginBottom="8dp">
 
                 <Switch
-                    android:id="@+id/switch_activo"
+                    android:id="@+id/switch_lunes"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="12dp" />
+                    android:layout_marginEnd="12dp"
+                    android:checked="true" />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Lunes"
+                    android:text="🌅 Lunes"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="#2C3E50" />
@@ -141,32 +146,38 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/layout_horarios"
+                android:id="@+id/layout_horarios_lunes"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:visibility="gone">
+                android:visibility="visible">
 
                 <EditText
-                    android:id="@+id/et_entrada"
+                    android:id="@+id/et_entrada_lunes"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:hint="Entrada"
+                    android:text="08:00"
                     android:inputType="time"
                     android:background="@drawable/edittext_background"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
                     android:padding="8dp"
                     android:textSize="14sp"
                     android:layout_marginEnd="8dp" />
 
                 <EditText
-                    android:id="@+id/et_salida"
+                    android:id="@+id/et_salida_lunes"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:hint="Salida"
+                    android:text="17:00"
                     android:inputType="time"
                     android:background="@drawable/edittext_background"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
                     android:padding="8dp"
                     android:textSize="14sp"
                     android:layout_marginStart="8dp" />
@@ -193,16 +204,17 @@
                 android:layout_marginBottom="8dp">
 
                 <Switch
-                    android:id="@+id/switch_activo"
+                    android:id="@+id/switch_martes"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="12dp" />
+                    android:layout_marginEnd="12dp"
+                    android:checked="true" />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Martes"
+                    android:text="💼 Martes"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="#2C3E50" />
@@ -210,32 +222,38 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/layout_horarios"
+                android:id="@+id/layout_horarios_martes"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:visibility="gone">
+                android:visibility="visible">
 
                 <EditText
-                    android:id="@+id/et_entrada"
+                    android:id="@+id/et_entrada_martes"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:hint="Entrada"
+                    android:text="08:00"
                     android:inputType="time"
                     android:background="@drawable/edittext_background"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
                     android:padding="8dp"
                     android:textSize="14sp"
                     android:layout_marginEnd="8dp" />
 
                 <EditText
-                    android:id="@+id/et_salida"
+                    android:id="@+id/et_salida_martes"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:hint="Salida"
+                    android:text="17:00"
                     android:inputType="time"
                     android:background="@drawable/edittext_background"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
                     android:padding="8dp"
                     android:textSize="14sp"
                     android:layout_marginStart="8dp" />
@@ -262,16 +280,17 @@
                 android:layout_marginBottom="8dp">
 
                 <Switch
-                    android:id="@+id/switch_activo"
+                    android:id="@+id/switch_miercoles"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="12dp" />
+                    android:layout_marginEnd="12dp"
+                    android:checked="true" />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Miércoles"
+                    android:text="⚡ Miércoles"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="#2C3E50" />
@@ -279,32 +298,38 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/layout_horarios"
+                android:id="@+id/layout_horarios_miercoles"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:visibility="gone">
+                android:visibility="visible">
 
                 <EditText
-                    android:id="@+id/et_entrada"
+                    android:id="@+id/et_entrada_miercoles"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:hint="Entrada"
+                    android:text="08:00"
                     android:inputType="time"
                     android:background="@drawable/edittext_background"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
                     android:padding="8dp"
                     android:textSize="14sp"
                     android:layout_marginEnd="8dp" />
 
                 <EditText
-                    android:id="@+id/et_salida"
+                    android:id="@+id/et_salida_miercoles"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:hint="Salida"
+                    android:text="17:00"
                     android:inputType="time"
                     android:background="@drawable/edittext_background"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
                     android:padding="8dp"
                     android:textSize="14sp"
                     android:layout_marginStart="8dp" />
@@ -331,16 +356,17 @@
                 android:layout_marginBottom="8dp">
 
                 <Switch
-                    android:id="@+id/switch_activo"
+                    android:id="@+id/switch_jueves"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="12dp" />
+                    android:layout_marginEnd="12dp"
+                    android:checked="true" />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Jueves"
+                    android:text="🚀 Jueves"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="#2C3E50" />
@@ -348,32 +374,38 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/layout_horarios"
+                android:id="@+id/layout_horarios_jueves"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:visibility="gone">
+                android:visibility="visible">
 
                 <EditText
-                    android:id="@+id/et_entrada"
+                    android:id="@+id/et_entrada_jueves"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:hint="Entrada"
+                    android:text="08:00"
                     android:inputType="time"
                     android:background="@drawable/edittext_background"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
                     android:padding="8dp"
                     android:textSize="14sp"
                     android:layout_marginEnd="8dp" />
 
                 <EditText
-                    android:id="@+id/et_salida"
+                    android:id="@+id/et_salida_jueves"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:hint="Salida"
+                    android:text="17:00"
                     android:inputType="time"
                     android:background="@drawable/edittext_background"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
                     android:padding="8dp"
                     android:textSize="14sp"
                     android:layout_marginStart="8dp" />
@@ -400,16 +432,17 @@
                 android:layout_marginBottom="8dp">
 
                 <Switch
-                    android:id="@+id/switch_activo"
+                    android:id="@+id/switch_viernes"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="12dp" />
+                    android:layout_marginEnd="12dp"
+                    android:checked="true" />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Viernes"
+                    android:text="🎉 Viernes"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="#2C3E50" />
@@ -417,32 +450,38 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/layout_horarios"
+                android:id="@+id/layout_horarios_viernes"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:visibility="gone">
+                android:visibility="visible">
 
                 <EditText
-                    android:id="@+id/et_entrada"
+                    android:id="@+id/et_entrada_viernes"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:hint="Entrada"
+                    android:text="08:00"
                     android:inputType="time"
                     android:background="@drawable/edittext_background"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
                     android:padding="8dp"
                     android:textSize="14sp"
                     android:layout_marginEnd="8dp" />
 
                 <EditText
-                    android:id="@+id/et_salida"
+                    android:id="@+id/et_salida_viernes"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:hint="Salida"
+                    android:text="17:00"
                     android:inputType="time"
                     android:background="@drawable/edittext_background"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
                     android:padding="8dp"
                     android:textSize="14sp"
                     android:layout_marginStart="8dp" />
@@ -469,16 +508,17 @@
                 android:layout_marginBottom="8dp">
 
                 <Switch
-                    android:id="@+id/switch_activo"
+                    android:id="@+id/switch_sabado"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="12dp" />
+                    android:layout_marginEnd="12dp"
+                    android:checked="false" />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Sábado"
+                    android:text="🌞 Sábado"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="#2C3E50" />
@@ -486,32 +526,38 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/layout_horarios"
+                android:id="@+id/layout_horarios_sabado"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:visibility="gone">
 
                 <EditText
-                    android:id="@+id/et_entrada"
+                    android:id="@+id/et_entrada_sabado"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:hint="Entrada"
+                    android:text="08:00"
                     android:inputType="time"
                     android:background="@drawable/edittext_background"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
                     android:padding="8dp"
                     android:textSize="14sp"
                     android:layout_marginEnd="8dp" />
 
                 <EditText
-                    android:id="@+id/et_salida"
+                    android:id="@+id/et_salida_sabado"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:hint="Salida"
+                    android:text="17:00"
                     android:inputType="time"
                     android:background="@drawable/edittext_background"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
                     android:padding="8dp"
                     android:textSize="14sp"
                     android:layout_marginStart="8dp" />
@@ -538,16 +584,17 @@
                 android:layout_marginBottom="8dp">
 
                 <Switch
-                    android:id="@+id/switch_activo"
+                    android:id="@+id/switch_domingo"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="12dp" />
+                    android:layout_marginEnd="12dp"
+                    android:checked="false" />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Domingo"
+                    android:text="🏠 Domingo"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="#2C3E50" />
@@ -555,32 +602,38 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/layout_horarios"
+                android:id="@+id/layout_horarios_domingo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:visibility="gone">
 
                 <EditText
-                    android:id="@+id/et_entrada"
+                    android:id="@+id/et_entrada_domingo"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:hint="Entrada"
+                    android:text="08:00"
                     android:inputType="time"
                     android:background="@drawable/edittext_background"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
                     android:padding="8dp"
                     android:textSize="14sp"
                     android:layout_marginEnd="8dp" />
 
                 <EditText
-                    android:id="@+id/et_salida"
+                    android:id="@+id/et_salida_domingo"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:hint="Salida"
+                    android:text="17:00"
                     android:inputType="time"
                     android:background="@drawable/edittext_background"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
                     android:padding="8dp"
                     android:textSize="14sp"
                     android:layout_marginStart="8dp" />

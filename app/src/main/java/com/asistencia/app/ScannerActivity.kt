@@ -357,6 +357,14 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
     private fun buscarEmpleadoEnSharedPreferences(dni: String): EmpleadoSimple? {
         return try {
             val sharedPreferences = getSharedPreferences("EmpleadosApp", Context.MODE_PRIVATE)
+            
+            // Primero buscar en empleados flexibles
+            val empleadoFlexible = buscarEmpleadoFlexible(dni)
+            if (empleadoFlexible != null) {
+                return empleadoFlexible.toEmpleadoSimple()
+            }
+            
+            // Si no está en flexibles, buscar en simples
             val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
             val type = object : TypeToken<List<EmpleadoSimple>>() {}.type
             val empleados: List<EmpleadoSimple> = Gson().fromJson(empleadosJson, type) ?: emptyList()
@@ -367,29 +375,64 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
         }
     }
     
+    private fun buscarEmpleadoFlexible(dni: String): EmpleadoFlexible? {
+        return try {
+            val sharedPreferences = getSharedPreferences("EmpleadosApp", Context.MODE_PRIVATE)
+            val empleadosFlexiblesJson = sharedPreferences.getString("empleados_flexibles", "[]")
+            val type = object : TypeToken<List<EmpleadoFlexible>>() {}.type
+            val empleadosFlexibles: List<EmpleadoFlexible> = Gson().fromJson(empleadosFlexiblesJson, type) ?: emptyList()
+            
+            empleadosFlexibles.find { it.dni == dni && it.activo }
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
     private fun showSuccessDialogSimple(empleado: EmpleadoSimple, dni: String) {
         val horaActual = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date())
         val fechaActual = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date())
         
-        // CORREGIDO: Determinar si es entrada o salida basado en el último registro del empleado
+        // Verificar si es empleado flexible
+        val empleadoFlexible = buscarEmpleadoFlexible(dni)
+        val esFlexible = empleadoFlexible != null
+        
+        // Obtener horario específico para hoy (si es flexible)
+        val (horaEntrada, horaSalida) = if (esFlexible && empleadoFlexible != null) {
+            if (empleadoFlexible.trabajaHoy()) {
+                val horarioHoy = empleadoFlexible.getHorarioHoy()
+                horarioHoy ?: Pair(empleado.horaEntrada, empleado.horaSalida)
+            } else {
+                // No trabaja hoy
+                showErrorDialog(
+                    "No trabaja hoy",
+                    "⏰ ${empleado.nombres} ${empleado.apellidos} no tiene horario configurado para hoy.\n\n" +
+                    "📅 Días de trabajo: ${empleadoFlexible.getDescripcionHorarios()}"
+                ) { resetScanner() }
+                return
+            }
+        } else {
+            Pair(empleado.horaEntrada, empleado.horaSalida)
+        }
+        
+        // Determinar si es entrada o salida basado en el último registro del empleado
         val ultimoRegistro = obtenerUltimoRegistroEmpleado(dni, fechaActual)
         val esEntrada = determinarSiEsEntrada(ultimoRegistro, horaActual, empleado)
         val tipoEvento = if (esEntrada) "📥 ENTRADA" else "📤 SALIDA"
         val emoji = if (esEntrada) "🌅" else "🏠"
         
-        // Verificar si está dentro del horario
+        // Verificar si está dentro del horario (usando horario específico del día)
         val dentroHorario = if (esEntrada) {
-            horaActual <= empleado.horaEntrada || 
-            calcularDiferenciaMinutos(horaActual, empleado.horaEntrada) <= 15
+            horaActual <= horaEntrada || 
+            calcularDiferenciaMinutos(horaActual, horaEntrada) <= 15
         } else {
-            horaActual >= empleado.horaSalida
+            horaActual >= horaSalida
         }
         
         val estadoHorario = if (dentroHorario) {
             "✅ PUNTUAL"
         } else {
             if (esEntrada) {
-                val minutosRetraso = calcularDiferenciaMinutos(empleado.horaEntrada, horaActual)
+                val minutosRetraso = calcularDiferenciaMinutos(horaEntrada, horaActual)
                 if (minutosRetraso <= 15) {
                     "⚠️ RETRASO RECUPERABLE ($minutosRetraso min)"
                 } else {
@@ -406,13 +449,24 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
             append("🆔 DNI: ${empleado.dni}\n")
             append("📅 $fechaActual\n")
             append("🕐 $horaActual\n")
-            append("⏰ Horario: ${empleado.horaEntrada} - ${empleado.horaSalida}\n\n")
-            append("📊 Estado: $estadoHorario\n\n")
+            
+            if (esFlexible) {
+                append("⏰ Horario hoy: $horaEntrada - $horaSalida\n")
+                append("📋 Tipo: Horario Flexible\n")
+                if (empleadoFlexible != null) {
+                    append("📊 ${empleadoFlexible.getEstadoActual()}\n")
+                }
+            } else {
+                append("⏰ Horario: $horaEntrada - $horaSalida\n")
+                append("📋 Tipo: Horario Fijo\n")
+            }
+            
+            append("\n📊 Estado: $estadoHorario\n\n")
             append("✅ Registro guardado correctamente")
         }
         
         // Guardar el registro en SharedPreferences
-        guardarRegistroSimple(empleado, tipoEvento, horaActual, fechaActual, estadoHorario)
+        guardarRegistroFlexible(empleado, tipoEvento, horaActual, fechaActual, estadoHorario, esFlexible)
         
         AlertDialog.Builder(this)
             .setTitle("✅ Asistencia Registrada")
@@ -508,6 +562,35 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
                 "hora" to hora,
                 "fecha" to fecha,
                 "estado" to estado,
+                "timestamp" to System.currentTimeMillis().toString()
+            )
+            
+            registros.add(nuevoRegistro)
+            
+            val nuevaLista = Gson().toJson(registros)
+            sharedPreferences.edit().putString("registros_list", nuevaLista).apply()
+            
+        } catch (e: Exception) {
+            // Si falla el guardado, no importa mucho para el demo
+        }
+    }
+    
+    private fun guardarRegistroFlexible(empleado: EmpleadoSimple, tipoEvento: String, hora: String, fecha: String, estado: String, esFlexible: Boolean) {
+        try {
+            val sharedPreferences = getSharedPreferences("RegistrosApp", Context.MODE_PRIVATE)
+            val registrosJson = sharedPreferences.getString("registros_list", "[]")
+            val type = object : TypeToken<MutableList<Map<String, String>>>() {}.type
+            val registros: MutableList<Map<String, String>> = Gson().fromJson(registrosJson, type) ?: mutableListOf()
+            
+            val nuevoRegistro = mapOf(
+                "dni" to empleado.dni,
+                "nombre" to "${empleado.nombres} ${empleado.apellidos}",
+                "tipoEvento" to tipoEvento,
+                "hora" to hora,
+                "fecha" to fecha,
+                "estado" to estado,
+                "esFlexible" to esFlexible.toString(),
+                "tipoHorario" to if (esFlexible) "FLEXIBLE" else "FIJO",
                 "timestamp" to System.currentTimeMillis().toString()
             )
             

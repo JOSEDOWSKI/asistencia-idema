@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F5F5"
+    android:background="@color/background_color"
     android:padding="16dp">
 
     <LinearLayout
@@ -48,14 +48,15 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Seleccione el tipo de código a escanear"
-                    android:textSize="14sp"
-                    android:textColor="#7F8C8D"
+                    style="@style/HighContrastSecondaryText"
                     android:layout_marginBottom="16dp" />
 
                 <Spinner
                     android:id="@+id/spinner_modo_lectura"
+                    style="@style/ModernSpinner"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp" />
+                    android:layout_height="56dp"
+                    android:contentDescription="Seleccionar modo de lectura de códigos" />
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -87,14 +88,15 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Configurar si es puesto fijo o autoservicio"
-                    android:textSize="14sp"
-                    android:textColor="#7F8C8D"
+                    style="@style/HighContrastSecondaryText"
                     android:layout_marginBottom="16dp" />
 
                 <Spinner
                     android:id="@+id/spinner_modo_operacion"
+                    style="@style/ModernSpinner"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp" />
+                    android:layout_height="56dp"
+                    android:contentDescription="Seleccionar modo de operación del sistema" />
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -148,8 +150,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Registrar coordenadas GPS en cada marcación"
-                            android:textSize="14sp"
-                            android:textColor="#7F8C8D" />
+                            style="@style/HighContrastSecondaryText" />
 
                     </LinearLayout>
 
@@ -185,8 +186,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Funcionar sin conexión a internet"
-                            android:textSize="14sp"
-                            android:textColor="#7F8C8D" />
+                            style="@style/HighContrastSecondaryText" />
 
                     </LinearLayout>
 
@@ -299,8 +299,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="⏳ Cargando estado..."
-                    android:textSize="14sp"
-                    android:textColor="#7F8C8D"
+                    style="@style/HighContrastSecondaryText"
                     android:layout_marginBottom="16dp" />
 
                 <Button

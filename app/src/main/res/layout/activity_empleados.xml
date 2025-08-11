@@ -3,74 +3,58 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F5F5F5">
+    android:background="@color/background_color">
 
-    <!-- Header con búsqueda -->
-    <androidx.cardview.widget.CardView
-        xmlns:app="http://schemas.android.com/apk/res-auto"
+    <!-- Header con búsqueda - ESTILO ELEGANTE -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/elegant_card_background"
         android:layout_margin="16dp"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="4dp">
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="👥 Gestión de Empleados"
+            style="@style/SoftTitle" />
+
+        <EditText
+            android:id="@+id/et_buscar_empleado"
+            style="@style/ElegantEditText"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:hint="🔍 Buscar por nombre, apellido o DNI..."
+            android:inputType="text"
+            android:layout_marginBottom="16dp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:orientation="horizontal">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="👥 Gestión de Empleados"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:textColor="#2C3E50"
-                android:layout_marginBottom="16dp" />
+            <Button
+                android:id="@+id/btn_agregar_empleado"
+                style="@style/SoftPrimaryButton"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:text="➕ Agregar"
+                android:layout_marginEnd="8dp" />
 
-            <EditText
-                android:id="@+id/et_buscar_empleado"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:background="@drawable/edittext_background"
-                android:hint="🔍 Buscar por nombre, apellido o DNI..."
-                android:padding="12dp"
-                android:inputType="text"
-                android:layout_marginBottom="16dp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btn_agregar_empleado"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:text="➕ Agregar"
-                    android:background="@drawable/button_primary_selector"
-                    android:textColor="@android:color/white"
-                    android:textStyle="bold"
-                    android:layout_marginEnd="8dp" />
-
-                <Button
-                    android:id="@+id/btn_importar_empleados"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:text="📥 Importar"
-                    android:background="@drawable/edittext_background"
-                    android:textColor="#2C3E50"
-                    android:textStyle="bold"
-                    android:layout_marginStart="8dp" />
-
-            </LinearLayout>
+            <Button
+                android:id="@+id/btn_importar_empleados"
+                style="@style/SoftButton"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:text="📥 Importar"
+                android:layout_marginStart="8dp" />
 
         </LinearLayout>
 
-    </androidx.cardview.widget.CardView>
+    </LinearLayout>
 
     <!-- Contador de empleados -->
     <TextView
@@ -78,8 +62,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Total: 0 empleados"
-        android:textSize="14sp"
-        android:textColor="#7F8C8D"
+        style="@style/HighContrastSecondaryText"
         android:gravity="center"
         android:layout_marginBottom="8dp" />
 
@@ -115,15 +98,14 @@
             android:text="No hay empleados registrados"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="#2C3E50"
+            android:textColor="@color/promesa_dark"
             android:layout_marginBottom="8dp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Toque 'Agregar' para registrar el primer empleado"
-            android:textSize="14sp"
-            android:textColor="#7F8C8D"
+            style="@style/HighContrastSecondaryText"
             android:gravity="center" />
 
     </LinearLayout>

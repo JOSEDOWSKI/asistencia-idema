@@ -64,4 +64,18 @@
     <string name="limite_defecto">3 tardanzas máximo por mes</string>
     <string name="sin_tolerancia">Sin tolerancia - Puntualidad estricta</string>
     <string name="sin_limite">Sin límite de tardanzas</string>
+    
+    <!-- Splash Screen -->
+    <string name="splash_app_name">Sistema de Asistencia</string>
+    <string name="splash_company">Promesa</string>
+    <string name="splash_loading">Iniciando aplicación…</string>
+    <string name="splash_version">Versión 2.1</string>
+    <string name="splash_loading_database">Inicializando base de datos…</string>
+    <string name="splash_loading_sync">Configurando sincronización…</string>
+    <string name="splash_loading_ui">Preparando interfaz…</string>
+    <string name="splash_loading_finish">Finalizando…</string>
+    
+    <!-- Branding -->
+    <string name="powered_by">Desarrollado por Promesa</string>
+    <string name="company_name">Promesa</string>
 </resources>

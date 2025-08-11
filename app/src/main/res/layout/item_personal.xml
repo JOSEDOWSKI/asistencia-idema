@@ -29,8 +29,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="DNI: 12345678"
-            android:textSize="14sp"
-            android:textColor="@android:color/darker_gray"
+            style="@style/HighContrastSecondaryText"
             android:layout_marginTop="4dp" />
 
         <TextView
@@ -38,8 +37,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Horario: 08:00 - 17:00"
-            android:textSize="14sp"
-            android:textColor="@android:color/darker_gray"
+            style="@style/HighContrastSecondaryText"
             android:layout_marginTop="4dp" />
 
     </LinearLayout>
