@@ -58,13 +58,52 @@
         android:text="📈 Estadísticas de Tardanzas"
         android:layout_marginBottom="16dp" />
 
-    <!-- Lista de reportes -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewReportes"
+    <!-- Sección de estadísticas -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/elegant_card_background"
+        android:padding="16dp"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📈 Estadísticas del Día"
+            style="@style/SubtitleText"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:id="@+id/estadisticasContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+    </LinearLayout>
+
+    <!-- Título de registros -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="📋 Registros de Asistencia"
+        style="@style/SubtitleText"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Lista de reportes con scroll -->
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:padding="8dp"
-        android:clipToPadding="false" />
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:id="@+id/registrosList"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="8dp" />
+
+    </ScrollView>
 
 </LinearLayout>

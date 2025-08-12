@@ -5,52 +5,69 @@
     android:orientation="vertical"
     android:background="@color/background_color">
 
-    <!-- Header con búsqueda - ESTILO ELEGANTE -->
+    <!-- Header Moderno con Gradiente -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="@drawable/elegant_card_background"
-        android:layout_margin="16dp"
-        android:padding="20dp">
+        android:background="@drawable/gradient_primary"
+        android:padding="24dp"
+        android:elevation="4dp">
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="👥 Gestión de Empleados"
-            style="@style/SoftTitle" />
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/white"
+            android:gravity="center"
+            android:layout_marginBottom="16dp" />
 
         <EditText
             android:id="@+id/et_buscar_empleado"
-            style="@style/ElegantEditText"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:hint="🔍 Buscar por nombre, apellido o DNI..."
+            android:layout_height="56dp"
+            android:background="@drawable/modern_search_background"
+            android:hint="🔍 Buscar empleado..."
+            android:textColorHint="@color/text_secondary"
+            android:textColor="@color/text_primary"
             android:inputType="text"
-            android:layout_marginBottom="16dp" />
+            android:padding="16dp"
+            android:drawablePadding="12dp"
+            android:layout_marginBottom="20dp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:gravity="center">
 
             <Button
                 android:id="@+id/btn_agregar_empleado"
-                style="@style/SoftPrimaryButton"
                 android:layout_width="0dp"
-                android:layout_height="50dp"
+                android:layout_height="56dp"
                 android:layout_weight="1"
-                android:text="➕ Agregar"
-                android:layout_marginEnd="8dp" />
+                android:text="➕ Agregar Empleado"
+                android:textColor="@color/promesa_green"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:background="@drawable/modern_white_button"
+                android:layout_marginEnd="8dp"
+                android:elevation="2dp" />
 
             <Button
                 android:id="@+id/btn_importar_empleados"
-                style="@style/SoftButton"
                 android:layout_width="0dp"
-                android:layout_height="50dp"
+                android:layout_height="56dp"
                 android:layout_weight="1"
                 android:text="📥 Importar"
-                android:layout_marginStart="8dp" />
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:background="@drawable/modern_outline_button"
+                android:layout_marginStart="8dp"
+                android:elevation="2dp" />
 
         </LinearLayout>
 

@@ -75,54 +75,171 @@ class ConfiguracionActivity : AppCompatActivity() {
     
     private fun setupModoLecturaSpinner() {
         val modos = arrayOf(
-            "QR Code",
-            "DNI (PDF417)",
-            "Código de Barras (Code128)"
+            "📱 QR Code",
+            "🆔 DNI (PDF417)",
+            "📊 Código de Barras (Code128)"
         )
         
-        // Usar layouts personalizados con mejor contraste
-        val adapter = ArrayAdapter(this, R.layout.spinner_item, modos)
-        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item)
+        // Crear adapter personalizado con texto más pequeño y legible
+        val adapter = object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, modos) {
+            override fun getView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
+                val view = super.getView(position, convertView, parent) as TextView
+                view.apply {
+                    textSize = 14f // Reducido de 18f a 14f
+                    setTextColor(android.graphics.Color.BLACK)
+                    setTypeface(null, android.graphics.Typeface.NORMAL) // Cambiado de BOLD a NORMAL
+                    setBackgroundColor(android.graphics.Color.WHITE)
+                    setPadding(12, 12, 12, 12) // Reducido padding
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                    maxLines = 1 // Asegurar una sola línea
+                    ellipsize = android.text.TextUtils.TruncateAt.END // Truncar con "..." si es muy largo
+                }
+                return view
+            }
+            
+            override fun getDropDownView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
+                val view = super.getDropDownView(position, convertView, parent) as TextView
+                view.apply {
+                    textSize = 14f // Reducido de 18f a 14f
+                    setTextColor(android.graphics.Color.BLACK)
+                    setTypeface(null, android.graphics.Typeface.NORMAL) // Cambiado de BOLD a NORMAL
+                    setBackgroundColor(if (position % 2 == 0) android.graphics.Color.WHITE else android.graphics.Color.parseColor("#F5F5F5"))
+                    setPadding(12, 12, 12, 12) // Reducido padding
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                    minHeight = 48 // Reducido de 56 a 48
+                    maxLines = 1 // Asegurar una sola línea
+                    ellipsize = android.text.TextUtils.TruncateAt.END // Truncar con "..." si es muy largo
+                }
+                return view
+            }
+        }
+        
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerModoLectura.adapter = adapter
+        
+        // Configurar listener para debug y confirmación
+        spinnerModoLectura.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                val modoSeleccionado = modos[position]
+                Toast.makeText(this@ConfiguracionActivity, "Modo seleccionado: $modoSeleccionado", Toast.LENGTH_SHORT).show()
+                
+                // Forzar actualización visual con texto más pequeño
+                (view as? TextView)?.apply {
+                    textSize = 14f // Reducido de 18f a 14f
+                    setTextColor(android.graphics.Color.BLACK)
+                    setTypeface(null, android.graphics.Typeface.NORMAL) // Cambiado de BOLD a NORMAL
+                    setBackgroundColor(android.graphics.Color.WHITE)
+                    maxLines = 1
+                    ellipsize = android.text.TextUtils.TruncateAt.END
+                }
+            }
+            
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+        }
+        
+        // Forzar selección inicial
+        spinnerModoLectura.setSelection(0)
     }
     
     private fun setupModoOperacionSpinner() {
         val modos = arrayOf(
-            "Puesto Fijo (Operador)",
-            "Autoservicio"
+            "🔓 Autoservicio",
+            "📱 Kiosco (Cámara Frontal Continua)"
         )
         
-        // Usar layouts personalizados con mejor contraste
-        val adapter = ArrayAdapter(this, R.layout.spinner_item, modos)
-        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item)
+        // Crear adapter personalizado con texto más pequeño y legible
+        val adapter = object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, modos) {
+            override fun getView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
+                val view = super.getView(position, convertView, parent) as TextView
+                view.apply {
+                    textSize = 14f // Reducido de 18f a 14f
+                    setTextColor(android.graphics.Color.BLACK)
+                    setTypeface(null, android.graphics.Typeface.NORMAL) // Cambiado de BOLD a NORMAL
+                    setBackgroundColor(android.graphics.Color.WHITE)
+                    setPadding(12, 12, 12, 12) // Reducido padding
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                    maxLines = 1 // Asegurar una sola línea
+                    ellipsize = android.text.TextUtils.TruncateAt.END // Truncar con "..." si es muy largo
+                }
+                return view
+            }
+            
+            override fun getDropDownView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
+                val view = super.getDropDownView(position, convertView, parent) as TextView
+                view.apply {
+                    textSize = 14f // Reducido de 18f a 14f
+                    setTextColor(android.graphics.Color.BLACK)
+                    setTypeface(null, android.graphics.Typeface.NORMAL) // Cambiado de BOLD a NORMAL
+                    setBackgroundColor(if (position % 2 == 0) android.graphics.Color.WHITE else android.graphics.Color.parseColor("#F5F5F5"))
+                    setPadding(12, 12, 12, 12) // Reducido padding
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                    minHeight = 48 // Reducido de 56 a 48
+                    maxLines = 1 // Asegurar una sola línea
+                    ellipsize = android.text.TextUtils.TruncateAt.END // Truncar con "..." si es muy largo
+                }
+                return view
+            }
+        }
+        
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerModoOperacion.adapter = adapter
+        
+        // Configurar listener para debug y confirmación
+        spinnerModoOperacion.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                val modoSeleccionado = modos[position]
+                Toast.makeText(this@ConfiguracionActivity, "Operación: $modoSeleccionado", Toast.LENGTH_SHORT).show()
+                
+                // Forzar actualización visual con texto más pequeño
+                (view as? TextView)?.apply {
+                    textSize = 14f // Reducido de 18f a 14f
+                    setTextColor(android.graphics.Color.BLACK)
+                    setTypeface(null, android.graphics.Typeface.NORMAL) // Cambiado de BOLD a NORMAL
+                    setBackgroundColor(android.graphics.Color.WHITE)
+                    maxLines = 1
+                    ellipsize = android.text.TextUtils.TruncateAt.END
+                }
+            }
+            
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+        }
+        
+        // Forzar selección inicial
+        spinnerModoOperacion.setSelection(0)
     }
     
     private fun loadCurrentConfiguration() {
         lifecycleScope.launch {
             try {
-                val dispositivo = repository.getDispositivo()
-                
-                // Cargar modo de lectura
-                val modoLecturaIndex = when (dispositivo.modoLectura) {
-                    ModoLectura.QR -> 0
-                    ModoLectura.DNI_PDF417 -> 1
-                    ModoLectura.CODE128 -> 2
+                // Intentar cargar desde base de datos primero
+                try {
+                    val dispositivo = repository.getDispositivo()
+                    
+                    // Cargar modo de lectura
+                    val modoLecturaIndex = when (dispositivo.modoLectura) {
+                        ModoLectura.QR -> 0
+                        ModoLectura.DNI_PDF417 -> 1
+                        ModoLectura.CODE128 -> 2
+                    }
+                    spinnerModoLectura.setSelection(modoLecturaIndex)
+                    
+                    // Cargar modo de operación
+                    val modoOperacionIndex = when (dispositivo.modoOperacion) {
+                        ModoOperacion.AUTOSERVICIO -> 0
+                        ModoOperacion.KIOSCO -> 1
+                    }
+                    spinnerModoOperacion.setSelection(modoOperacionIndex)
+                    
+                    // Cargar otros settings
+                    switchCapturaUbicacion.isChecked = dispositivo.capturaUbicacion
+                    switchModoOffline.isChecked = dispositivo.modoOffline
+                    etApiEndpoint.setText(dispositivo.apiEndpoint ?: "")
+                    etApiToken.setText(dispositivo.apiToken ?: "")
+                    
+                } catch (dbError: Exception) {
+                    // Si falla la BD, cargar desde SharedPreferences
+                    loadConfigurationFromSharedPreferences()
                 }
-                spinnerModoLectura.setSelection(modoLecturaIndex)
-                
-                // Cargar modo de operación
-                val modoOperacionIndex = when (dispositivo.modoOperacion) {
-                    ModoOperacion.PUESTO_FIJO -> 0
-                    ModoOperacion.AUTOSERVICIO -> 1
-                }
-                spinnerModoOperacion.setSelection(modoOperacionIndex)
-                
-                // Cargar otros settings
-                switchCapturaUbicacion.isChecked = dispositivo.capturaUbicacion
-                switchModoOffline.isChecked = dispositivo.modoOffline
-                etApiEndpoint.setText(dispositivo.apiEndpoint ?: "")
-                etApiToken.setText(dispositivo.apiToken ?: "")
                 
                 // Actualizar estado de sincronización
                 actualizarEstadoSync()
@@ -131,15 +248,48 @@ class ConfiguracionActivity : AppCompatActivity() {
                 Toast.makeText(this@ConfiguracionActivity, 
                     "Error al cargar configuración: ${e.message}", 
                     Toast.LENGTH_LONG).show()
+                
+                // Cargar configuración por defecto
+                loadDefaultConfiguration()
             }
         }
+    }
+    
+    private fun loadConfigurationFromSharedPreferences() {
+        try {
+            val sharedPreferences = getSharedPreferences("ConfiguracionApp", MODE_PRIVATE)
+            
+            val modoLecturaIndex = sharedPreferences.getInt("modo_lectura", 0)
+            val modoOperacionIndex = sharedPreferences.getInt("modo_operacion", 0)
+            val capturaUbicacion = sharedPreferences.getBoolean("captura_ubicacion", false)
+            val modoOffline = sharedPreferences.getBoolean("modo_offline", true)
+            val apiEndpoint = sharedPreferences.getString("api_endpoint", "")
+            val apiToken = sharedPreferences.getString("api_token", "")
+            
+            spinnerModoLectura.setSelection(modoLecturaIndex)
+            spinnerModoOperacion.setSelection(modoOperacionIndex)
+            switchCapturaUbicacion.isChecked = capturaUbicacion
+            switchModoOffline.isChecked = modoOffline
+            etApiEndpoint.setText(apiEndpoint ?: "")
+            etApiToken.setText(apiToken ?: "")
+            
+        } catch (e: Exception) {
+            loadDefaultConfiguration()
+        }
+    }
+    
+    private fun loadDefaultConfiguration() {
+        spinnerModoLectura.setSelection(0) // QR por defecto
+        spinnerModoOperacion.setSelection(0) // Autoservicio por defecto
+        switchCapturaUbicacion.isChecked = false
+        switchModoOffline.isChecked = true
+        etApiEndpoint.setText("")
+        etApiToken.setText("")
     }
     
     private fun guardarConfiguracion() {
         lifecycleScope.launch {
             try {
-                val dispositivo = repository.getDispositivo()
-                
                 // Obtener valores de UI
                 val modoLectura = when (spinnerModoLectura.selectedItemPosition) {
                     0 -> ModoLectura.QR
@@ -149,9 +299,9 @@ class ConfiguracionActivity : AppCompatActivity() {
                 }
                 
                 val modoOperacion = when (spinnerModoOperacion.selectedItemPosition) {
-                    0 -> ModoOperacion.PUESTO_FIJO
-                    1 -> ModoOperacion.AUTOSERVICIO
-                    else -> ModoOperacion.PUESTO_FIJO
+                    0 -> ModoOperacion.AUTOSERVICIO
+                    1 -> ModoOperacion.KIOSCO
+                    else -> ModoOperacion.AUTOSERVICIO
                 }
                 
                 val capturaUbicacion = switchCapturaUbicacion.isChecked
@@ -159,29 +309,48 @@ class ConfiguracionActivity : AppCompatActivity() {
                 val apiEndpoint = etApiEndpoint.text.toString().trim().takeIf { it.isNotEmpty() }
                 val apiToken = etApiToken.text.toString().trim().takeIf { it.isNotEmpty() }
                 
-                // Actualizar dispositivo
-                val dispositivoActualizado = dispositivo.copy(
-                    modoLectura = modoLectura,
-                    modoOperacion = modoOperacion,
-                    capturaUbicacion = capturaUbicacion,
-                    modoOffline = modoOffline,
-                    apiEndpoint = apiEndpoint,
-                    apiToken = apiToken,
-                    fechaActualizacion = System.currentTimeMillis()
-                )
+                // GUARDAR TAMBIÉN EN SHAREDPREFERENCES para persistencia inmediata
+                val sharedPreferences = getSharedPreferences("ConfiguracionApp", MODE_PRIVATE)
+                sharedPreferences.edit().apply {
+                    putInt("modo_lectura", spinnerModoLectura.selectedItemPosition)
+                    putInt("modo_operacion", spinnerModoOperacion.selectedItemPosition)
+                    putBoolean("captura_ubicacion", capturaUbicacion)
+                    putBoolean("modo_offline", modoOffline)
+                    putString("api_endpoint", apiEndpoint)
+                    putString("api_token", apiToken)
+                    putLong("fecha_actualizacion", System.currentTimeMillis())
+                    apply()
+                }
                 
-                repository.updateDispositivo(dispositivoActualizado)
-                
-                // Iniciar sincronización si está configurada
-                if (!modoOffline && apiEndpoint != null && apiToken != null) {
-                    repository.iniciarSincronizacionPeriodica()
+                // Intentar actualizar en base de datos también
+                try {
+                    val dispositivo = repository.getDispositivo()
+                    val dispositivoActualizado = dispositivo.copy(
+                        modoLectura = modoLectura,
+                        modoOperacion = modoOperacion,
+                        capturaUbicacion = capturaUbicacion,
+                        modoOffline = modoOffline,
+                        apiEndpoint = apiEndpoint,
+                        apiToken = apiToken,
+                        fechaActualizacion = System.currentTimeMillis()
+                    )
+                    
+                    repository.updateDispositivo(dispositivoActualizado)
+                    
+                    // Iniciar sincronización si está configurada
+                    if (!modoOffline && apiEndpoint != null && apiToken != null) {
+                        repository.iniciarSincronizacionPeriodica()
+                    }
+                    
+                    mostrarResumenConfiguracion(dispositivoActualizado)
+                } catch (dbError: Exception) {
+                    // Si falla la BD, al menos tenemos SharedPreferences
+                    mostrarResumenConfiguracionSimple(modoLectura, modoOperacion, capturaUbicacion, modoOffline, apiEndpoint)
                 }
                 
                 Toast.makeText(this@ConfiguracionActivity, 
                     "✅ Configuración guardada correctamente", 
                     Toast.LENGTH_SHORT).show()
-                
-                mostrarResumenConfiguracion(dispositivoActualizado)
                 
             } catch (e: Exception) {
                 Toast.makeText(this@ConfiguracionActivity, 
@@ -388,8 +557,8 @@ class ConfiguracionActivity : AppCompatActivity() {
         }
         
         val modoOperacionTexto = when (dispositivo.modoOperacion) {
-            ModoOperacion.PUESTO_FIJO -> "Puesto Fijo"
             ModoOperacion.AUTOSERVICIO -> "Autoservicio"
+            ModoOperacion.KIOSCO -> "Kiosco (Cámara Frontal Continua)"
         }
         
         val mensaje = """
@@ -405,6 +574,48 @@ class ConfiguracionActivity : AppCompatActivity() {
             } else {
                 "📱 Funcionando en modo offline"
             }}
+        """.trimIndent()
+        
+        AlertDialog.Builder(this)
+            .setTitle("Configuración Guardada")
+            .setMessage(mensaje)
+            .setPositiveButton("OK", null)
+            .show()
+    }
+    
+    private fun mostrarResumenConfiguracionSimple(
+        modoLectura: ModoLectura, 
+        modoOperacion: ModoOperacion, 
+        capturaUbicacion: Boolean, 
+        modoOffline: Boolean, 
+        apiEndpoint: String?
+    ) {
+        val modoLecturaTexto = when (modoLectura) {
+            ModoLectura.QR -> "QR Code"
+            ModoLectura.DNI_PDF417 -> "DNI (PDF417)"
+            ModoLectura.CODE128 -> "Código de Barras (Code128)"
+        }
+        
+        val modoOperacionTexto = when (modoOperacion) {
+            ModoOperacion.AUTOSERVICIO -> "Autoservicio"
+            ModoOperacion.KIOSCO -> "Kiosco (Cámara Frontal Continua)"
+        }
+        
+        val mensaje = """
+            ✅ CONFIGURACIÓN ACTUALIZADA
+            
+            📱 Modo de lectura: $modoLecturaTexto
+            👥 Modo de operación: $modoOperacionTexto
+            📍 Captura de ubicación: ${if (capturaUbicacion) "Activada" else "Desactivada"}
+            🔄 Modo offline: ${if (modoOffline) "Activado" else "Desactivado"}
+            
+            ${if (!modoOffline && apiEndpoint != null) {
+                "🌐 API configurada: $apiEndpoint"
+            } else {
+                "📱 Funcionando en modo offline"
+            }}
+            
+            💾 Configuración guardada en memoria local
         """.trimIndent()
         
         AlertDialog.Builder(this)

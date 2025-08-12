@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="@android:color/black">
 
-    <!-- Scanner View -->
+    <!-- Scanner View con CÁMARA FRONTAL -->
     <com.journeyapps.barcodescanner.DecoratedBarcodeView
         android:id="@+id/barcode_scanner"
         android:layout_width="match_parent"
@@ -25,18 +25,18 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="📱 Control de Asistencias"
+            android:text="📱 MODO KIOSCO - Control de Asistencias"
             android:textColor="@android:color/white"
-            android:textSize="18sp"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tv_proximo_evento"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Apunte la cámara al código para escanear"
+            android:text="Acerque su código QR a la cámara frontal"
             android:textColor="@android:color/white"
-            android:textSize="14sp"
+            android:textSize="16sp"
             android:layout_marginTop="4dp" />
 
         <TextView
@@ -45,27 +45,17 @@
             android:layout_height="wrap_content"
             android:text="Esperando escaneo..."
             android:textColor="#E0FFFFFF"
-            android:textSize="12sp"
+            android:textSize="14sp"
             android:layout_marginTop="2dp" />
 
     </LinearLayout>
 
-    <!-- Scanner Overlay -->
+    <!-- Scanner Overlay más grande para kiosco -->
     <View
-        android:layout_width="250dp"
-        android:layout_height="250dp"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
         android:layout_centerInParent="true"
         android:background="@drawable/scanner_overlay" />
-
-    <!-- Botón de linterna OCULTO (mantenido para compatibilidad) -->
-    <ImageButton
-        android:id="@+id/btn_linterna"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:background="@drawable/button_primary_selector"
-        android:src="@drawable/ic_flash_off"
-        android:contentDescription="Linterna oculta"
-        android:visibility="gone" />
 
     <!-- Progress Bar -->
     <ProgressBar
@@ -77,5 +67,15 @@
         android:indeterminateTint="@color/promesa_green" />
 
 
+
+    <!-- Botón de linterna OCULTO para kiosco -->
+    <ImageButton
+        android:id="@+id/btn_linterna"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:background="@drawable/button_primary_selector"
+        android:src="@drawable/ic_flash_off"
+        android:contentDescription="Linterna no disponible en cámara frontal"
+        android:visibility="gone" />
 
 </RelativeLayout>

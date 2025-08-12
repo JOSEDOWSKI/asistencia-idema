@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="20dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Información Personal -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/elegant_card_background"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="✏️ Editar Información Personal"
+                style="@style/SoftTitle"
+                android:textSize="18sp"
+                android:layout_marginBottom="12dp" />
+
+            <EditText
+                android:id="@+id/et_editar_nombres"
+                style="@style/ElegantEditText"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:hint="Nombres"
+                android:inputType="textPersonName"
+                android:layout_marginBottom="8dp" />
+
+            <EditText
+                android:id="@+id/et_editar_apellidos"
+                style="@style/ElegantEditText"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:hint="Apellidos"
+                android:inputType="textPersonName"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/tv_dni_no_editable"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="DNI: 12345678 (no editable)"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:padding="12dp"
+                android:background="@color/surface_variant"
+                android:layout_marginBottom="8dp" />
+
+        </LinearLayout>
+
+        <!-- Horario -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/elegant_card_background"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="⏰ Modificar Horario"
+                style="@style/SoftTitle"
+                android:textSize="18sp"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Horario Simple -->
+            <LinearLayout
+                android:id="@+id/layout_editar_horario_simple"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <EditText
+                        android:id="@+id/et_editar_entrada"
+                        style="@style/ElegantEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="50dp"
+                        android:layout_weight="1"
+                        android:hint="Hora entrada (08:00)"
+                        android:inputType="time"
+                        android:layout_marginEnd="8dp" />
+
+                    <EditText
+                        android:id="@+id/et_editar_salida"
+                        style="@style/ElegantEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="50dp"
+                        android:layout_weight="1"
+                        android:hint="Hora salida (17:00)"
+                        android:inputType="time"
+                        android:layout_marginStart="8dp" />
+
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btn_cambiar_a_flexible"
+                    style="@style/SoftButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="45dp"
+                    android:text="🔄 Cambiar a Horario Flexible"
+                    android:layout_marginTop="8dp" />
+
+            </LinearLayout>
+
+            <!-- Horario Flexible -->
+            <LinearLayout
+                android:id="@+id/layout_editar_horario_flexible"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="📅 Horario Flexible Actual"
+                    android:textSize="14sp"
+                    android:textColor="@color/promesa_green"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tv_horario_flexible_actual"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Horarios detallados..."
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginBottom="12dp" />
+
+                <Button
+                    android:id="@+id/btn_editar_horario_flexible"
+                    style="@style/SoftPrimaryButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="45dp"
+                    android:text="✏️ Modificar Horario Flexible"
+                    android:layout_marginBottom="8dp" />
+
+                <Button
+                    android:id="@+id/btn_cambiar_a_simple"
+                    style="@style/SoftButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="45dp"
+                    android:text="🔄 Cambiar a Horario Simple" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Aviso de Aplicación -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@color/warning_background"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="⚠️ Importante"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/warning_color"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Los cambios se aplicarán a partir del día siguiente para no afectar el registro de asistencia del día actual."
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary" />
+
+        </LinearLayout>
+
+        <!-- Botón Eliminar Empleado -->
+        <Button
+            android:id="@+id/btn_eliminar_empleado"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="🗑️ Eliminar Empleado"
+            android:textColor="@android:color/white"
+            android:background="@color/error_color"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
+            android:textStyle="bold" />
+
+        <!-- Botones de Acción -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="16dp">
+
+            <Button
+                android:id="@+id/btn_guardar_cambios"
+                style="@style/SoftPrimaryButton"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:text="💾 Guardar Cambios"
+                android:layout_marginEnd="8dp" />
+
+            <Button
+                android:id="@+id/btn_cancelar_edicion"
+                style="@style/SoftButton"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:text="❌ Cancelar"
+                android:layout_marginStart="8dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

@@ -1,0 +1,1818 @@
+package com.asistencia.app
+
+import android.content.Context
+import android.content.SharedPreferences
+import android.os.Bundle
+import android.view.View
+import android.widget.*
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+
+class EmpleadosActivity : AppCompatActivity() {
+    
+    private lateinit var sharedPreferences: SharedPreferences
+    private val gson = Gson()
+    private lateinit var mainLayout: LinearLayout
+    private lateinit var empleadosList: LinearLayout
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        try {
+            // Usar el layout XML moderno
+            setContentView(R.layout.activity_empleados)
+            
+            // Usar SharedPreferences como respaldo
+            sharedPreferences = getSharedPreferences("EmpleadosApp", Context.MODE_PRIVATE)
+            
+            setupModernLayout()
+            loadEmpleados()
+            
+        } catch (e: Exception) {
+            // Si todo falla, mostrar mensaje básico
+            showBasicError(e.message ?: "Error desconocido")
+        }
+    }
+    
+    private fun showBasicError(error: String) {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(50, 50, 50, 50)
+        }
+        
+        val errorText = TextView(this).apply {
+            text = "❌ Error en Gestión de Empleados:\n\n$error\n\nUsando modo básico..."
+            textSize = 16f
+            setTextColor(android.graphics.Color.RED)
+        }
+        
+        val btnBasico = Button(this).apply {
+            text = "Modo Básico - Agregar Empleado"
+            setOnClickListener { 
+                mostrarDialogoBasico()
+            }
+        }
+        
+        layout.addView(errorText)
+        layout.addView(btnBasico)
+        setContentView(layout)
+    }
+    
+    private fun setupModernLayout() {
+        try {
+            // Configurar RecyclerView para la lista de empleados
+            empleadosList = findViewById(R.id.recycler_empleados) ?: LinearLayout(this)
+            
+            // Configurar botones del header
+            findViewById<Button>(R.id.btn_agregar_empleado)?.setOnClickListener {
+                mostrarDialogoAgregar()
+            }
+            
+            findViewById<Button>(R.id.btn_importar_empleados)?.setOnClickListener {
+                showMessage("🚧 Función de importar en desarrollo")
+            }
+            
+            // Configurar búsqueda
+            findViewById<EditText>(R.id.et_buscar_empleado)?.let { searchEdit ->
+                // TODO: Implementar búsqueda en tiempo real
+            }
+            
+        } catch (e: Exception) {
+            showMessage("Error configurando layout moderno: ${e.message}")
+            // Fallback al layout programático
+            createLayout()
+        }
+    }
+
+    private fun createLayout() {
+        mainLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(32, 32, 32, 32)
+            setBackgroundColor(android.graphics.Color.WHITE)
+        }
+        
+        // Título
+        val title = TextView(this).apply {
+            text = "👥 Gestión de Empleados"
+            textSize = 24f
+            setPadding(0, 0, 0, 32)
+            setTextColor(android.graphics.Color.BLACK)
+            gravity = android.view.Gravity.CENTER
+        }
+        mainLayout.addView(title)
+        
+        // Botón agregar
+        val btnAgregar = Button(this).apply {
+            text = "➕ Agregar Empleado"
+            textSize = 16f
+            setPadding(20, 20, 20, 20)
+            setOnClickListener { 
+                mostrarDialogoAgregar()
+            }
+        }
+        mainLayout.addView(btnAgregar)
+        
+        // Botón limpiar (para debug)
+        val btnLimpiar = Button(this).apply {
+            text = "🗑️ Limpiar Todos (Debug)"
+            textSize = 14f
+            setPadding(20, 20, 20, 20)
+            setBackgroundColor(android.graphics.Color.RED)
+            setTextColor(android.graphics.Color.WHITE)
+            setOnClickListener { 
+                limpiarTodos()
+            }
+        }
+        mainLayout.addView(btnLimpiar)
+        
+        // Separador
+        val separator = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 
+                3
+            ).apply {
+                setMargins(0, 32, 0, 32)
+            }
+            setBackgroundColor(android.graphics.Color.GRAY)
+        }
+        mainLayout.addView(separator)
+        
+        // Título lista
+        val listTitle = TextView(this).apply {
+            text = "📋 Empleados:"
+            textSize = 18f
+            setPadding(0, 0, 0, 16)
+            setTextColor(android.graphics.Color.BLACK)
+        }
+        mainLayout.addView(listTitle)
+        
+        // Lista de empleados
+        empleadosList = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        mainLayout.addView(empleadosList)
+        
+        setContentView(mainLayout)
+    }
+    
+    private fun loadEmpleados() {
+        try {
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<List<EmpleadoSimple>>() {}.type
+            val empleados: List<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: emptyList()
+            
+            updateEmpleadosList(empleados)
+            
+        } catch (e: Exception) {
+            showMessage("Error al cargar: ${e.message}")
+            updateEmpleadosList(emptyList())
+        }
+    }
+    
+    private fun updateEmpleadosList(empleados: List<EmpleadoSimple>) {
+        try {
+            empleadosList.removeAllViews()
+            
+            // Cargar también empleados flexibles
+            val empleadosFlexibles = cargarEmpleadosFlexibles()
+            val totalEmpleados = empleados.size + empleadosFlexibles.size
+            
+            // Actualizar contador en el header
+            findViewById<TextView>(R.id.tv_empleados_count)?.text = 
+                "Total: $totalEmpleados empleados (${empleados.size} fijos, ${empleadosFlexibles.size} flexibles)"
+            
+            if (totalEmpleados == 0) {
+                // Mostrar estado vacío
+                findViewById<LinearLayout>(R.id.layout_empty_state)?.visibility = View.VISIBLE
+                empleadosList.visibility = View.GONE
+            } else {
+                // Ocultar estado vacío y mostrar lista
+                findViewById<LinearLayout>(R.id.layout_empty_state)?.visibility = View.GONE
+                empleadosList.visibility = View.VISIBLE
+                
+                // Mostrar empleados simples con layout moderno
+                empleados.forEach { empleado ->
+                    val empleadoView = createModernEmpleadoView(empleado, "SIMPLE")
+                    empleadosList.addView(empleadoView)
+                }
+                
+                // Mostrar empleados flexibles con layout moderno
+                empleadosFlexibles.forEach { empleadoFlexible ->
+                    val empleadoView = createModernEmpleadoFlexibleView(empleadoFlexible)
+                    empleadosList.addView(empleadoView)
+                }
+            }
+            
+        } catch (e: Exception) {
+            showMessage("Error al mostrar lista: ${e.message}")
+        }
+    }
+    
+    private fun cargarEmpleadosFlexibles(): List<EmpleadoFlexible> {
+        return try {
+            val empleadosFlexiblesJson = sharedPreferences.getString("empleados_flexibles", "[]")
+            val type = object : TypeToken<List<EmpleadoFlexible>>() {}.type
+            gson.fromJson(empleadosFlexiblesJson, type) ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+    
+    private fun createEmpleadoView(empleado: EmpleadoSimple, esFlexible: Boolean = false): LinearLayout {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16, 16, 16, 16)
+            setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, 8)
+            }
+            // Hacer clickeable
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                mostrarDetallesEmpleado(empleado.dni, "SIMPLE")
+            }
+        }
+        
+        // Nombre
+        val nombre = TextView(this).apply {
+            text = "${empleado.nombres} ${empleado.apellidos}"
+            textSize = 16f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        layout.addView(nombre)
+        
+        // DNI
+        val dni = TextView(this).apply {
+            text = "DNI: ${empleado.dni}"
+            textSize = 14f
+            setTextColor(android.graphics.Color.GRAY)
+        }
+        layout.addView(dni)
+        
+        // Horario
+        val horario = TextView(this).apply {
+            text = "⏰ ${empleado.horaEntrada} - ${empleado.horaSalida}"
+            textSize = 14f
+            setTextColor(android.graphics.Color.GRAY)
+        }
+        layout.addView(horario)
+        
+        // Estado
+        val estado = TextView(this).apply {
+            text = if (empleado.activo) "✅ Activo" else "❌ Inactivo"
+            textSize = 14f
+            setTextColor(if (empleado.activo) android.graphics.Color.GREEN else android.graphics.Color.RED)
+        }
+        layout.addView(estado)
+        
+        return layout
+    }
+    
+    private fun createEmpleadoFlexibleView(empleadoFlexible: EmpleadoFlexible): LinearLayout {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16, 16, 16, 16)
+            setBackgroundColor(android.graphics.Color.parseColor("#E8F5E9")) // Verde claro para diferenciarlo
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, 8)
+            }
+            // Hacer clickeable
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                mostrarDetallesEmpleado(empleadoFlexible.dni, "FLEXIBLE")
+            }
+        }
+        
+        // Nombre con indicador de horario flexible
+        val nombre = TextView(this).apply {
+            text = "⏰ ${empleadoFlexible.nombres} ${empleadoFlexible.apellidos}"
+            textSize = 16f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        layout.addView(nombre)
+        
+        // DNI
+        val dni = TextView(this).apply {
+            text = "DNI: ${empleadoFlexible.dni}"
+            textSize = 14f
+            setTextColor(android.graphics.Color.GRAY)
+        }
+        layout.addView(dni)
+        
+        // Tipo de horario
+        val tipoHorario = TextView(this).apply {
+            text = "📅 Horario Flexible"
+            textSize = 14f
+            setTextColor(android.graphics.Color.parseColor("#2E7D32"))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        layout.addView(tipoHorario)
+        
+        // Descripción de horarios
+        val descripcionHorarios = TextView(this).apply {
+            text = empleadoFlexible.getDescripcionHorarios()
+            textSize = 12f
+            setTextColor(android.graphics.Color.GRAY)
+        }
+        layout.addView(descripcionHorarios)
+        
+        // Horas semanales
+        val (horas, minutos) = empleadoFlexible.calcularHorasSemanales()
+        val horasSemanales = TextView(this).apply {
+            text = "⏱️ Total semanal: ${horas}h ${minutos}m (${empleadoFlexible.diasActivos.size} días)"
+            textSize = 12f
+            setTextColor(android.graphics.Color.parseColor("#1976D2"))
+        }
+        layout.addView(horasSemanales)
+        
+        // Estado actual
+        val estadoActual = TextView(this).apply {
+            text = empleadoFlexible.getEstadoActual()
+            textSize = 12f
+            setTextColor(android.graphics.Color.parseColor("#F57C00"))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        layout.addView(estadoActual)
+        
+        // Estado activo/inactivo
+        val estado = TextView(this).apply {
+            text = if (empleadoFlexible.activo) "✅ Activo" else "❌ Inactivo"
+            textSize = 14f
+            setTextColor(if (empleadoFlexible.activo) android.graphics.Color.parseColor("#2E7D32") else android.graphics.Color.RED)
+        }
+        layout.addView(estado)
+        
+        // Botón para ver detalles (opcional)
+        val btnDetalles = Button(this).apply {
+            text = "📋 Ver Detalles"
+            textSize = 12f
+            setPadding(12, 8, 12, 8)
+            setBackgroundColor(android.graphics.Color.parseColor("#4CAF50"))
+            setTextColor(android.graphics.Color.WHITE)
+            setOnClickListener {
+                mostrarDetallesEmpleadoFlexible(empleadoFlexible)
+            }
+        }
+        layout.addView(btnDetalles)
+        
+        return layout
+    }
+    
+    private fun mostrarDetallesEmpleadoFlexible(empleado: EmpleadoFlexible) {
+        try {
+            val mensaje = empleado.getInformacionDetallada()
+            
+            AlertDialog.Builder(this)
+                .setTitle("📋 Detalles del Empleado")
+                .setMessage(mensaje)
+                .setPositiveButton("Cerrar", null)
+                .setNeutralButton("⏰ Editar Horarios") { _, _ ->
+                    // TODO: Implementar edición de horarios flexibles
+                    showMessage("🚧 Función de edición en desarrollo")
+                }
+                .show()
+                
+        } catch (e: Exception) {
+            showMessage("Error al mostrar detalles: ${e.message}")
+        }
+    }
+    
+    private fun mostrarDialogoAgregar() {
+        try {
+            val dialogLayout = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(32, 32, 32, 32)
+            }
+            
+            val etDni = EditText(this).apply {
+                hint = "DNI (8 dígitos)"
+                inputType = android.text.InputType.TYPE_CLASS_NUMBER
+                textSize = 16f
+            }
+            dialogLayout.addView(etDni)
+            
+            val etNombres = EditText(this).apply {
+                hint = "Nombres"
+                inputType = android.text.InputType.TYPE_CLASS_TEXT
+                textSize = 16f
+            }
+            dialogLayout.addView(etNombres)
+            
+            val etApellidos = EditText(this).apply {
+                hint = "Apellidos"
+                inputType = android.text.InputType.TYPE_CLASS_TEXT
+                textSize = 16f
+            }
+            dialogLayout.addView(etApellidos)
+            
+            val etEntrada = EditText(this).apply {
+                hint = "Hora entrada (ej: 07:00)"
+                inputType = android.text.InputType.TYPE_CLASS_TEXT
+                textSize = 16f
+            }
+            dialogLayout.addView(etEntrada)
+            
+            val etSalida = EditText(this).apply {
+                hint = "Hora salida (ej: 13:00)"
+                inputType = android.text.InputType.TYPE_CLASS_TEXT
+                textSize = 16f
+            }
+            dialogLayout.addView(etSalida)
+            
+            AlertDialog.Builder(this)
+                .setTitle("➕ Agregar Empleado")
+                .setView(dialogLayout)
+                .setPositiveButton("Guardar") { _, _ ->
+                    guardarEmpleado(
+                        etDni.text.toString().trim(),
+                        etNombres.text.toString().trim(),
+                        etApellidos.text.toString().trim(),
+                        etEntrada.text.toString().trim(),
+                        etSalida.text.toString().trim()
+                    )
+                }
+                .setNeutralButton("⏰ Horario Flexible") { _, _ ->
+                    mostrarDialogoHorarioFlexible(
+                        etDni.text.toString().trim(),
+                        etNombres.text.toString().trim(),
+                        etApellidos.text.toString().trim()
+                    )
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+                
+        } catch (e: Exception) {
+            mostrarDialogoBasico()
+        }
+    }
+    
+    private fun mostrarDialogoBasico() {
+        // Diálogo ultra básico sin AlertDialog
+        val toast = Toast.makeText(this, "Ingrese DNI 72221744 para Jose Molina", Toast.LENGTH_LONG)
+        toast.show()
+        
+        // Agregar Jose Molina directamente
+        guardarEmpleado("72221744", "Jose", "Molina", "07:00", "13:00")
+    }
+    
+    private fun guardarEmpleado(dni: String, nombres: String, apellidos: String, entrada: String, salida: String) {
+        try {
+            // Validaciones básicas
+            if (dni.length != 8 || !dni.all { it.isDigit() }) {
+                showMessage("❌ DNI debe tener 8 dígitos")
+                return
+            }
+            
+            if (nombres.isEmpty() || apellidos.isEmpty()) {
+                showMessage("❌ Complete nombres y apellidos")
+                return
+            }
+            
+            if (entrada.isEmpty() || salida.isEmpty()) {
+                showMessage("❌ Complete horarios")
+                return
+            }
+            
+            // Cargar lista actual
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoSimple>>() {}.type
+            val empleados: MutableList<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: mutableListOf()
+            
+            // Verificar si ya existe
+            if (empleados.any { it.dni == dni }) {
+                showMessage("❌ Ya existe empleado con DNI $dni")
+                return
+            }
+            
+            // Agregar nuevo empleado
+            val nuevoEmpleado = EmpleadoSimple(dni, nombres, apellidos, entrada, salida, true)
+            empleados.add(nuevoEmpleado)
+            
+            // Guardar
+            val nuevaLista = gson.toJson(empleados)
+            sharedPreferences.edit().putString("empleados_list", nuevaLista).apply()
+            
+            showMessage("✅ Empleado agregado: $nombres $apellidos")
+            
+            // Recargar lista
+            loadEmpleados()
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al guardar: ${e.message}")
+        }
+    }
+    
+    private fun limpiarTodos() {
+        try {
+            sharedPreferences.edit().remove("empleados_list").apply()
+            showMessage("🗑️ Todos los empleados eliminados")
+            loadEmpleados()
+        } catch (e: Exception) {
+            showMessage("Error al limpiar: ${e.message}")
+        }
+    }
+    
+    private fun mostrarDialogoHorarioFlexible(dni: String, nombres: String, apellidos: String) {
+        try {
+            // Validaciones básicas primero
+            if (dni.length != 8 || !dni.all { it.isDigit() }) {
+                showMessage("❌ DNI debe tener 8 dígitos")
+                return
+            }
+            
+            if (nombres.isEmpty() || apellidos.isEmpty()) {
+                showMessage("❌ Complete nombres y apellidos")
+                return
+            }
+            
+            // Verificar si ya existe
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<List<EmpleadoSimple>>() {}.type
+            val empleados: List<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: emptyList()
+            
+            if (empleados.any { it.dni == dni }) {
+                showMessage("❌ Ya existe empleado con DNI $dni")
+                return
+            }
+            
+            // Crear diálogo de horario flexible
+            val dialogView = layoutInflater.inflate(R.layout.dialog_horario_flexible, null)
+            
+            // Configurar el diálogo
+            val dialog = AlertDialog.Builder(this)
+                .setTitle("⏰ Horario Flexible - $nombres $apellidos")
+                .setView(dialogView)
+                .setPositiveButton("Guardar") { _, _ ->
+                    guardarEmpleadoConHorarioFlexible(dni, nombres, apellidos, dialogView)
+                }
+                .setNegativeButton("Cancelar", null)
+                .create()
+            
+            // Configurar la funcionalidad del diálogo
+            configurarDialogoHorarioFlexible(dialogView)
+            
+            dialog.show()
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al abrir horario flexible: ${e.message}")
+        }
+    }
+    
+    private fun configurarDialogoHorarioFlexible(dialogView: View) {
+        try {
+            // Configurar aplicación rápida
+            val etHoraBaseEntrada = dialogView.findViewById<EditText>(R.id.et_hora_base_entrada)
+            val etHoraBaseSalida = dialogView.findViewById<EditText>(R.id.et_hora_base_salida)
+            val btnAplicarLV = dialogView.findViewById<Button>(R.id.btn_aplicar_lv)
+            val btnAplicarLS = dialogView.findViewById<Button>(R.id.btn_aplicar_ls)
+            
+            // Configurar valores por defecto
+            etHoraBaseEntrada.setText("08:00")
+            etHoraBaseSalida.setText("17:00")
+            
+            // Aplicar horario L-V (Lunes a Viernes)
+            btnAplicarLV.setOnClickListener {
+                val entrada = etHoraBaseEntrada.text.toString()
+                val salida = etHoraBaseSalida.text.toString()
+                
+                if (entrada.isNotEmpty() && salida.isNotEmpty()) {
+                    aplicarHorarioADias(dialogView, entrada, salida, listOf("L", "M", "X", "J", "V"))
+                    showMessage("✅ Horario aplicado L-V: $entrada - $salida")
+                }
+            }
+            
+            // Aplicar horario L-S (Lunes a Sábado)
+            btnAplicarLS.setOnClickListener {
+                val entrada = etHoraBaseEntrada.text.toString()
+                val salida = etHoraBaseSalida.text.toString()
+                
+                if (entrada.isNotEmpty() && salida.isNotEmpty()) {
+                    aplicarHorarioADias(dialogView, entrada, salida, listOf("L", "M", "X", "J", "V", "S"))
+                    showMessage("✅ Horario aplicado L-S: $entrada - $salida")
+                }
+            }
+            
+            // Configurar switches de días
+            configurarSwitchesDias(dialogView)
+            
+        } catch (e: Exception) {
+            showMessage("Error al configurar diálogo: ${e.message}")
+        }
+    }
+    
+    private fun aplicarHorarioADias(dialogView: View, entrada: String, salida: String, dias: List<String>) {
+        dias.forEach { dia ->
+            try {
+                // Usar los nuevos IDs únicos para cada día
+                val (switchId, layoutId, entradaId, salidaId) = when (dia) {
+                    "L" -> arrayOf(R.id.switch_lunes, R.id.layout_horarios_lunes, R.id.et_entrada_lunes, R.id.et_salida_lunes)
+                    "M" -> arrayOf(R.id.switch_martes, R.id.layout_horarios_martes, R.id.et_entrada_martes, R.id.et_salida_martes)
+                    "X" -> arrayOf(R.id.switch_miercoles, R.id.layout_horarios_miercoles, R.id.et_entrada_miercoles, R.id.et_salida_miercoles)
+                    "J" -> arrayOf(R.id.switch_jueves, R.id.layout_horarios_jueves, R.id.et_entrada_jueves, R.id.et_salida_jueves)
+                    "V" -> arrayOf(R.id.switch_viernes, R.id.layout_horarios_viernes, R.id.et_entrada_viernes, R.id.et_salida_viernes)
+                    "S" -> arrayOf(R.id.switch_sabado, R.id.layout_horarios_sabado, R.id.et_entrada_sabado, R.id.et_salida_sabado)
+                    "D" -> arrayOf(R.id.switch_domingo, R.id.layout_horarios_domingo, R.id.et_entrada_domingo, R.id.et_salida_domingo)
+                    else -> return@forEach
+                }
+                
+                val switchActivo = dialogView.findViewById<Switch>(switchId)
+                val layoutHorarios = dialogView.findViewById<LinearLayout>(layoutId)
+                val etEntrada = dialogView.findViewById<EditText>(entradaId)
+                val etSalida = dialogView.findViewById<EditText>(salidaId)
+                
+                // Activar el día y mostrar horarios
+                switchActivo?.isChecked = true
+                layoutHorarios?.visibility = View.VISIBLE
+                
+                // Establecer horarios
+                etEntrada?.setText(entrada)
+                etSalida?.setText(salida)
+                
+            } catch (e: Exception) {
+                // Continuar con el siguiente día si hay error
+                showMessage("Error configurando $dia: ${e.message}")
+            }
+        }
+    }
+    
+    private fun configurarSwitchesDias(dialogView: View) {
+        val dias = listOf("L", "M", "X", "J", "V", "S", "D")
+        
+        dias.forEach { dia ->
+            try {
+                // Usar los nuevos IDs únicos para cada día
+                val (switchId, layoutId) = when (dia) {
+                    "L" -> Pair(R.id.switch_lunes, R.id.layout_horarios_lunes)
+                    "M" -> Pair(R.id.switch_martes, R.id.layout_horarios_martes)
+                    "X" -> Pair(R.id.switch_miercoles, R.id.layout_horarios_miercoles)
+                    "J" -> Pair(R.id.switch_jueves, R.id.layout_horarios_jueves)
+                    "V" -> Pair(R.id.switch_viernes, R.id.layout_horarios_viernes)
+                    "S" -> Pair(R.id.switch_sabado, R.id.layout_horarios_sabado)
+                    "D" -> Pair(R.id.switch_domingo, R.id.layout_horarios_domingo)
+                    else -> return@forEach
+                }
+                
+                val switchActivo = dialogView.findViewById<Switch>(switchId)
+                val layoutHorarios = dialogView.findViewById<LinearLayout>(layoutId)
+                
+                // Configurar el switch
+                switchActivo?.setOnCheckedChangeListener { _, isChecked ->
+                    layoutHorarios?.visibility = if (isChecked) View.VISIBLE else View.GONE
+                }
+                
+                // Los switches ya están configurados correctamente en el XML
+                // L-V están en true, S-D están en false por defecto
+                
+            } catch (e: Exception) {
+                showMessage("Error configurando switch $dia: ${e.message}")
+            }
+        }
+    }
+    
+    private fun guardarEmpleadoConHorarioFlexible(dni: String, nombres: String, apellidos: String, dialogView: View) {
+        try {
+            // Recopilar horarios de todos los días
+            val horarios = mutableMapOf<String, Pair<String, String>>()
+            val diasActivos = mutableListOf<String>()
+            
+            val dias = mapOf(
+                "L" to "Lunes",
+                "M" to "Martes", 
+                "X" to "Miércoles",
+                "J" to "Jueves",
+                "V" to "Viernes",
+                "S" to "Sábado",
+                "D" to "Domingo"
+            )
+            
+            dias.forEach { (codigo, nombre) ->
+                try {
+                    // Usar los nuevos IDs únicos para cada día
+                    val (switchId, entradaId, salidaId) = when (codigo) {
+                        "L" -> Triple(R.id.switch_lunes, R.id.et_entrada_lunes, R.id.et_salida_lunes)
+                        "M" -> Triple(R.id.switch_martes, R.id.et_entrada_martes, R.id.et_salida_martes)
+                        "X" -> Triple(R.id.switch_miercoles, R.id.et_entrada_miercoles, R.id.et_salida_miercoles)
+                        "J" -> Triple(R.id.switch_jueves, R.id.et_entrada_jueves, R.id.et_salida_jueves)
+                        "V" -> Triple(R.id.switch_viernes, R.id.et_entrada_viernes, R.id.et_salida_viernes)
+                        "S" -> Triple(R.id.switch_sabado, R.id.et_entrada_sabado, R.id.et_salida_sabado)
+                        "D" -> Triple(R.id.switch_domingo, R.id.et_entrada_domingo, R.id.et_salida_domingo)
+                        else -> return@forEach
+                    }
+                    
+                    val switchActivo = dialogView.findViewById<Switch>(switchId)
+                    val etEntrada = dialogView.findViewById<EditText>(entradaId)
+                    val etSalida = dialogView.findViewById<EditText>(salidaId)
+                    
+                    if (switchActivo?.isChecked == true) {
+                        val entrada = etEntrada?.text.toString().trim() ?: ""
+                        val salida = etSalida?.text.toString().trim() ?: ""
+                        
+                        if (entrada.isNotEmpty() && salida.isNotEmpty()) {
+                            horarios[codigo] = Pair(entrada, salida)
+                            diasActivos.add(codigo)
+                        }
+                    }
+                } catch (e: Exception) {
+                    showMessage("Error procesando $nombre: ${e.message}")
+                }
+            }
+            
+            if (diasActivos.isEmpty()) {
+                showMessage("❌ Debe configurar al menos un día de trabajo")
+                return
+            }
+            
+            // Crear empleado con horario flexible
+            val empleadoFlexible = EmpleadoFlexible(
+                dni = dni,
+                nombres = nombres,
+                apellidos = apellidos,
+                tipoHorario = "FLEXIBLE",
+                horariosSemanales = horarios,
+                diasActivos = diasActivos,
+                activo = true
+            )
+            
+            // Guardar en SharedPreferences
+            guardarEmpleadoFlexible(empleadoFlexible)
+            
+            showMessage("✅ Empleado con horario flexible guardado: $nombres $apellidos")
+            
+            // Recargar lista
+            loadEmpleados()
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al guardar horario flexible: ${e.message}")
+        }
+    }
+    
+    private fun guardarEmpleadoFlexible(empleado: EmpleadoFlexible) {
+        try {
+            // Cargar empleados flexibles existentes
+            val empleadosFlexiblesJson = sharedPreferences.getString("empleados_flexibles", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoFlexible>>() {}.type
+            val empleadosFlexibles: MutableList<EmpleadoFlexible> = gson.fromJson(empleadosFlexiblesJson, type) ?: mutableListOf()
+            
+            // Agregar nuevo empleado
+            empleadosFlexibles.add(empleado)
+            
+            // Guardar lista actualizada
+            val nuevaLista = gson.toJson(empleadosFlexibles)
+            sharedPreferences.edit().putString("empleados_flexibles", nuevaLista).apply()
+            
+            // También crear un empleado simple para compatibilidad
+            val empleadoSimple = EmpleadoSimple(
+                dni = empleado.dni,
+                nombres = empleado.nombres,
+                apellidos = empleado.apellidos,
+                horaEntrada = empleado.getHorarioResumen().first,
+                horaSalida = empleado.getHorarioResumen().second,
+                activo = empleado.activo
+            )
+            
+            // Guardar en lista simple también
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val typeSimple = object : TypeToken<MutableList<EmpleadoSimple>>() {}.type
+            val empleados: MutableList<EmpleadoSimple> = gson.fromJson(empleadosJson, typeSimple) ?: mutableListOf()
+            empleados.add(empleadoSimple)
+            
+            val nuevaListaSimple = gson.toJson(empleados)
+            sharedPreferences.edit().putString("empleados_list", nuevaListaSimple).apply()
+            
+        } catch (e: Exception) {
+            throw Exception("Error al guardar empleado flexible: ${e.message}")
+        }
+    }
+    
+    // MÉTODOS MODERNOS PARA CREAR VISTAS DE EMPLEADOS
+    
+    private fun createModernEmpleadoView(empleado: EmpleadoSimple, tipoEmpleado: String): View {
+        return try {
+            val itemView = layoutInflater.inflate(R.layout.item_empleado_moderno, null)
+            
+            // Configurar avatar con iniciales
+            val iniciales = "${empleado.nombres.firstOrNull() ?: ""}${empleado.apellidos.firstOrNull() ?: ""}"
+            itemView.findViewById<TextView>(R.id.tv_avatar_inicial)?.text = iniciales.uppercase()
+            
+            // Información principal
+            itemView.findViewById<TextView>(R.id.tv_nombre_empleado)?.text = 
+                "${empleado.nombres} ${empleado.apellidos}"
+            itemView.findViewById<TextView>(R.id.tv_dni_empleado)?.text = 
+                "DNI: ${empleado.dni}"
+            itemView.findViewById<TextView>(R.id.tv_tipo_horario)?.text = "📅 Fijo"
+            itemView.findViewById<TextView>(R.id.tv_horario_empleado)?.text = 
+                "⏰ ${empleado.horaEntrada} - ${empleado.horaSalida}"
+            itemView.findViewById<TextView>(R.id.tv_estado_empleado)?.text = 
+                if (empleado.activo) "✅ Activo" else "❌ Inactivo"
+            
+            // Verificar cambios pendientes
+            val cambiosPendientesManager = CambiosPendientesManager(this)
+            val cambiosPendientes = cambiosPendientesManager.obtenerCambiosPendientesParaEmpleado(empleado.dni)
+            if (cambiosPendientes.isNotEmpty()) {
+                itemView.findViewById<LinearLayout>(R.id.layout_cambios_pendientes_indicator)?.visibility = View.VISIBLE
+            }
+            
+            // Configurar click
+            itemView.setOnClickListener {
+                mostrarDetallesEmpleado(empleado.dni, tipoEmpleado)
+            }
+            
+            itemView
+        } catch (e: Exception) {
+            // Fallback al método antiguo si hay error
+            createEmpleadoView(empleado, false)
+        }
+    }
+    
+    private fun createModernEmpleadoFlexibleView(empleadoFlexible: EmpleadoFlexible): View {
+        return try {
+            val itemView = layoutInflater.inflate(R.layout.item_empleado_moderno, null)
+            
+            // Configurar avatar con iniciales
+            val iniciales = "${empleadoFlexible.nombres.firstOrNull() ?: ""}${empleadoFlexible.apellidos.firstOrNull() ?: ""}"
+            itemView.findViewById<TextView>(R.id.tv_avatar_inicial)?.text = iniciales.uppercase()
+            
+            // Información principal
+            itemView.findViewById<TextView>(R.id.tv_nombre_empleado)?.text = 
+                "${empleadoFlexible.nombres} ${empleadoFlexible.apellidos}"
+            itemView.findViewById<TextView>(R.id.tv_dni_empleado)?.text = 
+                "DNI: ${empleadoFlexible.dni}"
+            itemView.findViewById<TextView>(R.id.tv_tipo_horario)?.text = "📅 Flexible"
+            
+            // Horario resumido para empleados flexibles
+            val horarioHoy = empleadoFlexible.getHorarioHoy()
+            val horarioTexto = if (horarioHoy != null) {
+                "⏰ Hoy: ${horarioHoy.first} - ${horarioHoy.second}"
+            } else {
+                "⏰ ${empleadoFlexible.getDescripcionHorarios()}"
+            }
+            itemView.findViewById<TextView>(R.id.tv_horario_empleado)?.text = horarioTexto
+            
+            itemView.findViewById<TextView>(R.id.tv_estado_empleado)?.text = 
+                if (empleadoFlexible.activo) "✅ Activo" else "❌ Inactivo"
+            
+            // Cambiar color del badge para empleados flexibles
+            itemView.findViewById<TextView>(R.id.tv_tipo_horario)?.setBackgroundResource(R.drawable.badge_entrada)
+            
+            // Verificar cambios pendientes
+            val cambiosPendientesManager = CambiosPendientesManager(this)
+            val cambiosPendientes = cambiosPendientesManager.obtenerCambiosPendientesParaEmpleado(empleadoFlexible.dni)
+            if (cambiosPendientes.isNotEmpty()) {
+                itemView.findViewById<LinearLayout>(R.id.layout_cambios_pendientes_indicator)?.visibility = View.VISIBLE
+            }
+            
+            // Configurar click
+            itemView.setOnClickListener {
+                mostrarDetallesEmpleado(empleadoFlexible.dni, "FLEXIBLE")
+            }
+            
+            itemView
+        } catch (e: Exception) {
+            // Fallback al método antiguo si hay error
+            createEmpleadoFlexibleView(empleadoFlexible)
+        }
+    }
+
+    // NUEVAS FUNCIONALIDADES AGREGADAS
+    
+    private fun mostrarDetallesEmpleado(dni: String, tipoEmpleado: String) {
+        try {
+            val dialogView = layoutInflater.inflate(R.layout.dialog_empleado_detalles, null)
+            
+            // Configurar información del empleado
+            configurarDetallesEmpleado(dialogView, dni, tipoEmpleado)
+            
+            val dialog = AlertDialog.Builder(this)
+                .setTitle("👤 Detalles del Empleado")
+                .setView(dialogView)
+                .setPositiveButton("Cerrar", null)
+                .create()
+            
+            // Configurar botones del diálogo
+            configurarBotonesDetalles(dialogView, dni, tipoEmpleado, dialog)
+            
+            dialog.show()
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al mostrar detalles: ${e.message}")
+        }
+    }
+    
+    private fun configurarDetallesEmpleado(dialogView: View, dni: String, tipoEmpleado: String) {
+        try {
+            val empleadosManager = EmpleadosManager(this)
+            val cambiosPendientesManager = CambiosPendientesManager(this)
+            
+            if (tipoEmpleado == "SIMPLE") {
+                val empleado = empleadosManager.obtenerEmpleadoSimple(dni)
+                if (empleado != null) {
+                    configurarDetallesEmpleadoSimple(dialogView, empleado, cambiosPendientesManager)
+                }
+            } else {
+                val empleado = empleadosManager.obtenerEmpleadoFlexible(dni)
+                if (empleado != null) {
+                    configurarDetallesEmpleadoFlexible(dialogView, empleado, cambiosPendientesManager)
+                }
+            }
+            
+        } catch (e: Exception) {
+            showMessage("Error configurando detalles: ${e.message}")
+        }
+    }
+    
+    private fun configurarDetallesEmpleadoSimple(
+        dialogView: View, 
+        empleado: EmpleadoSimple, 
+        cambiosPendientesManager: CambiosPendientesManager
+    ) {
+        // Información personal
+        dialogView.findViewById<TextView>(R.id.tv_nombre_completo)?.text = 
+            "${empleado.nombres} ${empleado.apellidos}"
+        dialogView.findViewById<TextView>(R.id.tv_dni_empleado)?.text = 
+            "DNI: ${empleado.dni}"
+        dialogView.findViewById<TextView>(R.id.tv_estado_empleado)?.text = 
+            if (empleado.activo) "✅ Activo" else "❌ Inactivo"
+        
+        // Horario actual
+        dialogView.findViewById<TextView>(R.id.tv_tipo_horario)?.text = "📅 Horario Fijo"
+        dialogView.findViewById<TextView>(R.id.tv_horario_simple)?.text = 
+            "🕐 ${empleado.horaEntrada} - ${empleado.horaSalida}"
+        
+        // Mostrar horario simple, ocultar flexible
+        dialogView.findViewById<LinearLayout>(R.id.layout_horario_simple)?.visibility = View.VISIBLE
+        dialogView.findViewById<LinearLayout>(R.id.layout_horario_flexible)?.visibility = View.GONE
+        
+        // Verificar cambios pendientes
+        val cambiosPendientes = cambiosPendientesManager.obtenerCambiosPendientesParaEmpleado(empleado.dni)
+        if (cambiosPendientes.isNotEmpty()) {
+            mostrarCambiosPendientes(dialogView, cambiosPendientes)
+        } else {
+            dialogView.findViewById<LinearLayout>(R.id.layout_cambios_pendientes)?.visibility = View.GONE
+        }
+    }
+    
+    private fun configurarDetallesEmpleadoFlexible(
+        dialogView: View, 
+        empleado: EmpleadoFlexible, 
+        cambiosPendientesManager: CambiosPendientesManager
+    ) {
+        // Información personal
+        dialogView.findViewById<TextView>(R.id.tv_nombre_completo)?.text = 
+            "${empleado.nombres} ${empleado.apellidos}"
+        dialogView.findViewById<TextView>(R.id.tv_dni_empleado)?.text = 
+            "DNI: ${empleado.dni}"
+        dialogView.findViewById<TextView>(R.id.tv_estado_empleado)?.text = 
+            if (empleado.activo) "✅ Activo" else "❌ Inactivo"
+        
+        // Horario flexible
+        dialogView.findViewById<TextView>(R.id.tv_tipo_horario)?.text = "📅 Horario Flexible"
+        dialogView.findViewById<TextView>(R.id.tv_horarios_detallados)?.text = 
+            empleado.getDescripcionHorarios()
+        
+        val (horas, minutos) = empleado.calcularHorasSemanales()
+        dialogView.findViewById<TextView>(R.id.tv_horas_semanales)?.text = 
+            "⏱️ Total semanal: ${horas}h ${minutos}m (${empleado.diasActivos.size} días)"
+        
+        // Mostrar horario flexible, ocultar simple
+        dialogView.findViewById<LinearLayout>(R.id.layout_horario_simple)?.visibility = View.GONE
+        dialogView.findViewById<LinearLayout>(R.id.layout_horario_flexible)?.visibility = View.VISIBLE
+        
+        // Verificar cambios pendientes
+        val cambiosPendientes = cambiosPendientesManager.obtenerCambiosPendientesParaEmpleado(empleado.dni)
+        if (cambiosPendientes.isNotEmpty()) {
+            mostrarCambiosPendientes(dialogView, cambiosPendientes)
+        } else {
+            dialogView.findViewById<LinearLayout>(R.id.layout_cambios_pendientes)?.visibility = View.GONE
+        }
+    }
+    
+    private fun mostrarCambiosPendientes(dialogView: View, cambios: List<CambioPendiente>) {
+        val layoutCambios = dialogView.findViewById<LinearLayout>(R.id.layout_cambios_pendientes)
+        layoutCambios?.visibility = View.VISIBLE
+        
+        val descripcionCambios = cambios.joinToString("\n") { cambio ->
+            "• ${cambio.getDescripcionCambio()}"
+        }
+        
+        dialogView.findViewById<TextView>(R.id.tv_cambios_pendientes)?.text = descripcionCambios
+        
+        val fechaAplicacion = cambios.firstOrNull()?.getFechaAplicacionFormateada() ?: ""
+        dialogView.findViewById<TextView>(R.id.tv_fecha_aplicacion)?.text = 
+            "📅 Se aplicarán el: $fechaAplicacion"
+    }
+    
+    private fun configurarBotonesDetalles(
+        dialogView: View, 
+        dni: String, 
+        tipoEmpleado: String, 
+        dialog: AlertDialog
+    ) {
+        // Botón Editar
+        dialogView.findViewById<Button>(R.id.btn_editar_empleado)?.setOnClickListener {
+            dialog.dismiss()
+            mostrarDialogoEditar(dni, tipoEmpleado)
+        }
+        
+        // Botón Cambiar Estado
+        dialogView.findViewById<Button>(R.id.btn_cambiar_estado)?.setOnClickListener {
+            dialog.dismiss()
+            cambiarEstadoEmpleado(dni, tipoEmpleado)
+        }
+    }
+    
+    private fun mostrarDialogoEditar(dni: String, tipoEmpleado: String) {
+        try {
+            val dialogView = layoutInflater.inflate(R.layout.dialog_editar_empleado, null)
+            
+            // Configurar información actual del empleado
+            configurarFormularioEdicion(dialogView, dni, tipoEmpleado)
+            
+            val dialog = AlertDialog.Builder(this)
+                .setTitle("✏️ Editar Empleado")
+                .setView(dialogView)
+                .create()
+            
+            // Configurar botones del formulario
+            configurarBotonesEdicion(dialogView, dni, tipoEmpleado, dialog)
+            
+            dialog.show()
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al abrir edición: ${e.message}")
+        }
+    }
+    
+    private fun configurarFormularioEdicion(dialogView: View, dni: String, tipoEmpleado: String) {
+        try {
+            val empleadosManager = EmpleadosManager(this)
+            
+            if (tipoEmpleado == "SIMPLE") {
+                val empleado = empleadosManager.obtenerEmpleadoSimple(dni)
+                if (empleado != null) {
+                    configurarEdicionEmpleadoSimple(dialogView, empleado)
+                }
+            } else {
+                val empleado = empleadosManager.obtenerEmpleadoFlexible(dni)
+                if (empleado != null) {
+                    configurarEdicionEmpleadoFlexible(dialogView, empleado)
+                }
+            }
+            
+        } catch (e: Exception) {
+            showMessage("Error configurando formulario: ${e.message}")
+        }
+    }
+    
+    private fun configurarEdicionEmpleadoSimple(dialogView: View, empleado: EmpleadoSimple) {
+        // Información personal
+        dialogView.findViewById<EditText>(R.id.et_editar_nombres)?.setText(empleado.nombres)
+        dialogView.findViewById<EditText>(R.id.et_editar_apellidos)?.setText(empleado.apellidos)
+        dialogView.findViewById<TextView>(R.id.tv_dni_no_editable)?.text = 
+            "DNI: ${empleado.dni} (no editable)"
+        
+        // Horario simple
+        dialogView.findViewById<EditText>(R.id.et_editar_entrada)?.setText(empleado.horaEntrada)
+        dialogView.findViewById<EditText>(R.id.et_editar_salida)?.setText(empleado.horaSalida)
+        
+        // Mostrar horario simple, ocultar flexible
+        dialogView.findViewById<LinearLayout>(R.id.layout_editar_horario_simple)?.visibility = View.VISIBLE
+        dialogView.findViewById<LinearLayout>(R.id.layout_editar_horario_flexible)?.visibility = View.GONE
+    }
+    
+    private fun configurarEdicionEmpleadoFlexible(dialogView: View, empleado: EmpleadoFlexible) {
+        // Información personal
+        dialogView.findViewById<EditText>(R.id.et_editar_nombres)?.setText(empleado.nombres)
+        dialogView.findViewById<EditText>(R.id.et_editar_apellidos)?.setText(empleado.apellidos)
+        dialogView.findViewById<TextView>(R.id.tv_dni_no_editable)?.text = 
+            "DNI: ${empleado.dni} (no editable)"
+        
+        // Horario flexible
+        dialogView.findViewById<TextView>(R.id.tv_horario_flexible_actual)?.text = 
+            empleado.getDescripcionHorarios()
+        
+        // Mostrar horario flexible, ocultar simple
+        dialogView.findViewById<LinearLayout>(R.id.layout_editar_horario_simple)?.visibility = View.GONE
+        dialogView.findViewById<LinearLayout>(R.id.layout_editar_horario_flexible)?.visibility = View.VISIBLE
+    }
+    
+    private fun configurarBotonesEdicion(
+        dialogView: View, 
+        dni: String, 
+        tipoEmpleado: String, 
+        dialog: AlertDialog
+    ) {
+        // Botón Guardar Cambios
+        dialogView.findViewById<Button>(R.id.btn_guardar_cambios)?.setOnClickListener {
+            guardarCambiosEmpleado(dialogView, dni, tipoEmpleado)
+            dialog.dismiss()
+        }
+        
+        // Botón Cancelar
+        dialogView.findViewById<Button>(R.id.btn_cancelar_edicion)?.setOnClickListener {
+            dialog.dismiss()
+        }
+        
+        // Botones de cambio de tipo de horario (por ahora en desarrollo)
+        dialogView.findViewById<Button>(R.id.btn_cambiar_a_flexible)?.setOnClickListener {
+            showMessage("🚧 Cambio a horario flexible en desarrollo")
+        }
+        
+        dialogView.findViewById<Button>(R.id.btn_cambiar_a_simple)?.setOnClickListener {
+            showMessage("🚧 Cambio a horario simple en desarrollo")
+        }
+        
+        dialogView.findViewById<Button>(R.id.btn_editar_horario_flexible)?.setOnClickListener {
+            showMessage("🚧 Edición de horario flexible en desarrollo")
+        }
+    }
+    
+    private fun guardarCambiosEmpleado(dialogView: View, dni: String, tipoEmpleado: String) {
+        try {
+            val empleadosManager = EmpleadosManager(this)
+            val cambiosPendientesManager = CambiosPendientesManager(this)
+            
+            // Obtener nuevos valores
+            val nuevosNombres = dialogView.findViewById<EditText>(R.id.et_editar_nombres)?.text.toString().trim()
+            val nuevosApellidos = dialogView.findViewById<EditText>(R.id.et_editar_apellidos)?.text.toString().trim()
+            
+            if (nuevosNombres.isEmpty() || nuevosApellidos.isEmpty()) {
+                showMessage("❌ Complete nombres y apellidos")
+                return
+            }
+            
+            if (tipoEmpleado == "SIMPLE") {
+                val empleado = empleadosManager.obtenerEmpleadoSimple(dni)
+                if (empleado != null) {
+                    // Verificar cambios en información personal
+                    if (empleado.nombres != nuevosNombres || empleado.apellidos != nuevosApellidos) {
+                        val cambioInfo = CambioPendiente.crearCambioInformacion(
+                            dni, tipoEmpleado, empleado.nombres, empleado.apellidos, 
+                            nuevosNombres, nuevosApellidos
+                        )
+                        cambiosPendientesManager.agregarCambioPendiente(cambioInfo)
+                    }
+                    
+                    // Verificar cambios en horario
+                    val nuevaEntrada = dialogView.findViewById<EditText>(R.id.et_editar_entrada)?.text.toString().trim()
+                    val nuevaSalida = dialogView.findViewById<EditText>(R.id.et_editar_salida)?.text.toString().trim()
+                    
+                    if (nuevaEntrada.isNotEmpty() && nuevaSalida.isNotEmpty() &&
+                        (empleado.horaEntrada != nuevaEntrada || empleado.horaSalida != nuevaSalida)) {
+                        val cambioHorario = CambioPendiente.crearCambioHorarioSimple(
+                            dni, tipoEmpleado, empleado.horaEntrada, empleado.horaSalida,
+                            nuevaEntrada, nuevaSalida
+                        )
+                        cambiosPendientesManager.agregarCambioPendiente(cambioHorario)
+                    }
+                }
+            } else {
+                val empleado = empleadosManager.obtenerEmpleadoFlexible(dni)
+                if (empleado != null) {
+                    // Solo cambios en información personal por ahora
+                    if (empleado.nombres != nuevosNombres || empleado.apellidos != nuevosApellidos) {
+                        val cambioInfo = CambioPendiente.crearCambioInformacion(
+                            dni, tipoEmpleado, empleado.nombres, empleado.apellidos, 
+                            nuevosNombres, nuevosApellidos
+                        )
+                        cambiosPendientesManager.agregarCambioPendiente(cambioInfo)
+                    }
+                }
+            }
+            
+            showMessage("✅ Cambios programados para aplicarse mañana")
+            loadEmpleados() // Recargar lista
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al guardar cambios: ${e.message}")
+        }
+    }
+    
+    private fun cambiarEstadoEmpleado(dni: String, tipoEmpleado: String) {
+        try {
+            val empleadosManager = EmpleadosManager(this)
+            val cambiosPendientesManager = CambiosPendientesManager(this)
+            
+            val estadoActual = if (tipoEmpleado == "SIMPLE") {
+                empleadosManager.obtenerEmpleadoSimple(dni)?.activo ?: true
+            } else {
+                empleadosManager.obtenerEmpleadoFlexible(dni)?.activo ?: true
+            }
+            
+            val nuevoEstado = !estadoActual
+            val accion = if (nuevoEstado) "activar" else "desactivar"
+            
+            AlertDialog.Builder(this)
+                .setTitle("🔄 Cambiar Estado")
+                .setMessage("¿Está seguro que desea $accion este empleado?\n\nEl cambio se aplicará mañana.")
+                .setPositiveButton("Sí, $accion") { _, _ ->
+                    val cambioEstado = CambioPendiente.crearCambioEstado(
+                        dni, tipoEmpleado, estadoActual, nuevoEstado
+                    )
+                    cambiosPendientesManager.agregarCambioPendiente(cambioEstado)
+                    showMessage("✅ Cambio de estado programado para mañana")
+                    loadEmpleados()
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+                
+        } catch (e: Exception) {
+            showMessage("❌ Error al cambiar estado: ${e.message}")
+        }
+    }
+
+    private fun showMessage(message: String) {
+        try {
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            // Si ni siquiera Toast funciona, no hacer nada
+        }
+    }
+    
+    override fun onBackPressed() {
+        finish()
+    }
+}   
+ // MÉTODOS PARA EDICIÓN Y ELIMINACIÓN DE EMPLEADOS
+    
+    private fun mostrarDetallesEmpleado(dni: String, tipo: String) {
+        try {
+            if (tipo == "FLEXIBLE") {
+                mostrarDialogoEditarFlexible(dni)
+            } else {
+                mostrarDialogoEditarSimple(dni)
+            }
+        } catch (e: Exception) {
+            showMessage("Error al mostrar detalles: ${e.message}")
+        }
+    }
+    
+    private fun mostrarDialogoEditarSimple(dni: String) {
+        try {
+            // Cargar empleado actual
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<List<EmpleadoSimple>>() {}.type
+            val empleados: List<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: emptyList()
+            val empleado = empleados.find { it.dni == dni }
+            
+            if (empleado == null) {
+                showMessage("❌ Empleado no encontrado")
+                return
+            }
+            
+            // Inflar el layout del diálogo
+            val dialogView = layoutInflater.inflate(R.layout.dialog_editar_empleado, null)
+            
+            // Configurar campos con datos actuales
+            dialogView.findViewById<EditText>(R.id.et_editar_nombres)?.setText(empleado.nombres)
+            dialogView.findViewById<EditText>(R.id.et_editar_apellidos)?.setText(empleado.apellidos)
+            dialogView.findViewById<TextView>(R.id.tv_dni_no_editable)?.text = "DNI: ${empleado.dni} (no editable)"
+            dialogView.findViewById<EditText>(R.id.et_editar_entrada)?.setText(empleado.horaEntrada)
+            dialogView.findViewById<EditText>(R.id.et_editar_salida)?.setText(empleado.horaSalida)
+            
+            // Mostrar solo horario simple
+            dialogView.findViewById<LinearLayout>(R.id.layout_editar_horario_simple)?.visibility = View.VISIBLE
+            dialogView.findViewById<LinearLayout>(R.id.layout_editar_horario_flexible)?.visibility = View.GONE
+            
+            val dialog = AlertDialog.Builder(this)
+                .setTitle("✏️ Editar Empleado")
+                .setView(dialogView)
+                .create()
+            
+            // Configurar botones
+            dialogView.findViewById<Button>(R.id.btn_guardar_cambios)?.setOnClickListener {
+                guardarCambiosEmpleado(dni, dialogView, "SIMPLE")
+                dialog.dismiss()
+            }
+            
+            dialogView.findViewById<Button>(R.id.btn_cancelar_edicion)?.setOnClickListener {
+                dialog.dismiss()
+            }
+            
+            dialogView.findViewById<Button>(R.id.btn_eliminar_empleado)?.setOnClickListener {
+                confirmarEliminarEmpleado(dni, "SIMPLE")
+                dialog.dismiss()
+            }
+            
+            dialogView.findViewById<Button>(R.id.btn_cambiar_a_flexible)?.setOnClickListener {
+                convertirAFlexible(empleado)
+                dialog.dismiss()
+            }
+            
+            dialog.show()
+            
+        } catch (e: Exception) {
+            showMessage("Error al mostrar diálogo de edición: ${e.message}")
+        }
+    }
+    
+    private fun mostrarDialogoEditarFlexible(dni: String) {
+        try {
+            // Cargar empleado flexible actual
+            val empleadosFlexiblesJson = sharedPreferences.getString("empleados_flexibles", "[]")
+            val type = object : TypeToken<List<EmpleadoFlexible>>() {}.type
+            val empleadosFlexibles: List<EmpleadoFlexible> = gson.fromJson(empleadosFlexiblesJson, type) ?: emptyList()
+            val empleado = empleadosFlexibles.find { it.dni == dni }
+            
+            if (empleado == null) {
+                showMessage("❌ Empleado flexible no encontrado")
+                return
+            }
+            
+            // Inflar el layout del diálogo
+            val dialogView = layoutInflater.inflate(R.layout.dialog_editar_empleado, null)
+            
+            // Configurar campos con datos actuales
+            dialogView.findViewById<EditText>(R.id.et_editar_nombres)?.setText(empleado.nombres)
+            dialogView.findViewById<EditText>(R.id.et_editar_apellidos)?.setText(empleado.apellidos)
+            dialogView.findViewById<TextView>(R.id.tv_dni_no_editable)?.text = "DNI: ${empleado.dni} (no editable)"
+            
+            // Mostrar solo horario flexible
+            dialogView.findViewById<LinearLayout>(R.id.layout_editar_horario_simple)?.visibility = View.GONE
+            dialogView.findViewById<LinearLayout>(R.id.layout_editar_horario_flexible)?.visibility = View.VISIBLE
+            
+            // Mostrar resumen del horario flexible actual
+            val horarioResumen = StringBuilder()
+            empleado.diasActivos.forEach { dia ->
+                val nombreDia = when (dia) {
+                    "L" -> "Lunes"
+                    "M" -> "Martes"
+                    "X" -> "Miércoles"
+                    "J" -> "Jueves"
+                    "V" -> "Viernes"
+                    "S" -> "Sábado"
+                    "D" -> "Domingo"
+                    else -> dia
+                }
+                val horario = empleado.horariosSemanales[dia]
+                if (horario != null) {
+                    horarioResumen.append("$nombreDia: ${horario.first} - ${horario.second}\n")
+                }
+            }
+            
+            dialogView.findViewById<TextView>(R.id.tv_horario_flexible_actual)?.text = horarioResumen.toString()
+            
+            val dialog = AlertDialog.Builder(this)
+                .setTitle("✏️ Editar Empleado Flexible")
+                .setView(dialogView)
+                .create()
+            
+            // Configurar botones
+            dialogView.findViewById<Button>(R.id.btn_guardar_cambios)?.setOnClickListener {
+                guardarCambiosEmpleado(dni, dialogView, "FLEXIBLE")
+                dialog.dismiss()
+            }
+            
+            dialogView.findViewById<Button>(R.id.btn_cancelar_edicion)?.setOnClickListener {
+                dialog.dismiss()
+            }
+            
+            dialogView.findViewById<Button>(R.id.btn_eliminar_empleado)?.setOnClickListener {
+                confirmarEliminarEmpleado(dni, "FLEXIBLE")
+                dialog.dismiss()
+            }
+            
+            dialogView.findViewById<Button>(R.id.btn_editar_horario_flexible)?.setOnClickListener {
+                editarHorarioFlexible(empleado)
+                dialog.dismiss()
+            }
+            
+            dialogView.findViewById<Button>(R.id.btn_cambiar_a_simple)?.setOnClickListener {
+                convertirASimple(empleado)
+                dialog.dismiss()
+            }
+            
+            dialog.show()
+            
+        } catch (e: Exception) {
+            showMessage("Error al mostrar diálogo de edición flexible: ${e.message}")
+        }
+    }
+    
+    private fun guardarCambiosEmpleado(dni: String, dialogView: View, tipo: String) {
+        try {
+            val nuevosNombres = dialogView.findViewById<EditText>(R.id.et_editar_nombres)?.text.toString().trim()
+            val nuevosApellidos = dialogView.findViewById<EditText>(R.id.et_editar_apellidos)?.text.toString().trim()
+            
+            if (nuevosNombres.isEmpty() || nuevosApellidos.isEmpty()) {
+                showMessage("❌ Complete nombres y apellidos")
+                return
+            }
+            
+            if (tipo == "SIMPLE") {
+                val nuevaEntrada = dialogView.findViewById<EditText>(R.id.et_editar_entrada)?.text.toString().trim()
+                val nuevaSalida = dialogView.findViewById<EditText>(R.id.et_editar_salida)?.text.toString().trim()
+                
+                if (nuevaEntrada.isEmpty() || nuevaSalida.isEmpty()) {
+                    showMessage("❌ Complete horarios")
+                    return
+                }
+                
+                actualizarEmpleadoSimple(dni, nuevosNombres, nuevosApellidos, nuevaEntrada, nuevaSalida)
+            } else {
+                actualizarEmpleadoFlexible(dni, nuevosNombres, nuevosApellidos)
+            }
+            
+            showMessage("✅ Empleado actualizado correctamente")
+            loadEmpleados()
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al guardar cambios: ${e.message}")
+        }
+    }
+    
+    private fun actualizarEmpleadoSimple(dni: String, nombres: String, apellidos: String, entrada: String, salida: String) {
+        try {
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoSimple>>() {}.type
+            val empleados: MutableList<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: mutableListOf()
+            
+            val index = empleados.indexOfFirst { it.dni == dni }
+            if (index != -1) {
+                empleados[index] = EmpleadoSimple(dni, nombres, apellidos, entrada, salida, true)
+                
+                val nuevaLista = gson.toJson(empleados)
+                sharedPreferences.edit().putString("empleados_list", nuevaLista).apply()
+            }
+        } catch (e: Exception) {
+            throw Exception("Error al actualizar empleado simple: ${e.message}")
+        }
+    }
+    
+    private fun actualizarEmpleadoFlexible(dni: String, nombres: String, apellidos: String) {
+        try {
+            val empleadosFlexiblesJson = sharedPreferences.getString("empleados_flexibles", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoFlexible>>() {}.type
+            val empleadosFlexibles: MutableList<EmpleadoFlexible> = gson.fromJson(empleadosFlexiblesJson, type) ?: mutableListOf()
+            
+            val index = empleadosFlexibles.indexOfFirst { it.dni == dni }
+            if (index != -1) {
+                val empleadoActual = empleadosFlexibles[index]
+                empleadosFlexibles[index] = empleadoActual.copy(nombres = nombres, apellidos = apellidos)
+                
+                val nuevaLista = gson.toJson(empleadosFlexibles)
+                sharedPreferences.edit().putString("empleados_flexibles", nuevaLista).apply()
+                
+                // También actualizar en lista simple
+                actualizarEmpleadoSimpleDesdeFlexible(empleadosFlexibles[index])
+            }
+        } catch (e: Exception) {
+            throw Exception("Error al actualizar empleado flexible: ${e.message}")
+        }
+    }
+    
+    private fun actualizarEmpleadoSimpleDesdeFlexible(empleadoFlexible: EmpleadoFlexible) {
+        try {
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoSimple>>() {}.type
+            val empleados: MutableList<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: mutableListOf()
+            
+            val index = empleados.indexOfFirst { it.dni == empleadoFlexible.dni }
+            if (index != -1) {
+                val horarioResumen = empleadoFlexible.getHorarioResumen()
+                empleados[index] = EmpleadoSimple(
+                    dni = empleadoFlexible.dni,
+                    nombres = empleadoFlexible.nombres,
+                    apellidos = empleadoFlexible.apellidos,
+                    horaEntrada = horarioResumen.first,
+                    horaSalida = horarioResumen.second,
+                    activo = empleadoFlexible.activo
+                )
+                
+                val nuevaLista = gson.toJson(empleados)
+                sharedPreferences.edit().putString("empleados_list", nuevaLista).apply()
+            }
+        } catch (e: Exception) {
+            // No es crítico si falla
+        }
+    }
+    
+    private fun confirmarEliminarEmpleado(dni: String, tipo: String) {
+        try {
+            AlertDialog.Builder(this)
+                .setTitle("⚠️ Confirmar Eliminación")
+                .setMessage("¿Está seguro de eliminar este empleado?\n\nEsta acción no se puede deshacer.\n\nTambién se eliminarán todos sus registros de asistencia.")
+                .setPositiveButton("🗑️ Eliminar") { _, _ ->
+                    eliminarEmpleado(dni, tipo)
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        } catch (e: Exception) {
+            showMessage("Error al confirmar eliminación: ${e.message}")
+        }
+    }
+    
+    private fun eliminarEmpleado(dni: String, tipo: String) {
+        try {
+            var eliminado = false
+            
+            // Eliminar de empleados simples
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val typeSimple = object : TypeToken<MutableList<EmpleadoSimple>>() {}.type
+            val empleados: MutableList<EmpleadoSimple> = gson.fromJson(empleadosJson, typeSimple) ?: mutableListOf()
+            
+            val indexSimple = empleados.indexOfFirst { it.dni == dni }
+            if (indexSimple != -1) {
+                empleados.removeAt(indexSimple)
+                val nuevaListaSimple = gson.toJson(empleados)
+                sharedPreferences.edit().putString("empleados_list", nuevaListaSimple).apply()
+                eliminado = true
+            }
+            
+            // Eliminar de empleados flexibles si es necesario
+            if (tipo == "FLEXIBLE") {
+                val empleadosFlexiblesJson = sharedPreferences.getString("empleados_flexibles", "[]")
+                val typeFlexible = object : TypeToken<MutableList<EmpleadoFlexible>>() {}.type
+                val empleadosFlexibles: MutableList<EmpleadoFlexible> = gson.fromJson(empleadosFlexiblesJson, typeFlexible) ?: mutableListOf()
+                
+                val indexFlexible = empleadosFlexibles.indexOfFirst { it.dni == dni }
+                if (indexFlexible != -1) {
+                    empleadosFlexibles.removeAt(indexFlexible)
+                    val nuevaListaFlexible = gson.toJson(empleadosFlexibles)
+                    sharedPreferences.edit().putString("empleados_flexibles", nuevaListaFlexible).apply()
+                    eliminado = true
+                }
+            }
+            
+            // Eliminar registros de asistencia del empleado
+            eliminarRegistrosEmpleado(dni)
+            
+            if (eliminado) {
+                showMessage("✅ Empleado eliminado correctamente")
+                loadEmpleados()
+            } else {
+                showMessage("❌ No se pudo eliminar el empleado")
+            }
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al eliminar empleado: ${e.message}")
+        }
+    }
+    
+    private fun eliminarRegistrosEmpleado(dni: String) {
+        try {
+            val sharedPreferencesRegistros = getSharedPreferences("RegistrosApp", Context.MODE_PRIVATE)
+            val registrosJson = sharedPreferencesRegistros.getString("registros_list", "[]")
+            val type = object : TypeToken<MutableList<Map<String, String>>>() {}.type
+            val registros: MutableList<Map<String, String>> = gson.fromJson(registrosJson, type) ?: mutableListOf()
+            
+            // Filtrar registros que no pertenezcan al empleado eliminado
+            val registrosFiltrados = registros.filter { it["dni"] != dni }
+            
+            val nuevaListaRegistros = gson.toJson(registrosFiltrados)
+            sharedPreferencesRegistros.edit().putString("registros_list", nuevaListaRegistros).apply()
+            
+        } catch (e: Exception) {
+            // No es crítico si falla
+        }
+    }
+    
+    private fun convertirAFlexible(empleado: EmpleadoSimple) {
+        try {
+            showMessage("🔄 Convirtiendo a horario flexible...")
+            
+            // Crear horario flexible basado en el horario simple
+            val horariosSemanales = mutableMapOf<String, Pair<String, String>>()
+            val diasActivos = mutableListOf<String>()
+            
+            // Aplicar el mismo horario a días laborables (L-V)
+            listOf("L", "M", "X", "J", "V").forEach { dia ->
+                horariosSemanales[dia] = Pair(empleado.horaEntrada, empleado.horaSalida)
+                diasActivos.add(dia)
+            }
+            
+            val empleadoFlexible = EmpleadoFlexible(
+                dni = empleado.dni,
+                nombres = empleado.nombres,
+                apellidos = empleado.apellidos,
+                tipoHorario = "FLEXIBLE",
+                horariosSemanales = horariosSemanales,
+                diasActivos = diasActivos,
+                activo = empleado.activo
+            )
+            
+            // Guardar empleado flexible
+            guardarEmpleadoFlexible(empleadoFlexible)
+            
+            // Eliminar de empleados simples
+            eliminarEmpleadoSimple(empleado.dni)
+            
+            showMessage("✅ Empleado convertido a horario flexible")
+            loadEmpleados()
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al convertir a flexible: ${e.message}")
+        }
+    }
+    
+    private fun convertirASimple(empleado: EmpleadoFlexible) {
+        try {
+            showMessage("🔄 Convirtiendo a horario simple...")
+            
+            val horarioResumen = empleado.getHorarioResumen()
+            val empleadoSimple = EmpleadoSimple(
+                dni = empleado.dni,
+                nombres = empleado.nombres,
+                apellidos = empleado.apellidos,
+                horaEntrada = horarioResumen.first,
+                horaSalida = horarioResumen.second,
+                activo = empleado.activo
+            )
+            
+            // Eliminar de empleados flexibles
+            eliminarEmpleadoFlexible(empleado.dni)
+            
+            // Guardar como empleado simple
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoSimple>>() {}.type
+            val empleados: MutableList<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: mutableListOf()
+            empleados.add(empleadoSimple)
+            
+            val nuevaLista = gson.toJson(empleados)
+            sharedPreferences.edit().putString("empleados_list", nuevaLista).apply()
+            
+            showMessage("✅ Empleado convertido a horario simple")
+            loadEmpleados()
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al convertir a simple: ${e.message}")
+        }
+    }
+    
+    private fun eliminarEmpleadoSimple(dni: String) {
+        try {
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoSimple>>() {}.type
+            val empleados: MutableList<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: mutableListOf()
+            
+            empleados.removeAll { it.dni == dni }
+            
+            val nuevaLista = gson.toJson(empleados)
+            sharedPreferences.edit().putString("empleados_list", nuevaLista).apply()
+        } catch (e: Exception) {
+            // No es crítico si falla
+        }
+    }
+    
+    private fun eliminarEmpleadoFlexible(dni: String) {
+        try {
+            val empleadosFlexiblesJson = sharedPreferences.getString("empleados_flexibles", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoFlexible>>() {}.type
+            val empleadosFlexibles: MutableList<EmpleadoFlexible> = gson.fromJson(empleadosFlexiblesJson, type) ?: mutableListOf()
+            
+            empleadosFlexibles.removeAll { it.dni == dni }
+            
+            val nuevaLista = gson.toJson(empleadosFlexibles)
+            sharedPreferences.edit().putString("empleados_flexibles", nuevaLista).apply()
+        } catch (e: Exception) {
+            // No es crítico si falla
+        }
+    }
+    
+    private fun editarHorarioFlexible(empleado: EmpleadoFlexible) {
+        try {
+            // Reutilizar el diálogo de horario flexible existente
+            mostrarDialogoHorarioFlexible(empleado.dni, empleado.nombres, empleado.apellidos, empleado)
+        } catch (e: Exception) {
+            showMessage("Error al editar horario flexible: ${e.message}")
+        }
+    }
+    
+    // Sobrecarga del método para edición
+    private fun mostrarDialogoHorarioFlexible(dni: String, nombres: String, apellidos: String, empleadoExistente: EmpleadoFlexible? = null) {
+        try {
+            val dialogView = layoutInflater.inflate(R.layout.dialog_horario_flexible, null)
+            
+            // Si es edición, precargar datos
+            empleadoExistente?.let { empleado ->
+                val dias = listOf(
+                    "L" to "Lunes", "M" to "Martes", "X" to "Miércoles", 
+                    "J" to "Jueves", "V" to "Viernes", "S" to "Sábado", "D" to "Domingo"
+                )
+                
+                dias.forEach { (codigo, _) ->
+                    val (switchId, entradaId, salidaId) = when (codigo) {
+                        "L" -> Triple(R.id.switch_lunes, R.id.et_entrada_lunes, R.id.et_salida_lunes)
+                        "M" -> Triple(R.id.switch_martes, R.id.et_entrada_martes, R.id.et_salida_martes)
+                        "X" -> Triple(R.id.switch_miercoles, R.id.et_entrada_miercoles, R.id.et_salida_miercoles)
+                        "J" -> Triple(R.id.switch_jueves, R.id.et_entrada_jueves, R.id.et_salida_jueves)
+                        "V" -> Triple(R.id.switch_viernes, R.id.et_entrada_viernes, R.id.et_salida_viernes)
+                        "S" -> Triple(R.id.switch_sabado, R.id.et_entrada_sabado, R.id.et_salida_sabado)
+                        "D" -> Triple(R.id.switch_domingo, R.id.et_entrada_domingo, R.id.et_salida_domingo)
+                        else -> return@forEach
+                    }
+                    
+                    val switchActivo = dialogView.findViewById<Switch>(switchId)
+                    val etEntrada = dialogView.findViewById<EditText>(entradaId)
+                    val etSalida = dialogView.findViewById<EditText>(salidaId)
+                    
+                    if (empleado.diasActivos.contains(codigo)) {
+                        switchActivo?.isChecked = true
+                        val horario = empleado.horariosSemanales[codigo]
+                        etEntrada?.setText(horario?.first ?: "")
+                        etSalida?.setText(horario?.second ?: "")
+                    }
+                }
+            }
+            
+            AlertDialog.Builder(this)
+                .setTitle(if (empleadoExistente != null) "✏️ Editar Horario Flexible" else "⏰ Configurar Horario Flexible")
+                .setView(dialogView)
+                .setPositiveButton("Guardar") { _, _ ->
+                    if (empleadoExistente != null) {
+                        actualizarHorarioFlexible(empleadoExistente, dialogView)
+                    } else {
+                        procesarHorarioFlexible(dni, nombres, apellidos, dialogView)
+                    }
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+                
+        } catch (e: Exception) {
+            showMessage("Error al mostrar diálogo de horario flexible: ${e.message}")
+        }
+    }
+    
+    private fun actualizarHorarioFlexible(empleado: EmpleadoFlexible, dialogView: View) {
+        try {
+            val horarios = mutableMapOf<String, Pair<String, String>>()
+            val diasActivos = mutableListOf<String>()
+            
+            val dias = listOf(
+                "L" to "Lunes", "M" to "Martes", "X" to "Miércoles", 
+                "J" to "Jueves", "V" to "Viernes", "S" to "Sábado", "D" to "Domingo"
+            )
+            
+            dias.forEach { (codigo, _) ->
+                val (switchId, entradaId, salidaId) = when (codigo) {
+                    "L" -> Triple(R.id.switch_lunes, R.id.et_entrada_lunes, R.id.et_salida_lunes)
+                    "M" -> Triple(R.id.switch_martes, R.id.et_entrada_martes, R.id.et_salida_martes)
+                    "X" -> Triple(R.id.switch_miercoles, R.id.et_entrada_miercoles, R.id.et_salida_miercoles)
+                    "J" -> Triple(R.id.switch_jueves, R.id.et_entrada_jueves, R.id.et_salida_jueves)
+                    "V" -> Triple(R.id.switch_viernes, R.id.et_entrada_viernes, R.id.et_salida_viernes)
+                    "S" -> Triple(R.id.switch_sabado, R.id.et_entrada_sabado, R.id.et_salida_sabado)
+                    "D" -> Triple(R.id.switch_domingo, R.id.et_entrada_domingo, R.id.et_salida_domingo)
+                    else -> return@forEach
+                }
+                
+                val switchActivo = dialogView.findViewById<Switch>(switchId)
+                val etEntrada = dialogView.findViewById<EditText>(entradaId)
+                val etSalida = dialogView.findViewById<EditText>(salidaId)
+                
+                if (switchActivo?.isChecked == true) {
+                    val entrada = etEntrada?.text.toString().trim() ?: ""
+                    val salida = etSalida?.text.toString().trim() ?: ""
+                    
+                    if (entrada.isNotEmpty() && salida.isNotEmpty()) {
+                        horarios[codigo] = Pair(entrada, salida)
+                        diasActivos.add(codigo)
+                    }
+                }
+            }
+            
+            if (diasActivos.isEmpty()) {
+                showMessage("❌ Debe configurar al menos un día de trabajo")
+                return
+            }
+            
+            // Actualizar empleado flexible
+            val empleadoActualizado = empleado.copy(
+                horariosSemanales = horarios,
+                diasActivos = diasActivos
+            )
+            
+            // Guardar cambios
+            val empleadosFlexiblesJson = sharedPreferences.getString("empleados_flexibles", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoFlexible>>() {}.type
+            val empleadosFlexibles: MutableList<EmpleadoFlexible> = gson.fromJson(empleadosFlexiblesJson, type) ?: mutableListOf()
+            
+            val index = empleadosFlexibles.indexOfFirst { it.dni == empleado.dni }
+            if (index != -1) {
+                empleadosFlexibles[index] = empleadoActualizado
+                
+                val nuevaLista = gson.toJson(empleadosFlexibles)
+                sharedPreferences.edit().putString("empleados_flexibles", nuevaLista).apply()
+                
+                // También actualizar en lista simple
+                actualizarEmpleadoSimpleDesdeFlexible(empleadoActualizado)
+                
+                showMessage("✅ Horario flexible actualizado")
+                loadEmpleados()
+            }
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al actualizar horario flexible: ${e.message}")
+        }
+    }
+}

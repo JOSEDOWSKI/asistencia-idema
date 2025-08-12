@@ -28,13 +28,14 @@
     <color name="text_on_surface">#1C1B1F</color>
     <color name="text_on_background">#1C1B1F</color>
     
-    <!-- Spinner Colors - Nuevos para mejor legibilidad -->
-    <color name="spinner_text">#1C1B1F</color>
-    <color name="spinner_text_selected">#1a8a7a</color>
+    <!-- Spinner Colors - ALTO CONTRASTE para mejor legibilidad -->
+    <color name="spinner_text">#000000</color>
+    <color name="spinner_text_selected">#FFFFFF</color>
     <color name="spinner_background">#FFFFFF</color>
     <color name="spinner_dropdown_background">#FFFFFF</color>
-    <color name="spinner_item_background">#F5F5F5</color>
-    <color name="spinner_item_selected">#E8F5F4</color>
+    <color name="spinner_item_background">#F8F9FA</color>
+    <color name="spinner_item_selected">#1a8a7a</color>
+    <color name="spinner_border">#1a8a7a</color>
     
     <!-- Status Colors - Updated with Promesa theme -->
     <color name="success_color">#1a8a7a</color>

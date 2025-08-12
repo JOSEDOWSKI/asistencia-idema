@@ -9,7 +9,7 @@ data class Dispositivo(
     val deviceId: String,
     val operadorPinHash: String? = null,
     val skewMs: Long = 0, // Diferencia con el servidor en milisegundos
-    val modoOperacion: ModoOperacion = ModoOperacion.PUESTO_FIJO,
+    val modoOperacion: ModoOperacion = ModoOperacion.AUTOSERVICIO,
     val modoLectura: ModoLectura = ModoLectura.QR,
     val capturaUbicacion: Boolean = false,
     val modoOffline: Boolean = true,
@@ -19,6 +19,6 @@ data class Dispositivo(
 )
 
 enum class ModoOperacion {
-    PUESTO_FIJO,
-    AUTOSERVICIO
+    AUTOSERVICIO,
+    KIOSCO
 }

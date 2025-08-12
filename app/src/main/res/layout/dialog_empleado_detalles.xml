@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="20dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Información Personal -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/elegant_card_background"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="👤 Información Personal"
+                style="@style/SoftTitle"
+                android:textSize="18sp"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:id="@+id/tv_nombre_completo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Nombre Completo"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/promesa_dark"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/tv_dni_empleado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="DNI: 12345678"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/tv_estado_empleado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="✅ Activo"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+        </LinearLayout>
+
+        <!-- Horario Actual -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/elegant_card_background"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="⏰ Horario Actual"
+                style="@style/SoftTitle"
+                android:textSize="18sp"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:id="@+id/tv_tipo_horario"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📅 Horario Fijo"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/promesa_green"
+                android:layout_marginBottom="8dp" />
+
+            <LinearLayout
+                android:id="@+id/layout_horario_simple"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="visible">
+
+                <TextView
+                    android:id="@+id/tv_horario_simple"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🕐 08:00 - 17:00"
+                    android:textSize="16sp"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginBottom="8dp" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layout_horario_flexible"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tv_horarios_detallados"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Horarios por día..."
+                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tv_horas_semanales"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="⏱️ Total semanal: 40h 0m"
+                    android:textSize="14sp"
+                    android:textColor="@color/promesa_green"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Cambios Pendientes -->
+        <LinearLayout
+            android:id="@+id/layout_cambios_pendientes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/elegant_card_background"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="⏳ Cambios Pendientes"
+                style="@style/SoftTitle"
+                android:textSize="18sp"
+                android:textColor="@color/warning_color"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:id="@+id/tv_cambios_pendientes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Los cambios se aplicarán mañana..."
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/tv_fecha_aplicacion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📅 Se aplicarán el: DD/MM/YYYY"
+                android:textSize="12sp"
+                android:textColor="@color/warning_color"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <!-- Botones de Acción -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="16dp">
+
+            <Button
+                android:id="@+id/btn_editar_empleado"
+                style="@style/SoftPrimaryButton"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:text="✏️ Editar"
+                android:layout_marginEnd="8dp" />
+
+            <Button
+                android:id="@+id/btn_cambiar_estado"
+                style="@style/SoftButton"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:text="🔄 Estado"
+                android:layout_marginStart="8dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

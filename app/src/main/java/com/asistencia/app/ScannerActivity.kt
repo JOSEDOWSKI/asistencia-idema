@@ -39,6 +39,7 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
     
     private var currentLocation: Location? = null
     private var isProcessing = false
+    private var esModoKiosco = false
     
     companion object {
         private const val CAMERA_PERMISSION_REQUEST = 100
@@ -47,11 +48,78 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_scanner)
+        
+        // VERIFICAR MODO ANTES DE CONFIGURAR EL LAYOUT
+        val modoOperacion = verificarModoOperacion()
+        esModoKiosco = (modoOperacion == ModoOperacion.KIOSCO)
+        
+        // USAR LAYOUT ESPECÍFICO SEGÚN EL MODO
+        if (esModoKiosco) {
+            setContentView(R.layout.activity_scanner_kiosco) // Layout con cámara frontal
+            Toast.makeText(this, "📱 Iniciando modo KIOSCO con cámara frontal", Toast.LENGTH_LONG).show()
+        } else {
+            setContentView(R.layout.activity_scanner) // Layout con cámara trasera
+            Toast.makeText(this, "🔓 Iniciando modo AUTOSERVICIO con cámara trasera", Toast.LENGTH_SHORT).show()
+        }
         
         initializeComponents()
         setupUI()
         checkPermissions()
+    }
+    
+    private fun verificarModoOperacion(): ModoOperacion {
+        return try {
+            // Cargar desde SharedPreferences directamente (más rápido y confiable)
+            val sharedPreferences = getSharedPreferences("ConfiguracionApp", MODE_PRIVATE)
+            val modoOperacionIndex = sharedPreferences.getInt("modo_operacion", 0)
+            
+            when (modoOperacionIndex) {
+                0 -> ModoOperacion.AUTOSERVICIO
+                1 -> ModoOperacion.KIOSCO
+                else -> ModoOperacion.AUTOSERVICIO
+            }
+        } catch (e: Exception) {
+            // Fallback a autoservicio
+            ModoOperacion.AUTOSERVICIO
+        }
+    }
+    
+    private fun configurarCamaraFrontalInicial() {
+        try {
+            // MÉTODO DEFINITIVO: Cambiar el atributo XML dinámicamente
+            
+            // 1. Obtener el layout padre
+            val parentLayout = findViewById<android.widget.RelativeLayout>(android.R.id.content)
+            
+            // 2. Remover el BarcodeView actual
+            val currentBarcodeView = findViewById<com.journeyapps.barcodescanner.DecoratedBarcodeView>(R.id.barcode_scanner)
+            val parent = currentBarcodeView.parent as android.view.ViewGroup
+            val layoutParams = currentBarcodeView.layoutParams
+            parent.removeView(currentBarcodeView)
+            
+            // 3. Crear nuevo BarcodeView con cámara frontal
+            val nuevoBarcodeView = com.journeyapps.barcodescanner.DecoratedBarcodeView(this, null)
+            nuevoBarcodeView.id = R.id.barcode_scanner
+            nuevoBarcodeView.layoutParams = layoutParams
+            
+            // 4. CONFIGURAR CÁMARA FRONTAL ANTES DE AGREGAR AL LAYOUT
+            val cameraSettings = nuevoBarcodeView.barcodeView.cameraSettings
+            cameraSettings.requestedCameraId = 1 // 1 = cámara frontal
+            
+            // 5. Agregar el nuevo BarcodeView
+            parent.addView(nuevoBarcodeView, 0) // Agregar como primer hijo
+            
+            // 6. Actualizar la referencia
+            barcodeView = nuevoBarcodeView
+            
+            Toast.makeText(this, "📱 Cámara frontal configurada exitosamente", Toast.LENGTH_SHORT).show()
+            
+        } catch (e: Exception) {
+            Toast.makeText(this, "⚠️ Error configurando cámara frontal: ${e.message}", Toast.LENGTH_LONG).show()
+            
+            // Fallback: usar cámara trasera
+            esModoKiosco = false
+        }
     }
     
     private fun initializeComponents() {
@@ -66,7 +134,28 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
         btnLinterna = findViewById(R.id.btn_linterna)
         progressBar = findViewById(R.id.progress_bar)
         
+        // CONFIGURAR CÁMARA FRONTAL INMEDIATAMENTE SI ES MODO KIOSCO
+        if (esModoKiosco) {
+            configurarCamaraFrontal()
+        }
+        
         scannerService.setCallback(this)
+    }
+    
+    private fun configurarCamaraFrontal() {
+        try {
+            // Configurar cámara frontal INMEDIATAMENTE después de inicializar el BarcodeView
+            val cameraSettings = barcodeView.barcodeView.cameraSettings
+            cameraSettings.requestedCameraId = 1 // 1 = cámara frontal, 0 = cámara trasera
+            
+            Toast.makeText(this, "📱 Cámara frontal configurada para modo kiosco", Toast.LENGTH_SHORT).show()
+            
+        } catch (e: Exception) {
+            Toast.makeText(this, "⚠️ Error configurando cámara frontal: ${e.message}", Toast.LENGTH_LONG).show()
+            
+            // Si falla, cambiar a modo autoservicio
+            esModoKiosco = false
+        }
     }
     
     private fun setupUI() {
@@ -95,9 +184,13 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
         
         // Solo pedir ubicación si está habilitada en configuración
         lifecycleScope.launch {
-            val dispositivo = repository.getDispositivo()
-            if (dispositivo.capturaUbicacion && locationPermission != PackageManager.PERMISSION_GRANTED) {
-                permissionsNeeded.add(Manifest.permission.ACCESS_FINE_LOCATION)
+            try {
+                val dispositivo = repository.getDispositivo()
+                if (dispositivo.capturaUbicacion && locationPermission != PackageManager.PERMISSION_GRANTED) {
+                    permissionsNeeded.add(Manifest.permission.ACCESS_FINE_LOCATION)
+                }
+            } catch (e: Exception) {
+                // Ignorar error de BD
             }
             
             if (permissionsNeeded.isNotEmpty()) {
@@ -139,21 +232,194 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
     private fun startScanning() {
         lifecycleScope.launch {
             try {
-                val dispositivo = repository.getDispositivo()
-                scannerService.configurarScanner(barcodeView, dispositivo.modoLectura)
+                // Intentar cargar configuración desde base de datos
+                var modoLectura = ModoLectura.QR
+                var modoOperacion = ModoOperacion.AUTOSERVICIO
+                var capturaUbicacion = false
+                
+                try {
+                    val dispositivo = repository.getDispositivo()
+                    modoLectura = dispositivo.modoLectura
+                    modoOperacion = dispositivo.modoOperacion
+                    capturaUbicacion = dispositivo.capturaUbicacion
+                } catch (dbError: Exception) {
+                    // Si falla la BD, cargar desde SharedPreferences
+                    val sharedPreferences = getSharedPreferences("ConfiguracionApp", MODE_PRIVATE)
+                    val modoLecturaIndex = sharedPreferences.getInt("modo_lectura", 0)
+                    val modoOperacionIndex = sharedPreferences.getInt("modo_operacion", 0)
+                    
+                    modoLectura = when (modoLecturaIndex) {
+                        0 -> ModoLectura.QR
+                        1 -> ModoLectura.DNI_PDF417
+                        2 -> ModoLectura.CODE128
+                        else -> ModoLectura.QR
+                    }
+                    
+                    modoOperacion = when (modoOperacionIndex) {
+                        0 -> ModoOperacion.AUTOSERVICIO
+                        1 -> ModoOperacion.KIOSCO
+                        else -> ModoOperacion.AUTOSERVICIO
+                    }
+                    
+                    capturaUbicacion = sharedPreferences.getBoolean("captura_ubicacion", false)
+                }
+                
+                // Configurar scanner según el modo de operación
+                esModoKiosco = (modoOperacion == ModoOperacion.KIOSCO)
+                
+                // IMPORTANTE: Pausar primero para reconfigurar
+                barcodeView.pause()
+                
+                if (esModoKiosco) {
+                    configurarModoKiosco(modoLectura)
+                } else {
+                    configurarModoAutoservicio(modoLectura)
+                }
                 
                 // Obtener ubicación si está habilitada
-                if (dispositivo.capturaUbicacion) {
+                if (capturaUbicacion) {
                     getCurrentLocation()
                 }
                 
-                barcodeView.resume()
+                // Esperar un momento antes de reanudar para que la configuración se aplique
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    barcodeView.resume()
+                }, 500)
                 
             } catch (e: Exception) {
                 showErrorDialog("Error", "Error al inicializar el scanner: ${e.message}") {
                     finish()
                 }
             }
+        }
+    }
+    
+    private fun configurarModoKiosco(modoLectura: ModoLectura) {
+        try {
+            // MÉTODO ALTERNATIVO: Recrear el BarcodeView con configuración de cámara frontal
+            recrearBarcodeViewConCamaraFrontal(modoLectura)
+            
+            // Mostrar información del modo Kiosco
+            updateProximoEventoDisplay("📱 MODO KIOSCO - Cámara Frontal Activa")
+            tvEmpleadoInfo.text = "Acerque su código QR a la cámara frontal"
+            
+            // Ocultar botón de linterna (no disponible en cámara frontal)
+            btnLinterna.visibility = View.GONE
+            
+            // Configurar UI para modo kiosco
+            configurarUIKiosco()
+            
+        } catch (e: Exception) {
+            // Si falla la configuración de cámara frontal, mostrar error
+            showErrorDialog(
+                "Error de Cámara Frontal", 
+                "No se pudo configurar la cámara frontal. Usando cámara trasera.\n\nError: ${e.message}"
+            ) {
+                // Fallback a modo autoservicio con cámara trasera
+                configurarModoAutoservicio(modoLectura)
+            }
+        }
+    }
+    
+    private fun recrearBarcodeViewConCamaraFrontal(modoLectura: ModoLectura) {
+        try {
+            // SOLUCIÓN DEFINITIVA: Recrear completamente el DecoratedBarcodeView
+            
+            // 1. Pausar y remover el BarcodeView actual
+            barcodeView.pause()
+            
+            // 2. Obtener el contenedor padre
+            val parentLayout = barcodeView.parent as android.view.ViewGroup
+            val layoutParams = barcodeView.layoutParams
+            
+            // 3. Remover el BarcodeView actual
+            parentLayout.removeView(barcodeView)
+            
+            // 4. Crear un nuevo DecoratedBarcodeView con configuración de cámara frontal
+            val nuevoBarcodeView = com.journeyapps.barcodescanner.DecoratedBarcodeView(this)
+            nuevoBarcodeView.layoutParams = layoutParams
+            nuevoBarcodeView.id = R.id.barcode_scanner
+            
+            // 5. CONFIGURAR CÁMARA FRONTAL ANTES DE CUALQUIER OTRA CONFIGURACIÓN
+            val cameraSettings = nuevoBarcodeView.barcodeView.cameraSettings
+            cameraSettings.requestedCameraId = 1 // 1 = cámara frontal
+            
+            // 6. Configurar formatos de código
+            val formats = when (modoLectura) {
+                ModoLectura.QR -> listOf(com.google.zxing.BarcodeFormat.QR_CODE)
+                ModoLectura.DNI_PDF417 -> listOf(com.google.zxing.BarcodeFormat.PDF_417)
+                ModoLectura.CODE128 -> listOf(com.google.zxing.BarcodeFormat.CODE_128)
+            }
+            
+            // 7. Configurar decoder
+            nuevoBarcodeView.barcodeView.decoderFactory = com.journeyapps.barcodescanner.DefaultDecoderFactory(formats)
+            
+            // 8. Configurar callback personalizado para kiosco
+            nuevoBarcodeView.decodeContinuous(object : com.journeyapps.barcodescanner.BarcodeCallback {
+                override fun barcodeResult(result: com.journeyapps.barcodescanner.BarcodeResult) {
+                    procesarResultadoKiosco(result.text, modoLectura)
+                }
+                
+                override fun possibleResultPoints(resultPoints: List<com.google.zxing.ResultPoint>) {
+                    // No implementado
+                }
+            })
+            
+            // 9. Agregar el nuevo BarcodeView al layout
+            parentLayout.addView(nuevoBarcodeView)
+            
+            // 10. Actualizar la referencia
+            barcodeView = nuevoBarcodeView
+            
+            // Mostrar mensaje de confirmación
+            Toast.makeText(this, "📱 Cámara frontal configurada para modo kiosco", Toast.LENGTH_LONG).show()
+            
+        } catch (e: Exception) {
+            throw Exception("Error recreando BarcodeView con cámara frontal: ${e.message}")
+        }
+    }
+    
+    private fun configurarModoAutoservicio(modoLectura: ModoLectura) {
+        // Configurar scanner normal con cámara trasera
+        scannerService.configurarScanner(barcodeView, modoLectura)
+        
+        // Mostrar modo de lectura actual
+        updateProximoEventoDisplay("🔓 AUTOSERVICIO - ${getModoLecturaTexto(modoLectura)}")
+        tvEmpleadoInfo.text = "Apunte la cámara hacia el código"
+        
+        // Botón de linterna permanece oculto
+        btnLinterna.visibility = View.GONE
+    }
+    
+    private fun configurarUIKiosco() {
+        // Configurar UI específica para modo kiosco
+        // Pantalla siempre encendida
+        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        
+        // Ocultar barra de navegación y estado para pantalla completa
+        window.decorView.systemUiVisibility = (
+            View.SYSTEM_UI_FLAG_FULLSCREEN or
+            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+        )
+        
+        // Configurar texto más grande para visibilidad desde lejos
+        tvProximoEvento.textSize = 24f
+        tvEmpleadoInfo.textSize = 20f
+        
+        // Cambiar colores para mejor visibilidad
+        tvProximoEvento.setTextColor(android.graphics.Color.WHITE)
+        tvEmpleadoInfo.setTextColor(android.graphics.Color.YELLOW)
+        
+        // Fondo oscuro para mejor contraste
+        findViewById<View>(android.R.id.content).setBackgroundColor(android.graphics.Color.BLACK)
+    }
+    
+    private fun getModoLecturaTexto(modo: ModoLectura): String {
+        return when (modo) {
+            ModoLectura.QR -> "QR Code"
+            ModoLectura.DNI_PDF417 -> "DNI (PDF417)"
+            ModoLectura.CODE128 -> "Código de Barras"
         }
     }
     
@@ -169,15 +435,14 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
     
     private fun toggleFlashlight() {
         try {
-            // Simplificado por ahora - la funcionalidad de linterna se implementará después
             Toast.makeText(this, "Función de linterna en desarrollo", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Toast.makeText(this, "Error al controlar la linterna", Toast.LENGTH_SHORT).show()
         }
     }
     
-    private fun updateProximoEventoDisplay() {
-        tvProximoEvento.text = "Apunte la cámara al código para escanear"
+    private fun updateProximoEventoDisplay(mensaje: String = "Apunte la cámara al código para escanear") {
+        tvProximoEvento.text = mensaje
         tvEmpleadoInfo.text = "Esperando escaneo..."
     }
     
@@ -191,170 +456,46 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
         
         lifecycleScope.launch {
             try {
-                // NUEVO: Primero buscar en SharedPreferences (sistema simple)
-                val empleadoSimple = buscarEmpleadoEnSharedPreferences(empleadoId)
+                val empleado = buscarEmpleado(empleadoId)
                 
-                if (empleadoSimple != null) {
-                    // Encontrado en sistema simple - mostrar éxito
-                    showSuccessDialogSimple(empleadoSimple, empleadoId)
-                    return@launch
-                }
-                
-                // Si no está en sistema simple, buscar en sistema complejo
-                val debugInfo = repository.verificarEmpleadoExiste(empleadoId)
-                val proximoEvento = repository.determinarProximoEvento(empleadoId)
-                
-                if (proximoEvento == null) {
-                    val empleado = repository.getEmpleadoByDni(empleadoId) ?: repository.getEmpleadoById(empleadoId)
-                    if (empleado == null) {
-                        showErrorDialog(
-                            "Empleado no encontrado",
-                            "No se encontró empleado con DNI: $empleadoId\n\n$debugInfo\n\nVerifique que esté registrado en 'Gestión de Empleados'"
-                        ) { resetScanner() }
-                        return@launch
+                if (empleado != null) {
+                    if (esModoKiosco) {
+                        procesarAsistenciaKiosco(empleado, empleadoId)
+                    } else {
+                        showSuccessDialogSimple(empleado, empleadoId)
+                    }
+                } else {
+                    if (esModoKiosco) {
+                        mostrarErrorKiosco("Empleado no encontrado", "ID: $empleadoId")
                     } else {
                         showErrorDialog(
-                            "Jornada completa",
-                            "El empleado ya completó todos los registros del día."
+                            "Empleado no encontrado",
+                            "No se encontró empleado con ID: $empleadoId\n\nCódigo escaneado: $rawCode"
                         ) { resetScanner() }
-                        return@launch
-                    }
-                }
-                
-                // Registrar la asistencia en sistema complejo
-                val resultado = repository.registrarAsistencia(
-                    empleadoIdentificador = empleadoId,
-                    tipoEvento = proximoEvento,
-                    modoLectura = modoDetectado,
-                    rawCode = rawCode,
-                    gpsLat = currentLocation?.latitude,
-                    gpsLon = currentLocation?.longitude
-                )
-                
-                when (resultado) {
-                    is ResultadoRegistro.Exito -> {
-                        showSuccessDialog(resultado)
-                    }
-                    is ResultadoRegistro.Error -> {
-                        val mensaje = if (resultado.mensaje.contains("Empleado no encontrado")) {
-                            "${resultado.mensaje}\n\n$debugInfo"
-                        } else {
-                            resultado.mensaje
-                        }
-                        
-                        showErrorDialog("Error de registro", mensaje) {
-                            resetScanner()
-                        }
                     }
                 }
                 
             } catch (e: Exception) {
-                showErrorDialog("Error interno", "Error al procesar el registro: ${e.message}") {
-                    resetScanner()
+                if (esModoKiosco) {
+                    mostrarErrorKiosco("Error", e.message ?: "Error desconocido")
+                } else {
+                    showErrorDialog("Error", "Error al procesar: ${e.message}") { resetScanner() }
                 }
             } finally {
                 progressBar.visibility = View.GONE
-                isProcessing = false
             }
         }
     }
     
     override fun onScanError(error: String) {
-        showErrorDialog("Error de escaneo", error) {
-            resetScanner()
+        if (esModoKiosco) {
+            mostrarErrorKiosco("Error de escaneo", error)
+        } else {
+            showErrorDialog("Error de escaneo", error) { resetScanner() }
         }
     }
     
-    private fun showSuccessDialog(resultado: ResultadoRegistro.Exito) {
-        val empleado = resultado.empleado
-        val registro = resultado.registro
-        
-        // Generar mensaje según el tipo de evento
-        val (emoji, tipoTexto) = when (registro.tipoEvento) {
-            TipoEvento.ENTRADA_TURNO -> "🌅" to "Entrada de Turno"
-            TipoEvento.SALIDA_REFRIGERIO -> "🍽️" to "Salida a Refrigerio"
-            TipoEvento.ENTRADA_POST_REFRIGERIO -> "🔄" to "Regreso de Refrigerio"
-            TipoEvento.SALIDA_TURNO -> "🏠" to "Salida de Turno"
-        }
-        
-        val horaRegistro = HorarioUtils.formatTimestamp(registro.timestampDispositivo)
-        val fechaRegistro = HorarioUtils.formatDateTimestamp(registro.timestampDispositivo)
-        
-        val mensaje = buildString {
-            append("$emoji $tipoTexto registrado\n\n")
-            append("👤 ${empleado.nombres} ${empleado.apellidos}\n")
-            append("🆔 DNI: ${empleado.dni}\n")
-            append("📅 $fechaRegistro\n")
-            append("🕐 $horaRegistro\n\n")
-            append("📝 ${resultado.mensaje}")
-            
-            if (resultado.proximoEvento != null) {
-                val proximoTexto = when (resultado.proximoEvento) {
-                    TipoEvento.ENTRADA_TURNO -> "Entrada de Turno"
-                    TipoEvento.SALIDA_REFRIGERIO -> "Salida a Refrigerio"
-                    TipoEvento.ENTRADA_POST_REFRIGERIO -> "Regreso de Refrigerio"
-                    TipoEvento.SALIDA_TURNO -> "Salida de Turno"
-                }
-                append("\n\n➡️ Próximo evento: $proximoTexto")
-            }
-        }
-        
-        AlertDialog.Builder(this)
-            .setTitle("✅ Registro Exitoso")
-            .setMessage(mensaje)
-            .setPositiveButton("Continuar") { _, _ ->
-                resetScanner()
-            }
-            .setNegativeButton("Salir") { _, _ ->
-                finish()
-            }
-            .setCancelable(false)
-            .show()
-    }
-    
-    private fun showErrorDialog(title: String, message: String, onDismiss: () -> Unit = {}) {
-        AlertDialog.Builder(this)
-            .setTitle("❌ $title")
-            .setMessage(message)
-            .setPositiveButton("Reintentar") { _, _ ->
-                onDismiss()
-            }
-            .setNegativeButton("Salir") { _, _ ->
-                finish()
-            }
-            .setCancelable(false)
-            .show()
-    }
-    
-    private fun resetScanner() {
-        isProcessing = false
-        updateProximoEventoDisplay()
-        barcodeView.resume()
-    }
-    
-    override fun onResume() {
-        super.onResume()
-        if (::barcodeView.isInitialized && !isProcessing) {
-            barcodeView.resume()
-        }
-    }
-    
-    override fun onPause() {
-        super.onPause()
-        if (::barcodeView.isInitialized) {
-            barcodeView.pause()
-        }
-    }
-    
-    override fun onDestroy() {
-        super.onDestroy()
-        if (::scannerService.isInitialized) {
-            scannerService.removeCallback()
-        }
-    }
-    
-    // NUEVAS FUNCIONES para buscar en SharedPreferences
-    private fun buscarEmpleadoEnSharedPreferences(dni: String): EmpleadoSimple? {
+    private fun buscarEmpleado(dni: String): EmpleadoSimple? {
         return try {
             val sharedPreferences = getSharedPreferences("EmpleadosApp", Context.MODE_PRIVATE)
             
@@ -383,6 +524,276 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
             val empleadosFlexibles: List<EmpleadoFlexible> = Gson().fromJson(empleadosFlexiblesJson, type) ?: emptyList()
             
             empleadosFlexibles.find { it.dni == dni && it.activo }
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
+    private fun procesarAsistenciaKiosco(empleado: EmpleadoSimple, dni: String) {
+        val horaActual = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date())
+        val fechaActual = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date())
+        
+        // Verificar si es empleado flexible
+        val empleadoFlexible = buscarEmpleadoFlexible(dni)
+        val esFlexible = empleadoFlexible != null
+        
+        // Obtener horario específico para hoy (si es flexible)
+        val (horaEntrada, horaSalida) = if (esFlexible && empleadoFlexible != null) {
+            if (empleadoFlexible.trabajaHoy()) {
+                val horarioHoy = empleadoFlexible.getHorarioHoy()
+                horarioHoy ?: Pair(empleado.horaEntrada, empleado.horaSalida)
+            } else {
+                mostrarErrorKiosco("No trabaja hoy", "${empleado.nombres} ${empleado.apellidos}")
+                return
+            }
+        } else {
+            Pair(empleado.horaEntrada, empleado.horaSalida)
+        }
+        
+        // Determinar si es entrada o salida
+        val ultimoRegistro = obtenerUltimoRegistroEmpleado(dni, fechaActual)
+        val esEntrada = determinarSiEsEntrada(ultimoRegistro, horaActual, empleado)
+        val tipoEvento = if (esEntrada) "📥 ENTRADA" else "📤 SALIDA"
+        
+        // Verificar si está dentro del horario
+        val dentroHorario = if (esEntrada) {
+            horaActual <= horaEntrada || 
+            calcularDiferenciaMinutos(horaActual, horaEntrada) <= 15
+        } else {
+            horaActual >= horaSalida
+        }
+        
+        val estadoHorario = if (dentroHorario) {
+            "✅ PUNTUAL"
+        } else {
+            if (esEntrada) {
+                val minutosRetraso = calcularDiferenciaMinutos(horaEntrada, horaActual)
+                if (minutosRetraso <= 15) {
+                    "⚠️ RETRASO RECUPERABLE ($minutosRetraso min)"
+                } else {
+                    "❌ TARDANZA ($minutosRetraso min)"
+                }
+            } else {
+                "⏰ SALIDA TEMPRANA"
+            }
+        }
+        
+        // Guardar el registro
+        guardarRegistroFlexible(empleado, tipoEvento, horaActual, fechaActual, estadoHorario, esFlexible)
+        
+        // Mostrar confirmación rápida en modo kiosco
+        mostrarConfirmacionKiosco(empleado, tipoEvento, estadoHorario, horaActual)
+    }
+    
+    private fun mostrarConfirmacionKiosco(empleado: EmpleadoSimple, tipoEvento: String, estado: String, hora: String) {
+        // Actualizar UI con información del registro
+        tvProximoEvento.text = "✅ REGISTRO EXITOSO"
+        tvEmpleadoInfo.text = "${empleado.nombres} ${empleado.apellidos} - $tipoEvento - $hora"
+        
+        // Cambiar colores temporalmente para feedback visual
+        tvProximoEvento.setTextColor(android.graphics.Color.GREEN)
+        tvEmpleadoInfo.setTextColor(android.graphics.Color.WHITE)
+        
+        // Mostrar toast rápido
+        Toast.makeText(this, "✅ ${empleado.nombres} - $tipoEvento\n$estado", Toast.LENGTH_SHORT).show()
+        
+        // Reiniciar automáticamente después de 2 segundos
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            resetScannerKiosco()
+        }, 2000)
+    }
+    
+    private fun mostrarErrorKiosco(titulo: String, mensaje: String) {
+        // Mostrar error brevemente en modo kiosco
+        tvProximoEvento.text = "❌ $titulo"
+        tvEmpleadoInfo.text = mensaje
+        
+        // Cambiar colores para indicar error
+        tvProximoEvento.setTextColor(android.graphics.Color.RED)
+        tvEmpleadoInfo.setTextColor(android.graphics.Color.YELLOW)
+        
+        // Mostrar toast
+        Toast.makeText(this, "❌ $titulo: $mensaje", Toast.LENGTH_SHORT).show()
+        
+        // Reiniciar automáticamente después de 3 segundos
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            resetScannerKiosco()
+        }, 3000)
+    }
+    
+    private fun resetScannerKiosco() {
+        // Restaurar UI del modo kiosco
+        tvProximoEvento.text = "📱 MODO KIOSCO - Cámara Frontal Activa"
+        tvProximoEvento.setTextColor(android.graphics.Color.WHITE)
+        
+        tvEmpleadoInfo.text = "Acerque su código QR a la cámara frontal"
+        tvEmpleadoInfo.setTextColor(android.graphics.Color.YELLOW)
+        
+        // Reiniciar el procesamiento
+        isProcessing = false
+        
+        // La cámara sigue activa automáticamente en modo kiosco
+        barcodeView.resume()
+    }
+    
+    private fun procesarResultadoKiosco(rawCode: String, modoDetectado: ModoLectura) {
+        if (isProcessing) return
+        
+        isProcessing = true
+        progressBar.visibility = View.VISIBLE
+        
+        lifecycleScope.launch {
+            try {
+                // Extraer ID del empleado del código escaneado
+                val empleadoId = extraerIdDelCodigo(rawCode, modoDetectado)
+                
+                if (empleadoId.isNotEmpty()) {
+                    val empleado = buscarEmpleado(empleadoId)
+                    
+                    if (empleado != null) {
+                        procesarAsistenciaKiosco(empleado, empleadoId)
+                    } else {
+                        mostrarErrorKiosco("Empleado no encontrado", "ID: $empleadoId")
+                    }
+                } else {
+                    mostrarErrorKiosco("Código no válido", "No se pudo leer el código QR")
+                }
+                
+            } catch (e: Exception) {
+                mostrarErrorKiosco("Error", e.message ?: "Error desconocido")
+            } finally {
+                progressBar.visibility = View.GONE
+            }
+        }
+    }
+    
+    private fun extraerIdDelCodigo(rawCode: String, modo: ModoLectura): String {
+        return try {
+            when (modo) {
+                ModoLectura.QR -> {
+                    // Intentar extraer ID de empleado del QR
+                    when {
+                        // vCard format
+                        rawCode.startsWith("BEGIN:VCARD") -> extraerIdDeVCard(rawCode)
+                        // JSON format
+                        rawCode.startsWith("{") -> extraerIdDeJson(rawCode)
+                        // Texto plano - asumir que es el ID directamente
+                        else -> {
+                            val codigo = rawCode.trim()
+                            
+                            // Si es un DNI de 8 dígitos, usarlo directamente
+                            if (codigo.length == 8 && codigo.all { it.isDigit() }) {
+                                codigo
+                            } else if (codigo.isNotEmpty()) {
+                                // Si no es DNI pero tiene contenido, intentar extraer números
+                                val numerosEncontrados = codigo.filter { it.isDigit() }
+                                if (numerosEncontrados.length == 8) {
+                                    numerosEncontrados
+                                } else {
+                                    codigo // Usar tal como está
+                                }
+                            } else {
+                                ""
+                            }
+                        }
+                    }
+                }
+                ModoLectura.DNI_PDF417 -> {
+                    // Extraer DNI de código PDF417
+                    extraerDniDePDF417(rawCode) ?: ""
+                }
+                ModoLectura.CODE128 -> {
+                    // Procesar Code128
+                    val codigo = rawCode.trim()
+                    when {
+                        codigo.length == 8 && codigo.all { it.isDigit() } -> codigo
+                        codigo.all { it.isDigit() } -> {
+                            if (codigo.length > 8) {
+                                codigo.takeLast(8)
+                            } else {
+                                codigo.padStart(8, '0')
+                            }
+                        }
+                        else -> {
+                            val numerosEncontrados = codigo.filter { it.isDigit() }
+                            when {
+                                numerosEncontrados.length == 8 -> numerosEncontrados
+                                numerosEncontrados.length > 8 -> numerosEncontrados.takeLast(8)
+                                numerosEncontrados.length > 0 -> numerosEncontrados.padStart(8, '0')
+                                else -> codigo
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            ""
+        }
+    }
+    
+    private fun extraerIdDeVCard(vcard: String): String {
+        val lines = vcard.split("\n")
+        
+        for (line in lines) {
+            when {
+                line.startsWith("FN:") -> {
+                    return line.substring(3).trim()
+                }
+                line.startsWith("ORG:") -> {
+                    val org = line.substring(4).trim()
+                    if (org.contains("ID:")) {
+                        return org.substringAfter("ID:").trim()
+                    }
+                }
+                line.startsWith("NOTE:") -> {
+                    val note = line.substring(5).trim()
+                    if (note.contains("ID:")) {
+                        return note.substringAfter("ID:").trim()
+                    }
+                }
+            }
+        }
+        
+        return ""
+    }
+    
+    private fun extraerIdDeJson(json: String): String {
+        return try {
+            // Buscar campo "id", "empleadoId", "dni" en JSON
+            val idPattern = java.util.regex.Pattern.compile("\"(?:id|empleadoId|dni)\"\\s*:\\s*\"([^\"]+)\"")
+            val matcher = idPattern.matcher(json)
+            
+            if (matcher.find()) {
+                matcher.group(1) ?: ""
+            } else {
+                ""
+            }
+        } catch (e: Exception) {
+            ""
+        }
+    }
+    
+    private fun extraerDniDePDF417(rawCode: String): String? {
+        return try {
+            // Buscar patrón de 8 dígitos consecutivos
+            val dniPattern = java.util.regex.Pattern.compile("\\b(\\d{8})\\b")
+            val matcher = dniPattern.matcher(rawCode)
+            
+            if (matcher.find()) {
+                matcher.group(1)
+            } else {
+                // Intentar extraer de formato específico del DNI peruano
+                val parts = rawCode.split("[@|]")
+                
+                for (part in parts) {
+                    val cleanPart = part.trim()
+                    if (cleanPart.length == 8 && cleanPart.all { it.isDigit() }) {
+                        return cleanPart
+                    }
+                }
+                
+                null
+            }
         } catch (e: Exception) {
             null
         }
@@ -523,55 +934,80 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
             }
             
             val ultimoTipoEvento = ultimoRegistro["tipoEvento"] ?: ""
+            val ultimaHora = ultimoRegistro["hora"] ?: ""
             
-            // Lógica simple pero correcta:
-            // - Si el último fue ENTRADA -> ahora es SALIDA
-            // - Si el último fue SALIDA -> ahora es ENTRADA
+            // NUEVA LÓGICA MEJORADA para permitir múltiples entradas/salidas
             when {
-                ultimoTipoEvento.contains("ENTRADA") -> false // Próximo es SALIDA
-                ultimoTipoEvento.contains("SALIDA") -> true   // Próximo es ENTRADA
+                ultimoTipoEvento.contains("ENTRADA") -> {
+                    // Si el último fue ENTRADA, verificar si ha pasado suficiente tiempo para una nueva entrada
+                    val minutosDesdeUltimoRegistro = if (ultimaHora.isNotEmpty()) {
+                        calcularDiferenciaMinutos(ultimaHora, horaActual)
+                    } else {
+                        0
+                    }
+                    
+                    // Si han pasado más de 30 minutos desde la última entrada, permitir nueva entrada
+                    // Esto permite horarios partidos (ej: salió a almorzar y regresa)
+                    if (minutosDesdeUltimoRegistro > 30) {
+                        // Verificar si está en horario de entrada (mañana o tarde)
+                        esHorarioDeEntrada(horaActual, empleado)
+                    } else {
+                        false // Próximo es SALIDA (muy poco tiempo desde última entrada)
+                    }
+                }
+                
+                ultimoTipoEvento.contains("SALIDA") -> {
+                    // Si el último fue SALIDA, verificar si puede ser una nueva entrada
+                    val minutosDesdeUltimoRegistro = if (ultimaHora.isNotEmpty()) {
+                        calcularDiferenciaMinutos(ultimaHora, horaActual)
+                    } else {
+                        0
+                    }
+                    
+                    // Si han pasado más de 15 minutos desde la salida, permitir nueva entrada
+                    if (minutosDesdeUltimoRegistro > 15) {
+                        true // Permitir nueva ENTRADA
+                    } else {
+                        // Si es muy poco tiempo, verificar por horario
+                        esHorarioDeEntrada(horaActual, empleado)
+                    }
+                }
+                
                 else -> {
                     // Si no hay registro claro, usar lógica de horario
-                    // Si está más cerca de la hora de entrada que de salida, es entrada
-                    val minutosDesdeEntrada = calcularDiferenciaMinutos(horaActual, empleado.horaEntrada)
-                    val minutosHastaSalida = calcularDiferenciaMinutos(horaActual, empleado.horaSalida)
-                    
-                    minutosDesdeEntrada < minutosHastaSalida
+                    esHorarioDeEntrada(horaActual, empleado)
                 }
             }
         } catch (e: Exception) {
             // En caso de error, usar lógica de horario como fallback
-            val minutosDesdeEntrada = calcularDiferenciaMinutos(horaActual, empleado.horaEntrada)
-            val minutosHastaSalida = calcularDiferenciaMinutos(horaActual, empleado.horaSalida)
-            
-            minutosDesdeEntrada < minutosHastaSalida
+            esHorarioDeEntrada(horaActual, empleado)
         }
     }
     
-    private fun guardarRegistroSimple(empleado: EmpleadoSimple, tipoEvento: String, hora: String, fecha: String, estado: String) {
-        try {
-            val sharedPreferences = getSharedPreferences("RegistrosApp", Context.MODE_PRIVATE)
-            val registrosJson = sharedPreferences.getString("registros_list", "[]")
-            val type = object : TypeToken<MutableList<Map<String, String>>>() {}.type
-            val registros: MutableList<Map<String, String>> = Gson().fromJson(registrosJson, type) ?: mutableListOf()
+    private fun esHorarioDeEntrada(horaActual: String, empleado: EmpleadoSimple): Boolean {
+        return try {
+            // Lógica mejorada para determinar si es horario de entrada
+            val formato = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+            val actual = formato.parse(horaActual)
+            val horaEntrada = formato.parse(empleado.horaEntrada)
+            val horaSalida = formato.parse(empleado.horaSalida)
             
-            val nuevoRegistro = mapOf(
-                "dni" to empleado.dni,
-                "nombre" to "${empleado.nombres} ${empleado.apellidos}",
-                "tipoEvento" to tipoEvento,
-                "hora" to hora,
-                "fecha" to fecha,
-                "estado" to estado,
-                "timestamp" to System.currentTimeMillis().toString()
-            )
-            
-            registros.add(nuevoRegistro)
-            
-            val nuevaLista = Gson().toJson(registros)
-            sharedPreferences.edit().putString("registros_list", nuevaLista).apply()
-            
+            if (actual != null && horaEntrada != null && horaSalida != null) {
+                // Calcular punto medio del horario laboral
+                val puntoMedio = java.util.Date((horaEntrada.time + horaSalida.time) / 2)
+                
+                // Si está antes del punto medio, probablemente es entrada
+                // Si está después del punto medio, probablemente es salida
+                actual.before(puntoMedio)
+            } else {
+                // Fallback: si está más cerca de la hora de entrada que de salida
+                val minutosDesdeEntrada = calcularDiferenciaMinutos(horaActual, empleado.horaEntrada)
+                val minutosHastaSalida = calcularDiferenciaMinutos(horaActual, empleado.horaSalida)
+                
+                minutosDesdeEntrada < minutosHastaSalida
+            }
         } catch (e: Exception) {
-            // Si falla el guardado, no importa mucho para el demo
+            true // En caso de error, asumir entrada
         }
     }
     
@@ -601,6 +1037,47 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
             
         } catch (e: Exception) {
             // Si falla el guardado, no importa mucho para el demo
+        }
+    }
+    
+    private fun showErrorDialog(title: String, message: String, onDismiss: () -> Unit = {}) {
+        AlertDialog.Builder(this)
+            .setTitle("❌ $title")
+            .setMessage(message)
+            .setPositiveButton("Reintentar") { _, _ ->
+                onDismiss()
+            }
+            .setNegativeButton("Salir") { _, _ ->
+                finish()
+            }
+            .setCancelable(false)
+            .show()
+    }
+    
+    private fun resetScanner() {
+        isProcessing = false
+        updateProximoEventoDisplay()
+        barcodeView.resume()
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        if (::barcodeView.isInitialized && !isProcessing) {
+            barcodeView.resume()
+        }
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        if (::barcodeView.isInitialized) {
+            barcodeView.pause()
+        }
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        if (::scannerService.isInitialized) {
+            scannerService.removeCallback()
         }
     }
     

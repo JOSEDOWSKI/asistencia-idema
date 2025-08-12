@@ -28,9 +28,9 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, ScannerActivity::class.java))
         }
         
-        // Nueva gestión de empleados
+        // Nueva gestión de empleados mejorada
         findViewById<Button>(R.id.btnGestionEmpleados).setOnClickListener {
-            startActivity(Intent(this, EmpleadosActivity::class.java))
+            startActivity(Intent(this, EmpleadosActivityMejorado::class.java))
         }
         
         // Reportes (mantener la actividad existente por ahora)
