@@ -72,14 +72,26 @@ class EmpleadosAdapter(
                 cardEmpleado.alpha = 0.6f
             }
             
-            // Configurar click en card
-            cardEmpleado.setOnClickListener {
-                onEmpleadoAction(empleado, Accion.VER_DETALLE)
-            }
+            // Click en card deshabilitado - usar el botón de opciones (engranaje)
+            cardEmpleado.setOnClickListener(null)
+            cardEmpleado.isClickable = false
             
-            // Configurar menú de opciones
-            btnOpciones.setOnClickListener {
-                mostrarMenuOpciones(it, empleado)
+            // Configurar menú de opciones - ENGRANAJE MUY VISIBLE
+            btnOpciones.apply {
+                // Hacer el engranaje MUY visible y llamativo
+                setBackgroundColor(itemView.context.getColor(R.color.promesa_green))
+                setColorFilter(itemView.context.getColor(android.R.color.white))
+                alpha = 1.0f  // Completamente opaco
+                scaleX = 1.3f  // 30% más grande
+                scaleY = 1.3f  // 30% más grande
+                elevation = 4f  // Sombra para destacar
+                
+                // Agregar padding para hacer el área de toque más grande
+                setPadding(8, 8, 8, 8)
+                
+                setOnClickListener {
+                    mostrarMenuOpciones(it, empleado)
+                }
             }
         }
         

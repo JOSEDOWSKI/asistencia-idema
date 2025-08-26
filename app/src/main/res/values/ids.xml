@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- IDs para el adapter de empleados -->
+    <item name="tv_nombre_empleado" type="id" />
+    <item name="tv_dni_empleado" type="id" />
+    <item name="tv_horario_empleado" type="id" />
+    <item name="tv_estado_empleado" type="id" />
+    <item name="tv_tipo_empleado" type="id" />
+    <item name="layout_botones" type="id" />
+    <item name="btn_editar" type="id" />
+    <item name="btn_eliminar" type="id" />
+</resources>

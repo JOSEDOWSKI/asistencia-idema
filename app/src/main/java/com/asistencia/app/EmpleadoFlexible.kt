@@ -211,15 +211,13 @@ data class EmpleadoFlexible(
     fun getInformacionDetallada(): String {
         val (horas, minutos) = calcularHorasSemanales()
         val diasTrabajo = diasActivos.size
-        val estadoActual = getEstadoActual()
         
         return buildString {
             append("👤 $nombres $apellidos\n")
             append("🆔 DNI: $dni\n")
             append("📅 Días de trabajo: $diasTrabajo días/semana\n")
             append("⏱️ Horas semanales: ${horas}h ${minutos}m\n")
-            append("📋 Horarios: ${getDescripcionHorarios()}\n")
-            append("📍 Estado actual: $estadoActual")
+            append("📋 Horarios: ${getDescripcionHorarios()}")
         }
     }
 }

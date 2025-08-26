@@ -1,0 +1,2762 @@
+package com.asistencia.app
+
+import android.content.Context
+import android.content.SharedPreferences
+import android.os.Bundle
+import android.text.TextWatcher
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.*
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+
+class EmpleadosActivityMejorado : AppCompatActivity() {
+    
+    private lateinit var sharedPreferences: SharedPreferences
+    private val gson = Gson()
+    private lateinit var recyclerEmpleados: RecyclerView
+    private lateinit var empleadosAdapter: EmpleadosAdapter
+    private lateinit var tvEmpleadosCount: TextView
+    private lateinit var layoutEmptyState: LinearLayout
+    private lateinit var etBuscarEmpleado: EditText
+    
+    // Lista combinada para compatibilidad
+    private var todosLosEmpleados = mutableListOf<com.asistencia.app.database.Empleado>()
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        try {
+            // Usar SharedPreferences como respaldo
+            sharedPreferences = getSharedPreferences("EmpleadosApp", Context.MODE_PRIVATE)
+            
+            createLayout()
+            loadEmpleados()
+            
+        } catch (e: Exception) {
+            // Si todo falla, mostrar mensaje básico
+            showBasicError(e.message ?: "Error desconocido")
+        }
+    }
+    
+    private fun showBasicError(error: String) {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(50, 50, 50, 50)
+        }
+        
+        val errorText = TextView(this).apply {
+            text = "❌ Error en Gestión de Empleados:\n\n$error\n\nUsando modo básico..."
+            textSize = 16f
+            setTextColor(android.graphics.Color.RED)
+        }
+        
+        val btnBasico = Button(this).apply {
+            text = "Modo Básico - Agregar Empleado"
+            setOnClickListener { 
+                mostrarDialogoBasico()
+            }
+        }
+        
+        layout.addView(errorText)
+        layout.addView(btnBasico)
+        setContentView(layout)
+    }
+    
+    private fun createLayout() {
+        setContentView(R.layout.activity_empleados)
+        
+        // Inicializar vistas del layout XML
+        recyclerEmpleados = findViewById(R.id.recycler_empleados)
+        tvEmpleadosCount = findViewById(R.id.tv_empleados_count)
+        layoutEmptyState = findViewById(R.id.layout_empty_state)
+        etBuscarEmpleado = findViewById(R.id.et_buscar_empleado)
+        
+        // Configurar RecyclerView con el adapter existente
+        empleadosAdapter = EmpleadosAdapter { empleado, accion ->
+            when (accion) {
+                EmpleadosAdapter.Accion.VER_DETALLE -> {
+                    // Mostrar detalles del empleado
+                    mostrarDetallesEmpleadoModerno(empleado)
+                }
+                EmpleadosAdapter.Accion.EDITAR -> {
+                    // Editar empleado
+                    editarEmpleadoModerno(empleado)
+                }
+                EmpleadosAdapter.Accion.GENERAR_QR -> {
+                    // Generar QR
+                    showMessage("🚧 Función de QR en desarrollo")
+                }
+                EmpleadosAdapter.Accion.ACTIVAR_DESACTIVAR -> {
+                    // Activar/Desactivar
+                    showMessage("🚧 Función de activar/desactivar en desarrollo")
+                }
+                EmpleadosAdapter.Accion.ELIMINAR -> {
+                    // Eliminar empleado
+                    showMessage("🚧 Función de eliminar en desarrollo")
+                }
+            }
+        }
+        
+        recyclerEmpleados.apply {
+            layoutManager = LinearLayoutManager(this@EmpleadosActivityMejorado)
+            adapter = empleadosAdapter
+        }
+        
+        // Configurar botones
+        findViewById<Button>(R.id.btn_agregar_empleado).setOnClickListener {
+            mostrarDialogoAgregar()
+        }
+        
+        findViewById<Button>(R.id.btn_importar_empleados).setOnClickListener {
+            mostrarOpcionesExportacion() // Función de exportación simple
+        }
+        
+        // Configurar búsqueda
+        etBuscarEmpleado.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                filtrarEmpleados(s.toString())
+            }
+        })
+    }
+    
+    private fun loadEmpleados() {
+        try {
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<List<EmpleadoSimple>>() {}.type
+            val empleados: List<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: emptyList()
+            
+            updateEmpleadosList(empleados)
+            
+        } catch (e: Exception) {
+            showMessage("Error al cargar: ${e.message}")
+            updateEmpleadosList(emptyList())
+        }
+    }
+    
+    private fun updateEmpleadosList(empleados: List<EmpleadoSimple>) {
+        try {
+            // Cargar también empleados flexibles
+            val empleadosFlexibles = cargarEmpleadosFlexibles()
+            val totalEmpleados = empleados.size + empleadosFlexibles.size
+            
+            // Convertir a formato del adapter moderno
+            val empleadosModernos = mutableListOf<com.asistencia.app.database.Empleado>()
+            
+            // Convertir empleados simples
+            empleados.forEach { empleado ->
+                val empleadoModerno = com.asistencia.app.database.Empleado(
+                    dni = empleado.dni,
+                    nombres = empleado.nombres,
+                    apellidos = empleado.apellidos,
+                    activo = empleado.activo,
+                    tipoHorario = com.asistencia.app.database.TipoHorario.REGULAR,
+                    horaEntradaRegular = empleado.horaEntrada,
+                    horaSalidaRegular = empleado.horaSalida
+                )
+                empleadosModernos.add(empleadoModerno)
+            }
+            
+            // Convertir empleados flexibles
+            empleadosFlexibles.forEach { empleadoFlexible ->
+                val empleadoModerno = com.asistencia.app.database.Empleado(
+                    dni = empleadoFlexible.dni,
+                    nombres = empleadoFlexible.nombres,
+                    apellidos = empleadoFlexible.apellidos,
+                    activo = empleadoFlexible.activo,
+                    tipoHorario = com.asistencia.app.database.TipoHorario.FLEXIBLE,
+                    horarioFlexibleJson = gson.toJson(empleadoFlexible.horariosSemanales)
+                )
+                empleadosModernos.add(empleadoModerno)
+            }
+            
+            // Actualizar adapter
+            empleadosAdapter.submitList(empleadosModernos)
+            
+            // Actualizar contador
+            tvEmpleadosCount.text = "Total: $totalEmpleados empleados (${empleados.size} fijos, ${empleadosFlexibles.size} flexibles)"
+            
+            // Mostrar/ocultar estado vacío
+            if (totalEmpleados == 0) {
+                recyclerEmpleados.visibility = View.GONE
+                layoutEmptyState.visibility = View.VISIBLE
+            } else {
+                recyclerEmpleados.visibility = View.VISIBLE
+                layoutEmptyState.visibility = View.GONE
+            }
+            
+        } catch (e: Exception) {
+            showMessage("Error al mostrar lista: ${e.message}")
+        }
+    }
+    
+    private fun filtrarEmpleados(query: String) {
+        try {
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<List<EmpleadoSimple>>() {}.type
+            val todosEmpleados: List<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: emptyList()
+            
+            val empleadosFlexibles = cargarEmpleadosFlexibles()
+            
+            val empleadosFiltrados = if (query.isEmpty()) {
+                todosEmpleados
+            } else {
+                todosEmpleados.filter { empleado ->
+                    empleado.nombres.contains(query, ignoreCase = true) ||
+                    empleado.apellidos.contains(query, ignoreCase = true) ||
+                    empleado.dni.contains(query, ignoreCase = true)
+                }
+            }
+            
+            val empleadosFlexiblesFiltrados = if (query.isEmpty()) {
+                empleadosFlexibles
+            } else {
+                empleadosFlexibles.filter { empleado ->
+                    empleado.nombres.contains(query, ignoreCase = true) ||
+                    empleado.apellidos.contains(query, ignoreCase = true) ||
+                    empleado.dni.contains(query, ignoreCase = true)
+                }
+            }
+            
+            // Convertir a formato del adapter moderno
+            val empleadosModernos = mutableListOf<com.asistencia.app.database.Empleado>()
+            
+            // Convertir empleados simples filtrados
+            empleadosFiltrados.forEach { empleado ->
+                val empleadoModerno = com.asistencia.app.database.Empleado(
+                    dni = empleado.dni,
+                    nombres = empleado.nombres,
+                    apellidos = empleado.apellidos,
+                    activo = empleado.activo,
+                    tipoHorario = com.asistencia.app.database.TipoHorario.REGULAR,
+                    horaEntradaRegular = empleado.horaEntrada,
+                    horaSalidaRegular = empleado.horaSalida
+                )
+                empleadosModernos.add(empleadoModerno)
+            }
+            
+            // Convertir empleados flexibles filtrados
+            empleadosFlexiblesFiltrados.forEach { empleadoFlexible ->
+                val empleadoModerno = com.asistencia.app.database.Empleado(
+                    dni = empleadoFlexible.dni,
+                    nombres = empleadoFlexible.nombres,
+                    apellidos = empleadoFlexible.apellidos,
+                    activo = empleadoFlexible.activo,
+                    tipoHorario = com.asistencia.app.database.TipoHorario.FLEXIBLE,
+                    horarioFlexibleJson = gson.toJson(empleadoFlexible.horariosSemanales)
+                )
+                empleadosModernos.add(empleadoModerno)
+            }
+            
+            // Actualizar adapter
+            empleadosAdapter.submitList(empleadosModernos)
+            
+            val totalFiltrados = empleadosFiltrados.size + empleadosFlexiblesFiltrados.size
+            tvEmpleadosCount.text = if (query.isEmpty()) {
+                "Total: $totalFiltrados empleados (${empleadosFiltrados.size} fijos, ${empleadosFlexiblesFiltrados.size} flexibles)"
+            } else {
+                "Encontrados: $totalFiltrados empleados para '$query'"
+            }
+            
+        } catch (e: Exception) {
+            showMessage("Error al filtrar: ${e.message}")
+        }
+    }
+    
+    private fun cargarEmpleadosFlexibles(): List<EmpleadoFlexible> {
+        return try {
+            val empleadosFlexiblesJson = sharedPreferences.getString("empleados_flexibles", "[]")
+            val type = object : TypeToken<List<EmpleadoFlexible>>() {}.type
+            gson.fromJson(empleadosFlexiblesJson, type) ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+    
+    private fun createEmpleadoView(empleado: EmpleadoSimple, esFlexible: Boolean = false): LinearLayout {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16, 16, 16, 16)
+            setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, 8)
+            }
+            // Hacer clickeable con efecto visual
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                mostrarDetallesCompletoEmpleado(empleado)
+            }
+            // Agregar efecto de presión
+            setOnTouchListener { view, event ->
+                when (event.action) {
+                    android.view.MotionEvent.ACTION_DOWN -> {
+                        view.setBackgroundColor(android.graphics.Color.parseColor("#E0E0E0"))
+                    }
+                    android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                        view.setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+                    }
+                }
+                false
+            }
+        }
+        
+        // Nombre
+        val nombre = TextView(this).apply {
+            text = "${empleado.nombres} ${empleado.apellidos}"
+            textSize = 16f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        layout.addView(nombre)
+        
+        // DNI
+        val dni = TextView(this).apply {
+            text = "DNI: ${empleado.dni}"
+            textSize = 14f
+            setTextColor(android.graphics.Color.GRAY)
+        }
+        layout.addView(dni)
+        
+        // Horario
+        val horario = TextView(this).apply {
+            text = "⏰ ${empleado.horaEntrada} - ${empleado.horaSalida}"
+            textSize = 14f
+            setTextColor(android.graphics.Color.GRAY)
+        }
+        layout.addView(horario)
+        
+        // Estado
+        val estado = TextView(this).apply {
+            text = if (empleado.activo) "✅ Activo" else "❌ Inactivo"
+            textSize = 14f
+            setTextColor(if (empleado.activo) android.graphics.Color.GREEN else android.graphics.Color.RED)
+        }
+        layout.addView(estado)
+        
+        // Botones de acción
+        val botonesLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, 8, 0, 0)
+        }
+        
+        val btnEditar = Button(this).apply {
+            text = "✏️ Editar"
+            textSize = 12f
+            setPadding(12, 8, 12, 8)
+            setBackgroundColor(android.graphics.Color.parseColor("#4CAF50"))
+            setTextColor(android.graphics.Color.WHITE)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                setMargins(0, 0, 4, 0)
+            }
+            setOnClickListener {
+                editarEmpleado(empleado)
+            }
+        }
+        botonesLayout.addView(btnEditar)
+        
+        val btnEliminar = Button(this).apply {
+            text = "🗑️ Eliminar"
+            textSize = 12f
+            setPadding(12, 8, 12, 8)
+            setBackgroundColor(android.graphics.Color.parseColor("#F44336"))
+            setTextColor(android.graphics.Color.WHITE)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                setMargins(4, 0, 0, 0)
+            }
+            setOnClickListener {
+                eliminarEmpleado(empleado)
+            }
+        }
+        botonesLayout.addView(btnEliminar)
+        
+        layout.addView(botonesLayout)
+        
+        return layout
+    }
+    
+    private fun createEmpleadoFlexibleView(empleadoFlexible: EmpleadoFlexible): LinearLayout {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16, 16, 16, 16)
+            setBackgroundColor(android.graphics.Color.parseColor("#E8F5E9")) // Verde claro para diferenciarlo
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, 8)
+            }
+            // Hacer clickeable con efecto visual
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                mostrarDetallesEmpleadoFlexible(empleadoFlexible)
+            }
+            // Agregar efecto de presión
+            setOnTouchListener { view, event ->
+                when (event.action) {
+                    android.view.MotionEvent.ACTION_DOWN -> {
+                        view.setBackgroundColor(android.graphics.Color.parseColor("#C8E6C9"))
+                    }
+                    android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                        view.setBackgroundColor(android.graphics.Color.parseColor("#E8F5E9"))
+                    }
+                }
+                false
+            }
+        }
+        
+        // Nombre con indicador de horario flexible
+        val nombre = TextView(this).apply {
+            text = "⏰ ${empleadoFlexible.nombres} ${empleadoFlexible.apellidos}"
+            textSize = 16f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        layout.addView(nombre)
+        
+        // DNI
+        val dni = TextView(this).apply {
+            text = "DNI: ${empleadoFlexible.dni}"
+            textSize = 14f
+            setTextColor(android.graphics.Color.GRAY)
+        }
+        layout.addView(dni)
+        
+        // Tipo de horario
+        val tipoHorario = TextView(this).apply {
+            text = "📅 Horario Flexible"
+            textSize = 14f
+            setTextColor(android.graphics.Color.parseColor("#2E7D32"))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        layout.addView(tipoHorario)
+        
+        // Descripción de horarios
+        val descripcionHorarios = TextView(this).apply {
+            text = empleadoFlexible.getDescripcionHorarios()
+            textSize = 12f
+            setTextColor(android.graphics.Color.GRAY)
+        }
+        layout.addView(descripcionHorarios)
+        
+        // Estado activo/inactivo
+        val estado = TextView(this).apply {
+            text = if (empleadoFlexible.activo) "✅ Activo" else "❌ Inactivo"
+            textSize = 14f
+            setTextColor(if (empleadoFlexible.activo) android.graphics.Color.parseColor("#2E7D32") else android.graphics.Color.RED)
+        }
+        layout.addView(estado)
+        
+        // Botones de acción para empleado flexible
+        val botonesLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, 8, 0, 0)
+        }
+        
+        val btnDetalles = Button(this).apply {
+            text = "📋 Detalles"
+            textSize = 12f
+            setPadding(12, 8, 12, 8)
+            setBackgroundColor(android.graphics.Color.parseColor("#4CAF50"))
+            setTextColor(android.graphics.Color.WHITE)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                setMargins(0, 0, 2, 0)
+            }
+            setOnClickListener {
+                mostrarDetallesEmpleadoFlexible(empleadoFlexible)
+            }
+        }
+        botonesLayout.addView(btnDetalles)
+        
+        val btnEditar = Button(this).apply {
+            text = "✏️ Editar"
+            textSize = 12f
+            setPadding(12, 8, 12, 8)
+            setBackgroundColor(android.graphics.Color.parseColor("#FF9800"))
+            setTextColor(android.graphics.Color.WHITE)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                setMargins(2, 0, 2, 0)
+            }
+            setOnClickListener {
+                // TODO: Implementar edición de horarios flexibles
+                showMessage("🚧 Función de edición en desarrollo")
+            }
+        }
+        botonesLayout.addView(btnEditar)
+        
+        val btnEliminar = Button(this).apply {
+            text = "🗑️ Eliminar"
+            textSize = 12f
+            setPadding(12, 8, 12, 8)
+            setBackgroundColor(android.graphics.Color.parseColor("#F44336"))
+            setTextColor(android.graphics.Color.WHITE)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                setMargins(2, 0, 0, 0)
+            }
+            setOnClickListener {
+                eliminarEmpleadoFlexible(empleadoFlexible)
+            }
+        }
+        botonesLayout.addView(btnEliminar)
+        
+        layout.addView(botonesLayout)
+        
+        return layout
+    }
+    
+    // FUNCIONES DE GESTIÓN INDIVIDUAL DE EMPLEADOS
+    
+    private fun mostrarDetallesCompletoEmpleado(empleado: EmpleadoSimple) {
+        try {
+            // Verificar si es empleado flexible
+            val empleadoFlexible = buscarEmpleadoFlexiblePorDni(empleado.dni)
+            
+            val mensaje = if (empleadoFlexible != null) {
+                // Es empleado flexible - mostrar información completa
+                buildString {
+                    append("👤 EMPLEADO CON HORARIO FLEXIBLE\n\n")
+                    append("📝 Nombre: ${empleadoFlexible.nombres} ${empleadoFlexible.apellidos}\n")
+                    append("🆔 DNI: ${empleadoFlexible.dni}\n")
+                    append("📊 Estado: ${if (empleadoFlexible.activo) "✅ Activo" else "❌ Inactivo"}\n\n")
+                    
+                    append("📅 HORARIOS POR DÍA:\n")
+                    val diasCodigos = listOf("L", "M", "X", "J", "V", "S", "D")
+                    val diasNombres = listOf("🌅 Lunes", "💼 Martes", "⚡ Miércoles", "🔥 Jueves", "🎯 Viernes", "🏖️ Sábado", "🏠 Domingo")
+                    
+                    diasCodigos.forEachIndexed { index, codigo ->
+                        val horario = empleadoFlexible.getHorarioDia(codigo)
+                        val nombreDia = diasNombres[index]
+                        if (horario != null) {
+                            append("$nombreDia: ${horario.first} - ${horario.second}\n")
+                        } else {
+                            append("$nombreDia: No trabaja\n")
+                        }
+                    }
+                    append("\n")
+                    
+                    val (horasSemanales, minutosSemanales) = empleadoFlexible.calcularHorasSemanales()
+                    append("⏱️ Total semanal: ${horasSemanales}h ${minutosSemanales}min")
+                }
+            } else {
+                // Es empleado fijo - mostrar información básica
+                buildString {
+                    append("👤 EMPLEADO CON HORARIO FIJO\n\n")
+                    append("📝 Nombre: ${empleado.nombres} ${empleado.apellidos}\n")
+                    append("🆔 DNI: ${empleado.dni}\n")
+                    append("📊 Estado: ${if (empleado.activo) "✅ Activo" else "❌ Inactivo"}\n\n")
+                    
+                    append("📅 HORARIO FIJO:\n")
+                    append("🕐 Entrada: ${empleado.horaEntrada}\n")
+                    append("🕕 Salida: ${empleado.horaSalida}\n\n")
+                    
+                    append("📋 Días laborables: Lunes a Viernes\n")
+                    append("⏱️ Horas diarias: ${calcularHorasDiarias(empleado.horaEntrada, empleado.horaSalida)}\n")
+                    append("⏱️ Total semanal: ${calcularHorasSemanales(empleado.horaEntrada, empleado.horaSalida)} horas")
+                }
+            }
+            
+            AlertDialog.Builder(this)
+                .setTitle("📋 Información Completa del Empleado")
+                .setMessage(mensaje)
+                .setPositiveButton("Cerrar", null)
+                .setNeutralButton("✏️ Editar") { _, _ ->
+                    if (empleadoFlexible != null) {
+                        showMessage("🚧 Edición de horarios flexibles en desarrollo")
+                    } else {
+                        editarEmpleado(empleado)
+                    }
+                }
+                .setNegativeButton("🗑️ Eliminar") { _, _ ->
+                    if (empleadoFlexible != null) {
+                        eliminarEmpleadoFlexible(empleadoFlexible)
+                    } else {
+                        eliminarEmpleado(empleado)
+                    }
+                }
+                .show()
+                
+        } catch (e: Exception) {
+            showMessage("Error al mostrar detalles: ${e.message}")
+        }
+    }
+    
+    private fun buscarEmpleadoFlexiblePorDni(dni: String): EmpleadoFlexible? {
+        return try {
+            val empleadosFlexiblesJson = sharedPreferences.getString("empleados_flexibles", "[]")
+            val type = object : TypeToken<List<EmpleadoFlexible>>() {}.type
+            val empleadosFlexibles: List<EmpleadoFlexible> = gson.fromJson(empleadosFlexiblesJson, type) ?: emptyList()
+            empleadosFlexibles.find { it.dni == dni }
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
+    private fun calcularHorasDiarias(entrada: String, salida: String): String {
+        return try {
+            val formato = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+            val horaEntrada = formato.parse(entrada)
+            val horaSalida = formato.parse(salida)
+            
+            if (horaEntrada != null && horaSalida != null) {
+                val diferencia = horaSalida.time - horaEntrada.time
+                val horas = diferencia / (1000 * 60 * 60)
+                val minutos = (diferencia % (1000 * 60 * 60)) / (1000 * 60)
+                "${horas}h ${minutos}min"
+            } else {
+                "No calculable"
+            }
+        } catch (e: Exception) {
+            "Error en cálculo"
+        }
+    }
+    
+    private fun calcularHorasSemanales(entrada: String, salida: String): String {
+        return try {
+            val formato = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+            val horaEntrada = formato.parse(entrada)
+            val horaSalida = formato.parse(salida)
+            
+            if (horaEntrada != null && horaSalida != null) {
+                val diferenciaDiaria = horaSalida.time - horaEntrada.time
+                val horasDiarias = diferenciaDiaria / (1000 * 60 * 60)
+                val horasSemanales = horasDiarias * 5 // Lunes a Viernes
+                "$horasSemanales"
+            } else {
+                "No calculable"
+            }
+        } catch (e: Exception) {
+            "Error"
+        }
+    }
+    
+
+    
+    private fun mostrarDetallesEmpleado(empleado: EmpleadoSimple) {
+        try {
+            val mensaje = buildString {
+                append("👤 INFORMACIÓN DEL EMPLEADO\n\n")
+                append("📝 Nombre: ${empleado.nombres} ${empleado.apellidos}\n")
+                append("🆔 DNI: ${empleado.dni}\n")
+                append("⏰ Horario: ${empleado.horaEntrada} - ${empleado.horaSalida}\n")
+                append("📊 Estado: ${if (empleado.activo) "✅ Activo" else "❌ Inactivo"}\n\n")
+                
+                if (empleado.horaEntrada == "FLEXIBLE") {
+                    append("📅 Tipo: Horario Flexible\n")
+                    append("ℹ️ Ver detalles completos en la sección de empleados flexibles")
+                } else {
+                    append("📋 Tipo: Horario Fijo\n")
+                    append("🕐 Entrada: ${empleado.horaEntrada}\n")
+                    append("🕕 Salida: ${empleado.horaSalida}")
+                }
+            }
+            
+            AlertDialog.Builder(this)
+                .setTitle("📋 Detalles del Empleado")
+                .setMessage(mensaje)
+                .setPositiveButton("Cerrar", null)
+                .setNeutralButton("✏️ Editar") { _, _ ->
+                    editarEmpleado(empleado)
+                }
+                .setNegativeButton("🗑️ Eliminar") { _, _ ->
+                    eliminarEmpleado(empleado)
+                }
+                .show()
+                
+        } catch (e: Exception) {
+            showMessage("Error al mostrar detalles: ${e.message}")
+        }
+    }
+    
+    private fun mostrarDetallesEmpleadoFlexible(empleado: EmpleadoFlexible) {
+        try {
+            val mensaje = empleado.getInformacionDetallada()
+            
+            AlertDialog.Builder(this)
+                .setTitle("📋 Detalles del Empleado Flexible")
+                .setMessage(mensaje)
+                .setPositiveButton("Cerrar", null)
+                .setNeutralButton("⏰ Editar Horarios") { _, _ ->
+                    // TODO: Implementar edición de horarios flexibles
+                    showMessage("🚧 Función de edición en desarrollo")
+                }
+                .setNegativeButton("🗑️ Eliminar") { _, _ ->
+                    eliminarEmpleadoFlexible(empleado)
+                }
+                .show()
+                
+        } catch (e: Exception) {
+            showMessage("Error al mostrar detalles: ${e.message}")
+        }
+    }
+    
+    private fun mostrarDetallesEmpleadoModerno(empleado: com.asistencia.app.database.Empleado) {
+        try {
+            // Crear un layout personalizado para el modal
+            val dialogLayout = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(32, 24, 32, 24)
+                setBackgroundColor(android.graphics.Color.WHITE)
+            }
+            
+            // Header con nombre del empleado
+            val headerLayout = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, 0, 0, 16)
+                gravity = android.view.Gravity.CENTER_VERTICAL
+            }
+            
+            val avatarIcon = TextView(this).apply {
+                text = "👤"
+                textSize = 32f
+                setPadding(0, 0, 16, 0)
+            }
+            headerLayout.addView(avatarIcon)
+            
+            val headerInfo = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            
+            val nombreCompleto = TextView(this).apply {
+                text = "${empleado.nombres} ${empleado.apellidos}"
+                textSize = 20f
+                setTextColor(android.graphics.Color.BLACK)
+                setTypeface(null, android.graphics.Typeface.BOLD)
+            }
+            headerInfo.addView(nombreCompleto)
+            
+            val dniText = TextView(this).apply {
+                text = "DNI: ${empleado.dni}"
+                textSize = 14f
+                setTextColor(android.graphics.Color.GRAY)
+            }
+            headerInfo.addView(dniText)
+            
+            val estadoText = TextView(this).apply {
+                text = if (empleado.activo) "✅ Activo" else "❌ Inactivo"
+                textSize = 14f
+                setTextColor(if (empleado.activo) android.graphics.Color.parseColor("#4CAF50") else android.graphics.Color.parseColor("#F44336"))
+                setTypeface(null, android.graphics.Typeface.BOLD)
+            }
+            headerInfo.addView(estadoText)
+            
+            headerLayout.addView(headerInfo)
+            dialogLayout.addView(headerLayout)
+            
+            // Separador
+            val separador = View(this).apply {
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 2)
+                setBackgroundColor(android.graphics.Color.parseColor("#E0E0E0"))
+            }
+            dialogLayout.addView(separador)
+            
+            // Información de horarios
+            val horariosLayout = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(0, 16, 0, 0)
+            }
+            
+            when (empleado.tipoHorario) {
+                com.asistencia.app.database.TipoHorario.REGULAR -> {
+                    val tipoHorarioText = TextView(this).apply {
+                        text = "📅 HORARIO FIJO"
+                        textSize = 16f
+                        setTextColor(android.graphics.Color.parseColor("#1976D2"))
+                        setTypeface(null, android.graphics.Typeface.BOLD)
+                        setPadding(0, 0, 0, 12)
+                    }
+                    horariosLayout.addView(tipoHorarioText)
+                    
+                    if (empleado.horaEntradaRegular != null && empleado.horaSalidaRegular != null) {
+                        val horarioInfo = LinearLayout(this).apply {
+                            orientation = LinearLayout.HORIZONTAL
+                            setPadding(0, 0, 0, 8)
+                        }
+                        
+                        val entradaText = TextView(this).apply {
+                            text = "🕐 ${empleado.horaEntradaRegular}"
+                            textSize = 16f
+                            setTextColor(android.graphics.Color.BLACK)
+                            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                        }
+                        horarioInfo.addView(entradaText)
+                        
+                        val separadorHorario = TextView(this).apply {
+                            text = " - "
+                            textSize = 16f
+                            setTextColor(android.graphics.Color.GRAY)
+                        }
+                        horarioInfo.addView(separadorHorario)
+                        
+                        val salidaText = TextView(this).apply {
+                            text = "🕕 ${empleado.horaSalidaRegular}"
+                            textSize = 16f
+                            setTextColor(android.graphics.Color.BLACK)
+                            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                        }
+                        horarioInfo.addView(salidaText)
+                        
+                        horariosLayout.addView(horarioInfo)
+                        
+                        val diasText = TextView(this).apply {
+                            text = "📋 Lunes a Viernes"
+                            textSize = 14f
+                            setTextColor(android.graphics.Color.GRAY)
+                            setPadding(0, 8, 0, 0)
+                        }
+                        horariosLayout.addView(diasText)
+                        
+                        val horasText = TextView(this).apply {
+                            text = "⏱️ ${calcularHorasDiarias(empleado.horaEntradaRegular, empleado.horaSalidaRegular)} por día"
+                            textSize = 14f
+                            setTextColor(android.graphics.Color.GRAY)
+                        }
+                        horariosLayout.addView(horasText)
+                    } else {
+                        val noConfiguradoText = TextView(this).apply {
+                            text = "⚠️ Horario no configurado"
+                            textSize = 14f
+                            setTextColor(android.graphics.Color.parseColor("#FF9800"))
+                        }
+                        horariosLayout.addView(noConfiguradoText)
+                    }
+                }
+                com.asistencia.app.database.TipoHorario.FLEXIBLE -> {
+                    val tipoHorarioText = TextView(this).apply {
+                        text = "📅 HORARIO FLEXIBLE"
+                        textSize = 16f
+                        setTextColor(android.graphics.Color.parseColor("#4CAF50"))
+                        setTypeface(null, android.graphics.Typeface.BOLD)
+                        setPadding(0, 0, 0, 12)
+                    }
+                    horariosLayout.addView(tipoHorarioText)
+                    
+                    if (empleado.horarioFlexibleJson != null) {
+                        try {
+                            val horarios = gson.fromJson(empleado.horarioFlexibleJson, Map::class.java) as Map<String, Pair<String, String>>
+                            val diasNombres = mapOf(
+                                "L" to "Lun", "M" to "Mar", "X" to "Mié", "J" to "Jue", 
+                                "V" to "Vie", "S" to "Sáb", "D" to "Dom"
+                            )
+                            
+                            val diasEmojis = mapOf(
+                                "L" to "🌅", "M" to "💼", "X" to "⚡", "J" to "🔥", 
+                                "V" to "🎯", "S" to "🏖️", "D" to "🏠"
+                            )
+                            
+                            var diasTrabajo = 0
+                            var horasSemanales = 0
+                            
+                            diasNombres.forEach { (codigo, nombre) ->
+                                val horario = horarios[codigo]
+                                val emoji = diasEmojis[codigo] ?: "📅"
+                                
+                                val diaLayout = LinearLayout(this).apply {
+                                    orientation = LinearLayout.HORIZONTAL
+                                    setPadding(8, 6, 8, 6)
+                                    gravity = android.view.Gravity.CENTER_VERTICAL
+                                    setBackgroundColor(if (horario != null) 
+                                        android.graphics.Color.parseColor("#E8F5E9") 
+                                    else 
+                                        android.graphics.Color.parseColor("#FAFAFA"))
+                                    layoutParams = LinearLayout.LayoutParams(
+                                        LinearLayout.LayoutParams.MATCH_PARENT,
+                                        LinearLayout.LayoutParams.WRAP_CONTENT
+                                    ).apply {
+                                        setMargins(0, 2, 0, 2)
+                                    }
+                                }
+                                
+                                val diaText = TextView(this).apply {
+                                    text = "$emoji $nombre"
+                                    textSize = 14f
+                                    setTextColor(android.graphics.Color.BLACK)
+                                    setTypeface(null, android.graphics.Typeface.BOLD)
+                                    layoutParams = LinearLayout.LayoutParams(120, LinearLayout.LayoutParams.WRAP_CONTENT)
+                                }
+                                diaLayout.addView(diaText)
+                                
+                                if (horario != null) {
+                                    diasTrabajo++
+                                    
+                                    val horarioText = TextView(this).apply {
+                                        text = "${horario.first} - ${horario.second}"
+                                        textSize = 14f
+                                        setTextColor(android.graphics.Color.parseColor("#2E7D32"))
+                                        setTypeface(null, android.graphics.Typeface.BOLD)
+                                    }
+                                    diaLayout.addView(horarioText)
+                                    
+                                    // Calcular horas del día
+                                    try {
+                                        val formato = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                                        val entrada = formato.parse(horario.first)
+                                        val salida = formato.parse(horario.second)
+                                        if (entrada != null && salida != null) {
+                                            val diferencia = salida.time - entrada.time
+                                            val horas = (diferencia / (1000 * 60 * 60)).toInt()
+                                            horasSemanales += horas
+                                            
+                                            val horasText = TextView(this).apply {
+                                                text = " (${horas}h)"
+                                                textSize = 12f
+                                                setTextColor(android.graphics.Color.parseColor("#4CAF50"))
+                                                setPadding(8, 0, 0, 0)
+                                            }
+                                            diaLayout.addView(horasText)
+                                        }
+                                    } catch (e: Exception) {
+                                        // Ignorar errores de cálculo
+                                    }
+                                } else {
+                                    val noTrabajaText = TextView(this).apply {
+                                        text = "No trabaja"
+                                        textSize = 14f
+                                        setTextColor(android.graphics.Color.GRAY)
+                                        setTypeface(null, android.graphics.Typeface.ITALIC)
+                                    }
+                                    diaLayout.addView(noTrabajaText)
+                                }
+                                
+                                horariosLayout.addView(diaLayout)
+                            }
+                            
+                            // Separador
+                            val separadorResumen = View(this).apply {
+                                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 2)
+                                setBackgroundColor(android.graphics.Color.parseColor("#4CAF50"))
+                            }
+                            horariosLayout.addView(separadorResumen)
+                            
+                            // Resumen mejorado
+                            val resumenLayout = LinearLayout(this).apply {
+                                orientation = LinearLayout.HORIZONTAL
+                                setPadding(16, 12, 16, 12)
+                                gravity = android.view.Gravity.CENTER
+                                setBackgroundColor(android.graphics.Color.parseColor("#E8F5E9"))
+                            }
+                            
+                            val resumenText = TextView(this).apply {
+                                text = "📊 $diasTrabajo días/semana • $horasSemanales horas/semana"
+                                textSize = 16f
+                                setTextColor(android.graphics.Color.parseColor("#2E7D32"))
+                                setTypeface(null, android.graphics.Typeface.BOLD)
+                                gravity = android.view.Gravity.CENTER
+                            }
+                            resumenLayout.addView(resumenText)
+                            
+                            horariosLayout.addView(resumenLayout)
+                            
+                        } catch (e: Exception) {
+                            val errorText = TextView(this).apply {
+                                text = "⚠️ Error al cargar horarios"
+                                textSize = 14f
+                                setTextColor(android.graphics.Color.parseColor("#FF9800"))
+                            }
+                            horariosLayout.addView(errorText)
+                        }
+                    } else {
+                        val noConfiguradoText = TextView(this).apply {
+                            text = "⚠️ Horarios no configurados"
+                            textSize = 14f
+                            setTextColor(android.graphics.Color.parseColor("#FF9800"))
+                        }
+                        horariosLayout.addView(noConfiguradoText)
+                    }
+                }
+            }
+            
+            dialogLayout.addView(horariosLayout)
+            
+            // Crear y mostrar el diálogo
+            AlertDialog.Builder(this)
+                .setView(dialogLayout)
+                .setPositiveButton("Cerrar", null)
+                .setNeutralButton("✏️ Editar") { _, _ ->
+                    showMessage("🚧 Función de edición en desarrollo")
+                }
+                .setNegativeButton("🗑️ Eliminar") { _, _ ->
+                    showMessage("🚧 Función de eliminar en desarrollo")
+                }
+                .show()
+                
+        } catch (e: Exception) {
+            showMessage("Error al mostrar detalles: ${e.message}")
+        }
+    }
+    
+    private fun editarEmpleado(empleado: EmpleadoSimple) {
+        try {
+            val dialogLayout = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(32, 32, 32, 32)
+            }
+            
+            val etNombres = EditText(this).apply {
+                hint = "Nombres"
+                setText(empleado.nombres)
+                inputType = android.text.InputType.TYPE_CLASS_TEXT
+                textSize = 16f
+            }
+            dialogLayout.addView(etNombres)
+            
+            val etApellidos = EditText(this).apply {
+                hint = "Apellidos"
+                setText(empleado.apellidos)
+                inputType = android.text.InputType.TYPE_CLASS_TEXT
+                textSize = 16f
+            }
+            dialogLayout.addView(etApellidos)
+            
+            val etEntrada = EditText(this).apply {
+                hint = "Hora entrada (ej: 07:00)"
+                setText(if (empleado.horaEntrada != "FLEXIBLE") empleado.horaEntrada else "08:00")
+                inputType = android.text.InputType.TYPE_CLASS_TEXT
+                textSize = 16f
+            }
+            dialogLayout.addView(etEntrada)
+            
+            val etSalida = EditText(this).apply {
+                hint = "Hora salida (ej: 17:00)"
+                setText(if (empleado.horaSalida != "FLEXIBLE") empleado.horaSalida else "17:00")
+                inputType = android.text.InputType.TYPE_CLASS_TEXT
+                textSize = 16f
+            }
+            dialogLayout.addView(etSalida)
+            
+            val switchActivo = Switch(this).apply {
+                text = "Empleado activo"
+                isChecked = empleado.activo
+                textSize = 16f
+                setPadding(0, 16, 0, 16)
+            }
+            dialogLayout.addView(switchActivo)
+            
+            AlertDialog.Builder(this)
+                .setTitle("✏️ Editar Empleado - ${empleado.nombres}")
+                .setView(dialogLayout)
+                .setPositiveButton("💾 Guardar Cambios") { _, _ ->
+                    actualizarEmpleado(
+                        empleado.dni,
+                        etNombres.text.toString().trim(),
+                        etApellidos.text.toString().trim(),
+                        etEntrada.text.toString().trim(),
+                        etSalida.text.toString().trim(),
+                        switchActivo.isChecked
+                    )
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+                
+        } catch (e: Exception) {
+            showMessage("❌ Error al abrir editor: ${e.message}")
+        }
+    }
+    
+    private fun actualizarEmpleado(dni: String, nombres: String, apellidos: String, entrada: String, salida: String, activo: Boolean) {
+        try {
+            // Validaciones básicas
+            if (nombres.isEmpty() || apellidos.isEmpty()) {
+                showMessage("❌ Complete nombres y apellidos")
+                return
+            }
+            
+            if (entrada.isEmpty() || salida.isEmpty()) {
+                showMessage("❌ Complete horarios")
+                return
+            }
+            
+            // Cargar lista actual
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoSimple>>() {}.type
+            val empleados: MutableList<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: mutableListOf()
+            
+            // Buscar y actualizar empleado
+            val index = empleados.indexOfFirst { it.dni == dni }
+            if (index != -1) {
+                empleados[index] = EmpleadoSimple(dni, nombres, apellidos, entrada, salida, activo)
+                
+                // Guardar cambios
+                val nuevaLista = gson.toJson(empleados)
+                sharedPreferences.edit().putString("empleados_list", nuevaLista).apply()
+                
+                showMessage("✅ Empleado actualizado: $nombres $apellidos")
+                
+                // Recargar lista
+                loadEmpleados()
+            } else {
+                showMessage("❌ No se encontró el empleado para actualizar")
+            }
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al actualizar: ${e.message}")
+        }
+    }
+    
+    private fun eliminarEmpleado(empleado: EmpleadoSimple) {
+        try {
+            AlertDialog.Builder(this)
+                .setTitle("🗑️ Confirmar Eliminación")
+                .setMessage("¿Está seguro de eliminar a:\n\n👤 ${empleado.nombres} ${empleado.apellidos}\n🆔 DNI: ${empleado.dni}\n\n⚠️ Esta acción no se puede deshacer.")
+                .setPositiveButton("🗑️ Eliminar") { _, _ ->
+                    confirmarEliminacionEmpleado(empleado.dni)
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+                
+        } catch (e: Exception) {
+            showMessage("❌ Error al confirmar eliminación: ${e.message}")
+        }
+    }
+    
+    private fun eliminarEmpleadoFlexible(empleado: EmpleadoFlexible) {
+        try {
+            AlertDialog.Builder(this)
+                .setTitle("🗑️ Confirmar Eliminación")
+                .setMessage("¿Está seguro de eliminar a:\n\n👤 ${empleado.nombres} ${empleado.apellidos}\n🆔 DNI: ${empleado.dni}\n📅 Horario Flexible\n\n⚠️ Esta acción no se puede deshacer.")
+                .setPositiveButton("🗑️ Eliminar") { _, _ ->
+                    confirmarEliminacionEmpleadoFlexible(empleado.dni)
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+                
+        } catch (e: Exception) {
+            showMessage("❌ Error al confirmar eliminación: ${e.message}")
+        }
+    }
+    
+    private fun confirmarEliminacionEmpleado(dni: String) {
+        try {
+            // Cargar lista actual
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoSimple>>() {}.type
+            val empleados: MutableList<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: mutableListOf()
+            
+            // Eliminar empleado
+            val empleadoEliminado = empleados.find { it.dni == dni }
+            val eliminado = empleados.removeAll { it.dni == dni }
+            
+            if (eliminado) {
+                // Guardar cambios
+                val nuevaLista = gson.toJson(empleados)
+                sharedPreferences.edit().putString("empleados_list", nuevaLista).apply()
+                
+                showMessage("✅ Empleado eliminado: ${empleadoEliminado?.nombres} ${empleadoEliminado?.apellidos}")
+                
+                // Recargar lista
+                loadEmpleados()
+            } else {
+                showMessage("❌ No se encontró el empleado para eliminar")
+            }
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al eliminar: ${e.message}")
+        }
+    }
+    
+    private fun confirmarEliminacionEmpleadoFlexible(dni: String) {
+        try {
+            // Cargar lista de empleados flexibles
+            val empleadosFlexiblesJson = sharedPreferences.getString("empleados_flexibles", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoFlexible>>() {}.type
+            val empleadosFlexibles: MutableList<EmpleadoFlexible> = gson.fromJson(empleadosFlexiblesJson, type) ?: mutableListOf()
+            
+            // Eliminar empleado flexible
+            val empleadoEliminado = empleadosFlexibles.find { it.dni == dni }
+            val eliminado = empleadosFlexibles.removeAll { it.dni == dni }
+            
+            if (eliminado) {
+                // Guardar cambios en empleados flexibles
+                val nuevaListaFlexible = gson.toJson(empleadosFlexibles)
+                sharedPreferences.edit().putString("empleados_flexibles", nuevaListaFlexible).apply()
+                
+                // También eliminar de empleados simples si existe
+                eliminarEmpleadoSimplePorDni(dni)
+                
+                showMessage("✅ Empleado flexible eliminado: ${empleadoEliminado?.nombres} ${empleadoEliminado?.apellidos}")
+                
+                // Recargar lista
+                loadEmpleados()
+            } else {
+                showMessage("❌ No se encontró el empleado flexible para eliminar")
+            }
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al eliminar empleado flexible: ${e.message}")
+        }
+    }
+    
+    private fun eliminarEmpleadoSimplePorDni(dni: String) {
+        try {
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoSimple>>() {}.type
+            val empleados: MutableList<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: mutableListOf()
+            
+            empleados.removeAll { it.dni == dni }
+            
+            val nuevaLista = gson.toJson(empleados)
+            sharedPreferences.edit().putString("empleados_list", nuevaLista).apply()
+            
+        } catch (e: Exception) {
+            // No es crítico si falla
+        }
+    }
+    
+    // FUNCIONES ORIGINALES MANTENIDAS
+    
+    private fun mostrarDialogoAgregar() {
+        try {
+            val dialogLayout = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(32, 32, 32, 32)
+            }
+            
+            val etDni = EditText(this).apply {
+                hint = "DNI (8 dígitos)"
+                inputType = android.text.InputType.TYPE_CLASS_NUMBER
+                textSize = 16f
+            }
+            dialogLayout.addView(etDni)
+            
+            val etNombres = EditText(this).apply {
+                hint = "Nombres"
+                inputType = android.text.InputType.TYPE_CLASS_TEXT
+                textSize = 16f
+            }
+            dialogLayout.addView(etNombres)
+            
+            val etApellidos = EditText(this).apply {
+                hint = "Apellidos"
+                inputType = android.text.InputType.TYPE_CLASS_TEXT
+                textSize = 16f
+            }
+            dialogLayout.addView(etApellidos)
+            
+            val etEntrada = EditText(this).apply {
+                hint = "Hora entrada (ej: 07:00)"
+                inputType = android.text.InputType.TYPE_CLASS_TEXT
+                textSize = 16f
+            }
+            dialogLayout.addView(etEntrada)
+            
+            val etSalida = EditText(this).apply {
+                hint = "Hora salida (ej: 13:00)"
+                inputType = android.text.InputType.TYPE_CLASS_TEXT
+                textSize = 16f
+            }
+            dialogLayout.addView(etSalida)
+            
+            AlertDialog.Builder(this)
+                .setTitle("➕ Agregar Empleado")
+                .setView(dialogLayout)
+                .setPositiveButton("Guardar") { _, _ ->
+                    guardarEmpleado(
+                        etDni.text.toString().trim(),
+                        etNombres.text.toString().trim(),
+                        etApellidos.text.toString().trim(),
+                        etEntrada.text.toString().trim(),
+                        etSalida.text.toString().trim()
+                    )
+                }
+                .setNeutralButton("⏰ Horario Flexible") { _, _ ->
+                    mostrarDialogoHorarioFlexible(
+                        etDni.text.toString().trim(),
+                        etNombres.text.toString().trim(),
+                        etApellidos.text.toString().trim()
+                    )
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+                
+        } catch (e: Exception) {
+            mostrarDialogoBasico()
+        }
+    }
+    
+    private fun mostrarDialogoBasico() {
+        // Diálogo ultra básico sin AlertDialog
+        val toast = Toast.makeText(this, "Ingrese DNI 72221744 para Jose Molina", Toast.LENGTH_LONG)
+        toast.show()
+        
+        // Agregar Jose Molina directamente
+        guardarEmpleado("72221744", "Jose", "Molina", "07:00", "13:00")
+    }
+    
+    private fun guardarEmpleado(dni: String, nombres: String, apellidos: String, entrada: String, salida: String) {
+        try {
+            // Validaciones básicas
+            if (dni.length != 8 || !dni.all { it.isDigit() }) {
+                showMessage("❌ DNI debe tener 8 dígitos")
+                return
+            }
+            
+            if (nombres.isEmpty() || apellidos.isEmpty()) {
+                showMessage("❌ Complete nombres y apellidos")
+                return
+            }
+            
+            if (entrada.isEmpty() || salida.isEmpty()) {
+                showMessage("❌ Complete horarios")
+                return
+            }
+            
+            // Cargar lista actual
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoSimple>>() {}.type
+            val empleados: MutableList<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: mutableListOf()
+            
+            // Verificar si ya existe
+            if (empleados.any { it.dni == dni }) {
+                showMessage("❌ Ya existe empleado con DNI $dni")
+                return
+            }
+            
+            // Agregar nuevo empleado
+            val nuevoEmpleado = EmpleadoSimple(dni, nombres, apellidos, entrada, salida, true)
+            empleados.add(nuevoEmpleado)
+            
+            // Guardar
+            val nuevaLista = gson.toJson(empleados)
+            sharedPreferences.edit().putString("empleados_list", nuevaLista).apply()
+            
+            showMessage("✅ Empleado agregado: $nombres $apellidos")
+            
+            // Recargar lista
+            loadEmpleados()
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al guardar: ${e.message}")
+        }
+    }
+    
+    private fun limpiarTodos() {
+        try {
+            sharedPreferences.edit().remove("empleados_list").apply()
+            sharedPreferences.edit().remove("empleados_flexibles").apply()
+            showMessage("🗑️ Todos los empleados eliminados")
+            loadEmpleados()
+        } catch (e: Exception) {
+            showMessage("Error al limpiar: ${e.message}")
+        }
+    }
+    
+    private fun mostrarDialogoHorarioFlexible(dni: String, nombres: String, apellidos: String) {
+        try {
+            // Validaciones básicas primero
+            if (dni.length != 8 || !dni.all { it.isDigit() }) {
+                showMessage("❌ DNI debe tener 8 dígitos")
+                return
+            }
+            
+            if (nombres.isEmpty() || apellidos.isEmpty()) {
+                showMessage("❌ Complete nombres y apellidos")
+                return
+            }
+            
+            // Verificar si ya existe
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<List<EmpleadoSimple>>() {}.type
+            val empleados: List<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: emptyList()
+            
+            if (empleados.any { it.dni == dni }) {
+                showMessage("❌ Ya existe empleado con DNI $dni")
+                return
+            }
+            
+            // Crear diálogo de horario flexible
+            val dialogView = layoutInflater.inflate(R.layout.dialog_horario_flexible, null)
+            
+            // Configurar el diálogo
+            val dialog = AlertDialog.Builder(this)
+                .setTitle("⏰ Horario Flexible - $nombres $apellidos")
+                .setView(dialogView)
+                .setPositiveButton("Guardar") { _, _ ->
+                    guardarEmpleadoConHorarioFlexible(dni, nombres, apellidos, dialogView)
+                }
+                .setNegativeButton("Cancelar", null)
+                .create()
+            
+            // Configurar la funcionalidad del diálogo
+            configurarDialogoHorarioFlexible(dialogView)
+            
+            dialog.show()
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al abrir horario flexible: ${e.message}")
+        }
+    }
+    
+    private fun configurarDialogoHorarioFlexible(dialogView: View) {
+        try {
+            // Configurar aplicación rápida
+            val etHoraBaseEntrada = dialogView.findViewById<EditText>(R.id.et_hora_base_entrada)
+            val etHoraBaseSalida = dialogView.findViewById<EditText>(R.id.et_hora_base_salida)
+            val btnAplicarLV = dialogView.findViewById<Button>(R.id.btn_aplicar_lv)
+            val btnAplicarLS = dialogView.findViewById<Button>(R.id.btn_aplicar_ls)
+            
+            // Configurar valores por defecto
+            etHoraBaseEntrada.setText("08:00")
+            etHoraBaseSalida.setText("17:00")
+            
+            // Aplicar horario L-V (Lunes a Viernes)
+            btnAplicarLV.setOnClickListener {
+                val entrada = etHoraBaseEntrada.text.toString()
+                val salida = etHoraBaseSalida.text.toString()
+                
+                if (entrada.isNotEmpty() && salida.isNotEmpty()) {
+                    aplicarHorarioADias(dialogView, entrada, salida, listOf("L", "M", "X", "J", "V"))
+                    showMessage("✅ Horario aplicado L-V: $entrada - $salida")
+                }
+            }
+            
+            // Aplicar horario L-S (Lunes a Sábado)
+            btnAplicarLS.setOnClickListener {
+                val entrada = etHoraBaseEntrada.text.toString()
+                val salida = etHoraBaseSalida.text.toString()
+                
+                if (entrada.isNotEmpty() && salida.isNotEmpty()) {
+                    aplicarHorarioADias(dialogView, entrada, salida, listOf("L", "M", "X", "J", "V", "S"))
+                    showMessage("✅ Horario aplicado L-S: $entrada - $salida")
+                }
+            }
+            
+            // Configurar switches de días
+            configurarSwitchesDias(dialogView)
+            
+        } catch (e: Exception) {
+            showMessage("Error al configurar diálogo: ${e.message}")
+        }
+    }
+    
+    private fun aplicarHorarioADias(dialogView: View, entrada: String, salida: String, dias: List<String>) {
+        dias.forEach { dia ->
+            try {
+                // Usar los nuevos IDs únicos para cada día
+                val (switchId, layoutId, entradaId, salidaId) = when (dia) {
+                    "L" -> arrayOf(R.id.switch_lunes, R.id.layout_horarios_lunes, R.id.et_entrada_lunes, R.id.et_salida_lunes)
+                    "M" -> arrayOf(R.id.switch_martes, R.id.layout_horarios_martes, R.id.et_entrada_martes, R.id.et_salida_martes)
+                    "X" -> arrayOf(R.id.switch_miercoles, R.id.layout_horarios_miercoles, R.id.et_entrada_miercoles, R.id.et_salida_miercoles)
+                    "J" -> arrayOf(R.id.switch_jueves, R.id.layout_horarios_jueves, R.id.et_entrada_jueves, R.id.et_salida_jueves)
+                    "V" -> arrayOf(R.id.switch_viernes, R.id.layout_horarios_viernes, R.id.et_entrada_viernes, R.id.et_salida_viernes)
+                    "S" -> arrayOf(R.id.switch_sabado, R.id.layout_horarios_sabado, R.id.et_entrada_sabado, R.id.et_salida_sabado)
+                    "D" -> arrayOf(R.id.switch_domingo, R.id.layout_horarios_domingo, R.id.et_entrada_domingo, R.id.et_salida_domingo)
+                    else -> return@forEach
+                }
+                
+                val switchActivo = dialogView.findViewById<Switch>(switchId)
+                val layoutHorarios = dialogView.findViewById<LinearLayout>(layoutId)
+                val etEntrada = dialogView.findViewById<EditText>(entradaId)
+                val etSalida = dialogView.findViewById<EditText>(salidaId)
+                
+                // Activar el día y mostrar horarios
+                switchActivo?.isChecked = true
+                layoutHorarios?.visibility = View.VISIBLE
+                
+                // Establecer horarios
+                etEntrada?.setText(entrada)
+                etSalida?.setText(salida)
+                
+            } catch (e: Exception) {
+                // Continuar con el siguiente día si hay error
+                showMessage("Error configurando $dia: ${e.message}")
+            }
+        }
+    }
+    
+    private fun configurarSwitchesDias(dialogView: View) {
+        val dias = listOf("L", "M", "X", "J", "V", "S", "D")
+        
+        dias.forEach { dia ->
+            try {
+                // Usar los nuevos IDs únicos para cada día
+                val (switchId, layoutId) = when (dia) {
+                    "L" -> Pair(R.id.switch_lunes, R.id.layout_horarios_lunes)
+                    "M" -> Pair(R.id.switch_martes, R.id.layout_horarios_martes)
+                    "X" -> Pair(R.id.switch_miercoles, R.id.layout_horarios_miercoles)
+                    "J" -> Pair(R.id.switch_jueves, R.id.layout_horarios_jueves)
+                    "V" -> Pair(R.id.switch_viernes, R.id.layout_horarios_viernes)
+                    "S" -> Pair(R.id.switch_sabado, R.id.layout_horarios_sabado)
+                    "D" -> Pair(R.id.switch_domingo, R.id.layout_horarios_domingo)
+                    else -> return@forEach
+                }
+                
+                val switchActivo = dialogView.findViewById<Switch>(switchId)
+                val layoutHorarios = dialogView.findViewById<LinearLayout>(layoutId)
+                
+                // Configurar el switch
+                switchActivo?.setOnCheckedChangeListener { _, isChecked ->
+                    layoutHorarios?.visibility = if (isChecked) View.VISIBLE else View.GONE
+                }
+                
+            } catch (e: Exception) {
+                showMessage("Error configurando switch $dia: ${e.message}")
+            }
+        }
+    }
+    
+    private fun guardarEmpleadoConHorarioFlexible(dni: String, nombres: String, apellidos: String, dialogView: View) {
+        try {
+            // Recopilar horarios de todos los días
+            val horarios = mutableMapOf<String, Pair<String, String>>()
+            val diasActivos = mutableListOf<String>()
+            
+            val dias = mapOf(
+                "L" to "Lunes",
+                "M" to "Martes", 
+                "X" to "Miércoles",
+                "J" to "Jueves",
+                "V" to "Viernes",
+                "S" to "Sábado",
+                "D" to "Domingo"
+            )
+            
+            dias.forEach { (codigo, nombre) ->
+                try {
+                    // Usar los nuevos IDs únicos para cada día
+                    val (switchId, entradaId, salidaId) = when (codigo) {
+                        "L" -> Triple(R.id.switch_lunes, R.id.et_entrada_lunes, R.id.et_salida_lunes)
+                        "M" -> Triple(R.id.switch_martes, R.id.et_entrada_martes, R.id.et_salida_martes)
+                        "X" -> Triple(R.id.switch_miercoles, R.id.et_entrada_miercoles, R.id.et_salida_miercoles)
+                        "J" -> Triple(R.id.switch_jueves, R.id.et_entrada_jueves, R.id.et_salida_jueves)
+                        "V" -> Triple(R.id.switch_viernes, R.id.et_entrada_viernes, R.id.et_salida_viernes)
+                        "S" -> Triple(R.id.switch_sabado, R.id.et_entrada_sabado, R.id.et_salida_sabado)
+                        "D" -> Triple(R.id.switch_domingo, R.id.et_entrada_domingo, R.id.et_salida_domingo)
+                        else -> return@forEach
+                    }
+                    
+                    val switchActivo = dialogView.findViewById<Switch>(switchId)
+                    val etEntrada = dialogView.findViewById<EditText>(entradaId)
+                    val etSalida = dialogView.findViewById<EditText>(salidaId)
+                    
+                    if (switchActivo?.isChecked == true) {
+                        val entrada = etEntrada?.text.toString().trim() ?: ""
+                        val salida = etSalida?.text.toString().trim() ?: ""
+                        
+                        if (entrada.isNotEmpty() && salida.isNotEmpty()) {
+                            horarios[codigo] = Pair(entrada, salida)
+                            diasActivos.add(codigo)
+                        }
+                    }
+                } catch (e: Exception) {
+                    showMessage("Error procesando $nombre: ${e.message}")
+                }
+            }
+            
+            if (diasActivos.isEmpty()) {
+                showMessage("❌ Debe configurar al menos un día de trabajo")
+                return
+            }
+            
+            // Crear empleado con horario flexible
+            val empleadoFlexible = EmpleadoFlexible(
+                dni = dni,
+                nombres = nombres,
+                apellidos = apellidos,
+                tipoHorario = "FLEXIBLE",
+                horariosSemanales = horarios,
+                diasActivos = diasActivos,
+                activo = true
+            )
+            
+            // Guardar en SharedPreferences
+            guardarEmpleadoFlexible(empleadoFlexible)
+            
+            showMessage("✅ Empleado con horario flexible guardado: $nombres $apellidos")
+            
+            // Recargar lista
+            loadEmpleados()
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al guardar horario flexible: ${e.message}")
+        }
+    }
+    
+    private fun guardarEmpleadoFlexible(empleado: EmpleadoFlexible) {
+        try {
+            // Cargar empleados flexibles existentes
+            val empleadosFlexiblesJson = sharedPreferences.getString("empleados_flexibles", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoFlexible>>() {}.type
+            val empleadosFlexibles: MutableList<EmpleadoFlexible> = gson.fromJson(empleadosFlexiblesJson, type) ?: mutableListOf()
+            
+            // Agregar nuevo empleado
+            empleadosFlexibles.add(empleado)
+            
+            // Guardar lista actualizada
+            val nuevaLista = gson.toJson(empleadosFlexibles)
+            sharedPreferences.edit().putString("empleados_flexibles", nuevaLista).apply()
+            
+            // También crear un empleado simple equivalente para compatibilidad
+            val empleadoSimpleEquivalente = EmpleadoSimple(
+                dni = empleado.dni,
+                nombres = empleado.nombres,
+                apellidos = empleado.apellidos,
+                horaEntrada = "FLEXIBLE",
+                horaSalida = "FLEXIBLE",
+                activo = empleado.activo
+            )
+            
+            // Guardar también en lista simple para compatibilidad
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val typeSimple = object : TypeToken<MutableList<EmpleadoSimple>>() {}.type
+            val empleados: MutableList<EmpleadoSimple> = gson.fromJson(empleadosJson, typeSimple) ?: mutableListOf()
+            empleados.add(empleadoSimpleEquivalente)
+            
+            val nuevaListaSimple = gson.toJson(empleados)
+            sharedPreferences.edit().putString("empleados_list", nuevaListaSimple).apply()
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al guardar empleado flexible: ${e.message}")
+        }
+    }
+    
+    private fun showMessage(message: String) {
+        try {
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            // Fallback si Toast falla
+            println("Message: $message")
+        }
+    }
+    
+    private fun editarEmpleadoModerno(empleado: com.asistencia.app.database.Empleado) {
+        when (empleado.tipoHorario) {
+            com.asistencia.app.database.TipoHorario.REGULAR -> {
+                editarEmpleadoFijo(empleado)
+            }
+            com.asistencia.app.database.TipoHorario.FLEXIBLE -> {
+                editarEmpleadoFlexible(empleado)
+            }
+        }
+    }
+    
+    private fun editarEmpleadoFijo(empleado: com.asistencia.app.database.Empleado) {
+        // Crear layout personalizado para edición
+        val dialogLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24, 24, 24, 24)
+            setBackgroundColor(android.graphics.Color.WHITE)
+        }
+        
+        // Título
+        val titulo = TextView(this).apply {
+            text = "✏️ Editar Empleado"
+            textSize = 20f
+            setTextColor(android.graphics.Color.parseColor("#1976D2"))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            gravity = android.view.Gravity.CENTER
+            setPadding(0, 0, 0, 20)
+        }
+        dialogLayout.addView(titulo)
+        
+        // Campo Nombres
+        val nombresLabel = TextView(this).apply {
+            text = "Nombres:"
+            textSize = 14f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        dialogLayout.addView(nombresLabel)
+        
+        val etNombres = EditText(this).apply {
+            setText(empleado.nombres)
+            textSize = 16f
+            setPadding(16, 12, 16, 12)
+            setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 8, 0, 16)
+            }
+        }
+        dialogLayout.addView(etNombres)
+        
+        // Campo Apellidos
+        val apellidosLabel = TextView(this).apply {
+            text = "Apellidos:"
+            textSize = 14f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        dialogLayout.addView(apellidosLabel)
+        
+        val etApellidos = EditText(this).apply {
+            setText(empleado.apellidos)
+            textSize = 16f
+            setPadding(16, 12, 16, 12)
+            setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 8, 0, 16)
+            }
+        }
+        dialogLayout.addView(etApellidos)
+        
+        // Horarios
+        val horariosLabel = TextView(this).apply {
+            text = "Horarios:"
+            textSize = 14f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        dialogLayout.addView(horariosLabel)
+        
+        val horariosLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, 8, 0, 16)
+        }
+        
+        val etEntrada = EditText(this).apply {
+            setText(empleado.horaEntradaRegular ?: "08:00")
+            hint = "Entrada (HH:mm)"
+            textSize = 16f
+            setPadding(16, 12, 16, 12)
+            setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                setMargins(0, 0, 8, 0)
+            }
+        }
+        horariosLayout.addView(etEntrada)
+        
+        val etSalida = EditText(this).apply {
+            setText(empleado.horaSalidaRegular ?: "17:00")
+            hint = "Salida (HH:mm)"
+            textSize = 16f
+            setPadding(16, 12, 16, 12)
+            setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                setMargins(8, 0, 0, 0)
+            }
+        }
+        horariosLayout.addView(etSalida)
+        
+        dialogLayout.addView(horariosLayout)
+        
+        // Switch Estado Activo
+        val estadoLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setPadding(0, 16, 0, 0)
+        }
+        
+        val estadoLabel = TextView(this).apply {
+            text = "Estado:"
+            textSize = 14f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        estadoLayout.addView(estadoLabel)
+        
+        val switchActivo = Switch(this).apply {
+            isChecked = empleado.activo
+            textSize = 16f
+        }
+        estadoLayout.addView(switchActivo)
+        
+        dialogLayout.addView(estadoLayout)
+        
+        // Crear y mostrar el diálogo
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogLayout)
+            .setPositiveButton("Guardar Cambios") { _, _ ->
+                guardarCambiosEmpleadoFijo(
+                    empleado,
+                    etNombres.text.toString().trim(),
+                    etApellidos.text.toString().trim(),
+                    etEntrada.text.toString().trim(),
+                    etSalida.text.toString().trim(),
+                    switchActivo.isChecked
+                )
+            }
+            .setNegativeButton("Cancelar", null)
+            .create()
+        
+        dialog.show()
+        
+        // Personalizar botones
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.apply {
+            setTextColor(android.graphics.Color.parseColor("#4CAF50"))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+    }
+    
+    private fun editarEmpleadoFlexible(empleado: com.asistencia.app.database.Empleado) {
+        // Crear layout personalizado para edición de horario flexible
+        val dialogLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24, 24, 24, 24)
+            setBackgroundColor(android.graphics.Color.WHITE)
+        }
+        
+        // Título
+        val titulo = TextView(this).apply {
+            text = "⏰ Editar Empleado Flexible"
+            textSize = 20f
+            setTextColor(android.graphics.Color.parseColor("#4CAF50"))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            gravity = android.view.Gravity.CENTER
+            setPadding(0, 0, 0, 20)
+        }
+        dialogLayout.addView(titulo)
+        
+        // Campo Nombres
+        val nombresLabel = TextView(this).apply {
+            text = "Nombres:"
+            textSize = 14f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        dialogLayout.addView(nombresLabel)
+        
+        val etNombres = EditText(this).apply {
+            setText(empleado.nombres)
+            textSize = 16f
+            setPadding(16, 12, 16, 12)
+            setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 8, 0, 16)
+            }
+        }
+        dialogLayout.addView(etNombres)
+        
+        // Campo Apellidos
+        val apellidosLabel = TextView(this).apply {
+            text = "Apellidos:"
+            textSize = 14f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        dialogLayout.addView(apellidosLabel)
+        
+        val etApellidos = EditText(this).apply {
+            setText(empleado.apellidos)
+            textSize = 16f
+            setPadding(16, 12, 16, 12)
+            setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 8, 0, 16)
+            }
+        }
+        dialogLayout.addView(etApellidos)
+        
+        // Horarios por día
+        val horariosLabel = TextView(this).apply {
+            text = "Horarios por día:"
+            textSize = 14f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setPadding(0, 16, 0, 8)
+        }
+        dialogLayout.addView(horariosLabel)
+        
+        // Parsear horarios existentes
+        val horariosExistentes = try {
+            if (empleado.horarioFlexibleJson != null) {
+                gson.fromJson(empleado.horarioFlexibleJson, Map::class.java) as Map<String, Pair<String, String>>
+            } else {
+                emptyMap()
+            }
+        } catch (e: Exception) {
+            emptyMap<String, Pair<String, String>>()
+        }
+        
+        // Crear campos para cada día
+        val diasCodigos = listOf("L", "M", "X", "J", "V", "S", "D")
+        val diasNombres = listOf("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo")
+        val diasEmojis = listOf("🌅", "💼", "⚡", "🔥", "🎯", "🏖️", "🏠")
+        
+        val switchesDias = mutableMapOf<String, Switch>()
+        val camposEntrada = mutableMapOf<String, EditText>()
+        val camposSalida = mutableMapOf<String, EditText>()
+        
+        diasCodigos.forEachIndexed { index, codigo ->
+            val diaLayout = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(0, 8, 0, 8)
+                setBackgroundColor(android.graphics.Color.parseColor("#FAFAFA"))
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(0, 4, 0, 4)
+                }
+            }
+            
+            // Header del día con switch
+            val diaHeaderLayout = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setPadding(16, 12, 16, 12)
+            }
+            
+            val diaLabel = TextView(this).apply {
+                text = "${diasEmojis[index]} ${diasNombres[index]}"
+                textSize = 16f
+                setTextColor(android.graphics.Color.BLACK)
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            diaHeaderLayout.addView(diaLabel)
+            
+            val switchDia = Switch(this).apply {
+                isChecked = horariosExistentes.containsKey(codigo)
+            }
+            switchesDias[codigo] = switchDia
+            diaHeaderLayout.addView(switchDia)
+            
+            diaLayout.addView(diaHeaderLayout)
+            
+            // Campos de horario
+            val horarioLayout = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(16, 0, 16, 12)
+                visibility = if (switchDia.isChecked) View.VISIBLE else View.GONE
+            }
+            
+            val etEntrada = EditText(this).apply {
+                val horarioExistente = horariosExistentes[codigo]
+                setText(horarioExistente?.first ?: "08:00")
+                hint = "Entrada"
+                textSize = 14f
+                setPadding(12, 8, 12, 8)
+                setBackgroundColor(android.graphics.Color.WHITE)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    setMargins(0, 0, 8, 0)
+                }
+            }
+            camposEntrada[codigo] = etEntrada
+            horarioLayout.addView(etEntrada)
+            
+            val separador = TextView(this).apply {
+                text = " - "
+                textSize = 14f
+                gravity = android.view.Gravity.CENTER
+            }
+            horarioLayout.addView(separador)
+            
+            val etSalida = EditText(this).apply {
+                val horarioExistente = horariosExistentes[codigo]
+                setText(horarioExistente?.second ?: "17:00")
+                hint = "Salida"
+                textSize = 14f
+                setPadding(12, 8, 12, 8)
+                setBackgroundColor(android.graphics.Color.WHITE)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    setMargins(8, 0, 0, 0)
+                }
+            }
+            camposSalida[codigo] = etSalida
+            horarioLayout.addView(etSalida)
+            
+            diaLayout.addView(horarioLayout)
+            
+            // Configurar listener del switch
+            switchDia.setOnCheckedChangeListener { _, isChecked ->
+                horarioLayout.visibility = if (isChecked) View.VISIBLE else View.GONE
+            }
+            
+            dialogLayout.addView(diaLayout)
+        }
+        
+        // Switch Estado Activo
+        val estadoLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setPadding(0, 16, 0, 0)
+        }
+        
+        val estadoLabel = TextView(this).apply {
+            text = "Estado:"
+            textSize = 14f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        estadoLayout.addView(estadoLabel)
+        
+        val switchActivo = Switch(this).apply {
+            isChecked = empleado.activo
+            textSize = 16f
+        }
+        estadoLayout.addView(switchActivo)
+        
+        dialogLayout.addView(estadoLayout)
+        
+        // Crear ScrollView para el diálogo
+        val scrollView = ScrollView(this).apply {
+            addView(dialogLayout)
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                800 // Altura máxima
+            )
+        }
+        
+        // Crear y mostrar el diálogo
+        val dialog = AlertDialog.Builder(this)
+            .setView(scrollView)
+            .setPositiveButton("Guardar Cambios") { _, _ ->
+                guardarCambiosEmpleadoFlexible(
+                    empleado,
+                    etNombres.text.toString().trim(),
+                    etApellidos.text.toString().trim(),
+                    switchesDias,
+                    camposEntrada,
+                    camposSalida,
+                    switchActivo.isChecked
+                )
+            }
+            .setNegativeButton("Cancelar", null)
+            .create()
+        
+        dialog.show()
+        
+        // Personalizar botones
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.apply {
+            setTextColor(android.graphics.Color.parseColor("#4CAF50"))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+    }
+    
+    private fun guardarCambiosEmpleadoFijo(
+        empleado: com.asistencia.app.database.Empleado,
+        nombres: String,
+        apellidos: String,
+        entrada: String,
+        salida: String,
+        activo: Boolean
+    ) {
+        try {
+            // Validaciones
+            if (nombres.isEmpty() || apellidos.isEmpty()) {
+                showMessage("❌ Complete nombres y apellidos")
+                return
+            }
+            
+            if (entrada.isEmpty() || salida.isEmpty()) {
+                showMessage("❌ Complete horarios")
+                return
+            }
+            
+            // Buscar en empleados simples
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoSimple>>() {}.type
+            val empleados: MutableList<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: mutableListOf()
+            
+            // Buscar y actualizar empleado
+            val index = empleados.indexOfFirst { it.dni == empleado.dni }
+            if (index != -1) {
+                empleados[index] = EmpleadoSimple(empleado.dni, nombres, apellidos, entrada, salida, activo)
+                
+                // Guardar cambios
+                val nuevaLista = gson.toJson(empleados)
+                sharedPreferences.edit().putString("empleados_list", nuevaLista).apply()
+                
+                showMessage("✅ Empleado actualizado correctamente")
+                loadEmpleados() // Recargar lista
+            } else {
+                showMessage("❌ Error: Empleado no encontrado")
+            }
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al guardar: ${e.message}")
+        }
+    }
+    
+    private fun guardarCambiosEmpleadoFlexible(
+        empleado: com.asistencia.app.database.Empleado,
+        nombres: String,
+        apellidos: String,
+        switchesDias: Map<String, Switch>,
+        camposEntrada: Map<String, EditText>,
+        camposSalida: Map<String, EditText>,
+        activo: Boolean
+    ) {
+        try {
+            // Validaciones
+            if (nombres.isEmpty() || apellidos.isEmpty()) {
+                showMessage("❌ Complete nombres y apellidos")
+                return
+            }
+            
+            // Recopilar horarios
+            val horarios = mutableMapOf<String, Pair<String, String>>()
+            val diasActivos = mutableListOf<String>()
+            
+            switchesDias.forEach { (codigo, switch) ->
+                if (switch.isChecked) {
+                    val entrada = camposEntrada[codigo]?.text?.toString()?.trim() ?: "08:00"
+                    val salida = camposSalida[codigo]?.text?.toString()?.trim() ?: "17:00"
+                    
+                    if (entrada.isNotEmpty() && salida.isNotEmpty()) {
+                        horarios[codigo] = Pair(entrada, salida)
+                        diasActivos.add(codigo)
+                    }
+                }
+            }
+            
+            if (diasActivos.isEmpty()) {
+                showMessage("❌ Debe configurar al menos un día de trabajo")
+                return
+            }
+            
+            // Crear empleado flexible actualizado
+            val empleadoFlexibleActualizado = EmpleadoFlexible(
+                dni = empleado.dni,
+                nombres = nombres,
+                apellidos = apellidos,
+                horariosSemanales = horarios,
+                diasActivos = diasActivos,
+                activo = activo
+            )
+            
+            // Cargar lista de empleados flexibles
+            val empleadosFlexiblesJson = sharedPreferences.getString("empleados_flexibles", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoFlexible>>() {}.type
+            val empleadosFlexibles: MutableList<EmpleadoFlexible> = gson.fromJson(empleadosFlexiblesJson, type) ?: mutableListOf()
+            
+            // Buscar y actualizar empleado
+            val index = empleadosFlexibles.indexOfFirst { it.dni == empleado.dni }
+            if (index != -1) {
+                empleadosFlexibles[index] = empleadoFlexibleActualizado
+                
+                // Guardar cambios
+                val nuevaLista = gson.toJson(empleadosFlexibles)
+                sharedPreferences.edit().putString("empleados_flexibles", nuevaLista).apply()
+                
+                showMessage("✅ Empleado flexible actualizado correctamente")
+                loadEmpleados() // Recargar lista
+            } else {
+                showMessage("❌ Error: Empleado flexible no encontrado")
+            }
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al guardar: ${e.message}")
+        }
+    }}
+    
+    private fun exportarEmpleados() {
+        try {
+            // Cargar todos los empleados
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val empleadosFlexiblesJson = sharedPreferences.getString("empleados_flexibles", "[]")
+            
+            val type = object : TypeToken<List<EmpleadoSimple>>() {}.type
+            val typeFlexible = object : TypeToken<List<EmpleadoFlexible>>() {}.type
+            
+            val empleados: List<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: emptyList()
+            val empleadosFlexibles: List<EmpleadoFlexible> = gson.fromJson(empleadosFlexiblesJson, typeFlexible) ?: emptyList()
+            
+            val totalEmpleados = empleados.size + empleadosFlexibles.size
+            
+            if (totalEmpleados == 0) {
+                showMessage("❌ No hay empleados para exportar")
+                return
+            }
+            
+            // Crear contenido CSV
+            val csvContent = buildString {
+                append("DNI,Nombres,Apellidos,Tipo_Horario,Entrada,Salida,Dias_Activos,Estado\n")
+                
+                // Exportar empleados fijos
+                empleados.forEach { empleado ->
+                    append("${empleado.dni},")
+                    append("${empleado.nombres},")
+                    append("${empleado.apellidos},")
+                    append("FIJO,")
+                    append("${empleado.horaEntrada},")
+                    append("${empleado.horaSalida},")
+                    append("L-V,")
+                    append("${if (empleado.activo) "ACTIVO" else "INACTIVO"}\n")
+                }
+                
+                // Exportar empleados flexibles
+                empleadosFlexibles.forEach { empleado ->
+                    append("${empleado.dni},")
+                    append("${empleado.nombres},")
+                    append("${empleado.apellidos},")
+                    append("FLEXIBLE,")
+                    append("VARIABLE,")
+                    append("VARIABLE,")
+                    append("${empleado.diasActivos.joinToString("-")},")
+                    append("${if (empleado.activo) "ACTIVO" else "INACTIVO"}\n")
+                }
+            }
+            
+            // Mostrar diálogo con opciones de exportación
+            AlertDialog.Builder(this)
+                .setTitle("📤 Exportar Empleados")
+                .setMessage("Se exportarán $totalEmpleados empleados:\n• ${empleados.size} empleados fijos\n• ${empleadosFlexibles.size} empleados flexibles\n\n¿Cómo desea exportar?")
+                .setPositiveButton("📋 Copiar al Portapapeles") { _, _ ->
+                    copiarAlPortapapeles(csvContent)
+                }
+                .setNeutralButton("📄 Ver Datos") { _, _ ->
+                    mostrarDatosExportacion(csvContent)
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+                
+        } catch (e: Exception) {
+            showMessage("❌ Error al exportar: ${e.message}")
+        }
+    }
+    
+    private fun copiarAlPortapapeles(content: String) {
+        try {
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val clip = android.content.ClipData.newPlainText("Empleados CSV", content)
+            clipboard.setPrimaryClip(clip)
+            showMessage("✅ Datos copiados al portapapeles en formato CSV")
+        } catch (e: Exception) {
+            showMessage("❌ Error al copiar: ${e.message}")
+        }
+    }
+    
+    private fun mostrarDatosExportacion(content: String) {
+        val dialogLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16, 16, 16, 16)
+        }
+        
+        val titulo = TextView(this).apply {
+            text = "📄 Datos de Exportación (CSV)"
+            textSize = 18f
+            setTextColor(android.graphics.Color.parseColor("#1976D2"))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setPadding(0, 0, 0, 16)
+        }
+        dialogLayout.addView(titulo)
+        
+        val scrollView = ScrollView(this).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                600 // Altura máxima
+            )
+        }
+        
+        val contentText = TextView(this).apply {
+            text = content
+            textSize = 12f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(android.graphics.Typeface.MONOSPACE)
+            setPadding(8, 8, 8, 8)
+            setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+        }
+        
+        scrollView.addView(contentText)
+        dialogLayout.addView(scrollView)
+        
+        AlertDialog.Builder(this)
+            .setView(dialogLayout)
+            .setPositiveButton("📋 Copiar") { _, _ ->
+                copiarAlPortapapeles(content)
+            }
+            .setNegativeButton("Cerrar", null)
+            .show()
+    }    
+ 
+   private fun editarEmpleadoModerno(empleado: com.asistencia.app.database.Empleado) {
+        when (empleado.tipoHorario) {
+            com.asistencia.app.database.TipoHorario.REGULAR -> {
+                editarEmpleadoFijo(empleado)
+            }
+            com.asistencia.app.database.TipoHorario.FLEXIBLE -> {
+                editarEmpleadoFlexible(empleado)
+            }
+        }
+    }
+    
+    private fun editarEmpleadoFijo(empleado: com.asistencia.app.database.Empleado) {
+        // Crear layout personalizado para edición
+        val dialogLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24, 24, 24, 24)
+            setBackgroundColor(android.graphics.Color.WHITE)
+        }
+        
+        // Título
+        val titulo = TextView(this).apply {
+            text = "✏️ Editar Empleado"
+            textSize = 20f
+            setTextColor(android.graphics.Color.parseColor("#1976D2"))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            gravity = android.view.Gravity.CENTER
+            setPadding(0, 0, 0, 20)
+        }
+        dialogLayout.addView(titulo)
+        
+        // Campo Nombres
+        val nombresLabel = TextView(this).apply {
+            text = "Nombres:"
+            textSize = 14f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        dialogLayout.addView(nombresLabel)
+        
+        val etNombres = EditText(this).apply {
+            setText(empleado.nombres)
+            textSize = 16f
+            setPadding(16, 12, 16, 12)
+            setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 8, 0, 16)
+            }
+        }
+        dialogLayout.addView(etNombres)
+        
+        // Campo Apellidos
+        val apellidosLabel = TextView(this).apply {
+            text = "Apellidos:"
+            textSize = 14f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        dialogLayout.addView(apellidosLabel)
+        
+        val etApellidos = EditText(this).apply {
+            setText(empleado.apellidos)
+            textSize = 16f
+            setPadding(16, 12, 16, 12)
+            setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 8, 0, 16)
+            }
+        }
+        dialogLayout.addView(etApellidos)
+        
+        // Horarios
+        val horariosLabel = TextView(this).apply {
+            text = "Horarios:"
+            textSize = 14f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        dialogLayout.addView(horariosLabel)
+        
+        val horariosLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, 8, 0, 16)
+        }
+        
+        val etEntrada = EditText(this).apply {
+            setText(empleado.horaEntradaRegular ?: "08:00")
+            hint = "Entrada (HH:mm)"
+            textSize = 16f
+            setPadding(16, 12, 16, 12)
+            setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                setMargins(0, 0, 8, 0)
+            }
+        }
+        horariosLayout.addView(etEntrada)
+        
+        val etSalida = EditText(this).apply {
+            setText(empleado.horaSalidaRegular ?: "17:00")
+            hint = "Salida (HH:mm)"
+            textSize = 16f
+            setPadding(16, 12, 16, 12)
+            setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                setMargins(8, 0, 0, 0)
+            }
+        }
+        horariosLayout.addView(etSalida)
+        
+        dialogLayout.addView(horariosLayout)
+        
+        // Switch Estado Activo
+        val estadoLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setPadding(0, 16, 0, 0)
+        }
+        
+        val estadoLabel = TextView(this).apply {
+            text = "Estado:"
+            textSize = 14f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        estadoLayout.addView(estadoLabel)
+        
+        val switchActivo = Switch(this).apply {
+            isChecked = empleado.activo
+            textSize = 16f
+        }
+        estadoLayout.addView(switchActivo)
+        
+        dialogLayout.addView(estadoLayout)
+        
+        // Crear y mostrar el diálogo
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogLayout)
+            .setPositiveButton("Guardar Cambios") { _, _ ->
+                guardarCambiosEmpleadoFijo(
+                    empleado,
+                    etNombres.text.toString().trim(),
+                    etApellidos.text.toString().trim(),
+                    etEntrada.text.toString().trim(),
+                    etSalida.text.toString().trim(),
+                    switchActivo.isChecked
+                )
+            }
+            .setNegativeButton("Cancelar", null)
+            .create()
+        
+        dialog.show()
+        
+        // Personalizar botones
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.apply {
+            setTextColor(android.graphics.Color.parseColor("#4CAF50"))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+    }
+    
+    private fun editarEmpleadoFlexible(empleado: com.asistencia.app.database.Empleado) {
+        showMessage("⏰ Edición de empleados flexibles: Funcionalidad avanzada en desarrollo")
+    }
+    
+    private fun guardarCambiosEmpleadoFijo(
+        empleado: com.asistencia.app.database.Empleado,
+        nombres: String,
+        apellidos: String,
+        entrada: String,
+        salida: String,
+        activo: Boolean
+    ) {
+        try {
+            // Validaciones
+            if (nombres.isEmpty() || apellidos.isEmpty()) {
+                showMessage("❌ Complete nombres y apellidos")
+                return
+            }
+            
+            if (entrada.isEmpty() || salida.isEmpty()) {
+                showMessage("❌ Complete horarios")
+                return
+            }
+            
+            // Buscar en empleados simples
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoSimple>>() {}.type
+            val empleados: MutableList<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: mutableListOf()
+            
+            // Buscar y actualizar empleado
+            val index = empleados.indexOfFirst { it.dni == empleado.dni }
+            if (index != -1) {
+                empleados[index] = EmpleadoSimple(empleado.dni, nombres, apellidos, entrada, salida, activo)
+                
+                // Guardar cambios
+                val nuevaLista = gson.toJson(empleados)
+                sharedPreferences.edit().putString("empleados_list", nuevaLista).apply()
+                
+                showMessage("✅ Empleado actualizado correctamente")
+                loadEmpleados() // Recargar lista
+            } else {
+                showMessage("❌ Error: Empleado no encontrado")
+            }
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al guardar: ${e.message}")
+        }
+    }    private
+ fun mostrarOpcionesExportacion() {
+        try {
+            // Cargar todos los empleados
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val empleadosFlexiblesJson = sharedPreferences.getString("empleados_flexibles", "[]")
+            
+            val type = object : TypeToken<List<EmpleadoSimple>>() {}.type
+            val typeFlexible = object : TypeToken<List<EmpleadoFlexible>>() {}.type
+            
+            val empleados: List<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: emptyList()
+            val empleadosFlexibles: List<EmpleadoFlexible> = gson.fromJson(empleadosFlexiblesJson, typeFlexible) ?: emptyList()
+            
+            val totalEmpleados = empleados.size + empleadosFlexibles.size
+            
+            if (totalEmpleados == 0) {
+                showMessage("❌ No hay empleados para exportar")
+                return
+            }
+            
+            // Crear contenido de exportación
+            val contenido = buildString {
+                append("=== EMPLEADOS REGISTRADOS ===\n\n")
+                append("Total: $totalEmpleados empleados\n")
+                append("• ${empleados.size} empleados fijos\n")
+                append("• ${empleadosFlexibles.size} empleados flexibles\n\n")
+                
+                if (empleados.isNotEmpty()) {
+                    append("--- EMPLEADOS FIJOS ---\n")
+                    empleados.forEach { empleado ->
+                        append("DNI: ${empleado.dni}\n")
+                        append("Nombre: ${empleado.nombres} ${empleado.apellidos}\n")
+                        append("Horario: ${empleado.horaEntrada} - ${empleado.horaSalida}\n")
+                        append("Estado: ${if (empleado.activo) "Activo" else "Inactivo"}\n\n")
+                    }
+                }
+                
+                if (empleadosFlexibles.isNotEmpty()) {
+                    append("--- EMPLEADOS FLEXIBLES ---\n")
+                    empleadosFlexibles.forEach { empleado ->
+                        append("DNI: ${empleado.dni}\n")
+                        append("Nombre: ${empleado.nombres} ${empleado.apellidos}\n")
+                        append("Días activos: ${empleado.diasActivos.joinToString(", ")}\n")
+                        append("Estado: ${if (empleado.activo) "Activo" else "Inactivo"}\n\n")
+                    }
+                }
+            }
+            
+            // Mostrar diálogo con opciones
+            AlertDialog.Builder(this)
+                .setTitle("📤 Exportar Empleados")
+                .setMessage("Se exportarán $totalEmpleados empleados.\n\n¿Qué desea hacer?")
+                .setPositiveButton("📋 Ver Datos") { _, _ ->
+                    mostrarDatosParaExportar(contenido)
+                }
+                .setNeutralButton("📄 Copiar") { _, _ ->
+                    copiarAlPortapapeles(contenido)
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+                
+        } catch (e: Exception) {
+            showMessage("❌ Error al exportar: ${e.message}")
+        }
+    }
+    
+    private fun mostrarDatosParaExportar(contenido: String) {
+        val scrollView = ScrollView(this).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                600
+            )
+        }
+        
+        val textView = TextView(this).apply {
+            text = contenido
+            textSize = 12f
+            setTextColor(android.graphics.Color.BLACK)
+            setPadding(16, 16, 16, 16)
+            setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+        }
+        
+        scrollView.addView(textView)
+        
+        AlertDialog.Builder(this)
+            .setTitle("📄 Datos de Empleados")
+            .setView(scrollView)
+            .setPositiveButton("📋 Copiar") { _, _ ->
+                copiarAlPortapapeles(contenido)
+            }
+            .setNegativeButton("Cerrar", null)
+            .show()
+    }
+    
+    private fun copiarAlPortapapeles(contenido: String) {
+        try {
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val clip = android.content.ClipData.newPlainText("Empleados", contenido)
+            clipboard.setPrimaryClip(clip)
+            showMessage("✅ Datos copiados al portapapeles")
+        } catch (e: Exception) {
+            showMessage("❌ Error al copiar: ${e.message}")
+        }
+    }
+    
+    private fun editarEmpleadoModerno(empleado: com.asistencia.app.database.Empleado) {
+        when (empleado.tipoHorario) {
+            com.asistencia.app.database.TipoHorario.REGULAR -> {
+                editarEmpleadoFijo(empleado)
+            }
+            com.asistencia.app.database.TipoHorario.FLEXIBLE -> {
+                showMessage("⏰ Edición de empleados flexibles: Funcionalidad en desarrollo")
+            }
+        }
+    }
+    
+    private fun editarEmpleadoFijo(empleado: com.asistencia.app.database.Empleado) {
+        // Crear layout simple para edición
+        val dialogLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24, 24, 24, 24)
+        }
+        
+        // Título
+        val titulo = TextView(this).apply {
+            text = "✏️ Editar Empleado"
+            textSize = 18f
+            setTextColor(android.graphics.Color.parseColor("#1976D2"))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            gravity = android.view.Gravity.CENTER
+            setPadding(0, 0, 0, 16)
+        }
+        dialogLayout.addView(titulo)
+        
+        // Campo Nombres
+        val etNombres = EditText(this).apply {
+            setText(empleado.nombres)
+            hint = "Nombres"
+            textSize = 16f
+            setPadding(16, 12, 16, 12)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, 8)
+            }
+        }
+        dialogLayout.addView(etNombres)
+        
+        // Campo Apellidos
+        val etApellidos = EditText(this).apply {
+            setText(empleado.apellidos)
+            hint = "Apellidos"
+            textSize = 16f
+            setPadding(16, 12, 16, 12)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, 8)
+            }
+        }
+        dialogLayout.addView(etApellidos)
+        
+        // Horarios en una fila
+        val horariosLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, 8, 0, 8)
+        }
+        
+        val etEntrada = EditText(this).apply {
+            setText(empleado.horaEntradaRegular ?: "08:00")
+            hint = "Entrada"
+            textSize = 16f
+            setPadding(16, 12, 16, 12)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                setMargins(0, 0, 4, 0)
+            }
+        }
+        horariosLayout.addView(etEntrada)
+        
+        val etSalida = EditText(this).apply {
+            setText(empleado.horaSalidaRegular ?: "17:00")
+            hint = "Salida"
+            textSize = 16f
+            setPadding(16, 12, 16, 12)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                setMargins(4, 0, 0, 0)
+            }
+        }
+        horariosLayout.addView(etSalida)
+        
+        dialogLayout.addView(horariosLayout)
+        
+        // Switch Estado
+        val switchLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setPadding(0, 16, 0, 0)
+        }
+        
+        val estadoLabel = TextView(this).apply {
+            text = "Empleado activo:"
+            textSize = 16f
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        switchLayout.addView(estadoLabel)
+        
+        val switchActivo = Switch(this).apply {
+            isChecked = empleado.activo
+        }
+        switchLayout.addView(switchActivo)
+        
+        dialogLayout.addView(switchLayout)
+        
+        // Mostrar diálogo
+        AlertDialog.Builder(this)
+            .setView(dialogLayout)
+            .setPositiveButton("Guardar") { _, _ ->
+                guardarCambiosEmpleado(
+                    empleado,
+                    etNombres.text.toString().trim(),
+                    etApellidos.text.toString().trim(),
+                    etEntrada.text.toString().trim(),
+                    etSalida.text.toString().trim(),
+                    switchActivo.isChecked
+                )
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+    
+    private fun guardarCambiosEmpleado(
+        empleado: com.asistencia.app.database.Empleado,
+        nombres: String,
+        apellidos: String,
+        entrada: String,
+        salida: String,
+        activo: Boolean
+    ) {
+        try {
+            if (nombres.isEmpty() || apellidos.isEmpty()) {
+                showMessage("❌ Complete nombres y apellidos")
+                return
+            }
+            
+            if (entrada.isEmpty() || salida.isEmpty()) {
+                showMessage("❌ Complete horarios")
+                return
+            }
+            
+            // Buscar y actualizar en empleados simples
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoSimple>>() {}.type
+            val empleados: MutableList<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: mutableListOf()
+            
+            val index = empleados.indexOfFirst { it.dni == empleado.dni }
+            if (index != -1) {
+                empleados[index] = EmpleadoSimple(empleado.dni, nombres, apellidos, entrada, salida, activo)
+                
+                val nuevaLista = gson.toJson(empleados)
+                sharedPreferences.edit().putString("empleados_list", nuevaLista).apply()
+                
+                showMessage("✅ Empleado actualizado correctamente")
+                loadEmpleados()
+            } else {
+                showMessage("❌ Empleado no encontrado")
+            }
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al guardar: ${e.message}")
+        }
+    }
+}

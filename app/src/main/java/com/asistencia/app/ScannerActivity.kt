@@ -879,17 +879,228 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
         // Guardar el registro en SharedPreferences
         guardarRegistroFlexible(empleado, tipoEvento, horaActual, fechaActual, estadoHorario, esFlexible)
         
-        AlertDialog.Builder(this)
-            .setTitle("✅ Asistencia Registrada")
-            .setMessage(mensaje)
-            .setPositiveButton("Continuar") { _, _ ->
+        // Crear layout personalizado para el popup de escaneo
+        mostrarPopupEscaneoMejorado(empleado, tipoEvento, horaActual, fechaActual, estadoHorario, horaEntrada, horaSalida, esFlexible)
+    }
+    
+    private fun mostrarPopupEscaneoMejorado(
+        empleado: EmpleadoSimple, 
+        tipoEvento: String, 
+        horaActual: String, 
+        fechaActual: String, 
+        estadoHorario: String, 
+        horaEntrada: String, 
+        horaSalida: String, 
+        esFlexible: Boolean
+    ) {
+        // Crear layout principal del popup
+        val dialogLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24, 24, 24, 24)
+            setBackgroundColor(android.graphics.Color.WHITE)
+        }
+        
+        // Header con icono de éxito y tipo de evento
+        val headerLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setPadding(0, 0, 0, 20)
+        }
+        
+        val iconoEvento = TextView(this).apply {
+            text = if (tipoEvento.contains("ENTRADA")) "🌅" else "🏠"
+            textSize = 48f
+            setPadding(0, 0, 20, 0)
+        }
+        headerLayout.addView(iconoEvento)
+        
+        val headerInfo = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        
+        val tituloEvento = TextView(this).apply {
+            text = "✅ ASISTENCIA REGISTRADA"
+            textSize = 18f
+            setTextColor(android.graphics.Color.parseColor("#4CAF50"))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        headerInfo.addView(tituloEvento)
+        
+        val tipoEventoText = TextView(this).apply {
+            text = tipoEvento
+            textSize = 16f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        headerInfo.addView(tipoEventoText)
+        
+        headerLayout.addView(headerInfo)
+        dialogLayout.addView(headerLayout)
+        
+        // Separador
+        val separador1 = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 2)
+            setBackgroundColor(android.graphics.Color.parseColor("#E0E0E0"))
+        }
+        dialogLayout.addView(separador1)
+        
+        // Información del empleado
+        val empleadoLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, 16, 0, 16)
+        }
+        
+        val nombreEmpleado = TextView(this).apply {
+            text = "${empleado.nombres} ${empleado.apellidos}"
+            textSize = 20f
+            setTextColor(android.graphics.Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            gravity = android.view.Gravity.CENTER
+        }
+        empleadoLayout.addView(nombreEmpleado)
+        
+        val dniEmpleado = TextView(this).apply {
+            text = "DNI: ${empleado.dni}"
+            textSize = 14f
+            setTextColor(android.graphics.Color.GRAY)
+            gravity = android.view.Gravity.CENTER
+            setPadding(0, 4, 0, 0)
+        }
+        empleadoLayout.addView(dniEmpleado)
+        
+        dialogLayout.addView(empleadoLayout)
+        
+        // Separador
+        val separador2 = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 2)
+            setBackgroundColor(android.graphics.Color.parseColor("#E0E0E0"))
+        }
+        dialogLayout.addView(separador2)
+        
+        // Información del registro
+        val registroLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, 16, 0, 16)
+        }
+        
+        // Fecha y hora en una fila
+        val fechaHoraLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER
+        }
+        
+        val fechaText = TextView(this).apply {
+            text = "📅 $fechaActual"
+            textSize = 16f
+            setTextColor(android.graphics.Color.BLACK)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            gravity = android.view.Gravity.CENTER
+        }
+        fechaHoraLayout.addView(fechaText)
+        
+        val horaText = TextView(this).apply {
+            text = "🕐 $horaActual"
+            textSize = 16f
+            setTextColor(android.graphics.Color.BLACK)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            gravity = android.view.Gravity.CENTER
+        }
+        fechaHoraLayout.addView(horaText)
+        
+        registroLayout.addView(fechaHoraLayout)
+        
+        // Horario del empleado
+        val horarioLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER
+            setPadding(0, 12, 0, 12)
+        }
+        
+        val horarioText = TextView(this).apply {
+            text = "⏰ Horario: $horaEntrada - $horaSalida"
+            textSize = 14f
+            setTextColor(android.graphics.Color.GRAY)
+        }
+        horarioLayout.addView(horarioText)
+        
+        if (esFlexible) {
+            val tipoHorarioText = TextView(this).apply {
+                text = " (Flexible)"
+                textSize = 14f
+                setTextColor(android.graphics.Color.parseColor("#4CAF50"))
+                setTypeface(null, android.graphics.Typeface.BOLD)
+            }
+            horarioLayout.addView(tipoHorarioText)
+        }
+        
+        registroLayout.addView(horarioLayout)
+        
+        dialogLayout.addView(registroLayout)
+        
+        // Estado del registro (puntual, tardanza, etc.)
+        val estadoLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER
+            setPadding(16, 12, 16, 12)
+            setBackgroundColor(when {
+                estadoHorario.contains("PUNTUAL") -> android.graphics.Color.parseColor("#E8F5E9")
+                estadoHorario.contains("TARDANZA") -> android.graphics.Color.parseColor("#FFEBEE")
+                estadoHorario.contains("RETRASO") -> android.graphics.Color.parseColor("#FFF3E0")
+                else -> android.graphics.Color.parseColor("#F5F5F5")
+            })
+        }
+        
+        val estadoText = TextView(this).apply {
+            text = estadoHorario
+            textSize = 16f
+            setTextColor(when {
+                estadoHorario.contains("PUNTUAL") -> android.graphics.Color.parseColor("#4CAF50")
+                estadoHorario.contains("TARDANZA") -> android.graphics.Color.parseColor("#F44336")
+                estadoHorario.contains("RETRASO") -> android.graphics.Color.parseColor("#FF9800")
+                else -> android.graphics.Color.parseColor("#757575")
+            })
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        estadoLayout.addView(estadoText)
+        
+        dialogLayout.addView(estadoLayout)
+        
+        // Mensaje de confirmación
+        val confirmacionText = TextView(this).apply {
+            text = "✅ Registro guardado correctamente"
+            textSize = 14f
+            setTextColor(android.graphics.Color.parseColor("#4CAF50"))
+            gravity = android.view.Gravity.CENTER
+            setPadding(0, 16, 0, 0)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        dialogLayout.addView(confirmacionText)
+        
+        // Crear y mostrar el diálogo
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogLayout)
+            .setPositiveButton("Continuar Escaneando") { _, _ ->
                 resetScanner()
             }
             .setNegativeButton("Salir") { _, _ ->
                 finish()
             }
             .setCancelable(false)
-            .show()
+            .create()
+        
+        // Personalizar botones del diálogo
+        dialog.show()
+        
+        // Cambiar colores de los botones después de mostrar el diálogo
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.apply {
+            setTextColor(android.graphics.Color.parseColor("#4CAF50"))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.apply {
+            setTextColor(android.graphics.Color.parseColor("#757575"))
+        }
     }
     
     private fun calcularDiferenciaMinutos(hora1: String, hora2: String): Int {
@@ -1041,9 +1252,88 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
     }
     
     private fun showErrorDialog(title: String, message: String, onDismiss: () -> Unit = {}) {
-        AlertDialog.Builder(this)
-            .setTitle("❌ $title")
-            .setMessage(message)
+        // Crear layout personalizado para el popup de error
+        val dialogLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24, 24, 24, 24)
+            setBackgroundColor(android.graphics.Color.WHITE)
+        }
+        
+        // Header con icono de error
+        val headerLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setPadding(0, 0, 0, 20)
+        }
+        
+        val iconoError = TextView(this).apply {
+            text = "⚠️"
+            textSize = 48f
+            setPadding(0, 0, 20, 0)
+        }
+        headerLayout.addView(iconoError)
+        
+        val headerInfo = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        
+        val tituloError = TextView(this).apply {
+            text = title.uppercase()
+            textSize = 18f
+            setTextColor(android.graphics.Color.parseColor("#F44336"))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        headerInfo.addView(tituloError)
+        
+        val subtituloError = TextView(this).apply {
+            text = "Error en el escaneo"
+            textSize = 14f
+            setTextColor(android.graphics.Color.GRAY)
+        }
+        headerInfo.addView(subtituloError)
+        
+        headerLayout.addView(headerInfo)
+        dialogLayout.addView(headerLayout)
+        
+        // Separador
+        val separador = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 2)
+            setBackgroundColor(android.graphics.Color.parseColor("#FFCDD2"))
+        }
+        dialogLayout.addView(separador)
+        
+        // Mensaje de error
+        val mensajeLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, 16, 0, 16)
+            setBackgroundColor(android.graphics.Color.parseColor("#FFEBEE"))
+        }
+        
+        val mensajeText = TextView(this).apply {
+            text = message
+            textSize = 16f
+            setTextColor(android.graphics.Color.BLACK)
+            setPadding(16, 16, 16, 16)
+        }
+        mensajeLayout.addView(mensajeText)
+        
+        dialogLayout.addView(mensajeLayout)
+        
+        // Instrucciones
+        val instruccionesText = TextView(this).apply {
+            text = "💡 Verifica el código e intenta nuevamente"
+            textSize = 14f
+            setTextColor(android.graphics.Color.parseColor("#757575"))
+            gravity = android.view.Gravity.CENTER
+            setPadding(0, 16, 0, 0)
+            setTypeface(null, android.graphics.Typeface.ITALIC)
+        }
+        dialogLayout.addView(instruccionesText)
+        
+        // Crear y mostrar el diálogo
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogLayout)
             .setPositiveButton("Reintentar") { _, _ ->
                 onDismiss()
             }
@@ -1051,7 +1341,20 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
                 finish()
             }
             .setCancelable(false)
-            .show()
+            .create()
+        
+        // Personalizar botones del diálogo
+        dialog.show()
+        
+        // Cambiar colores de los botones después de mostrar el diálogo
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.apply {
+            setTextColor(android.graphics.Color.parseColor("#F44336"))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.apply {
+            setTextColor(android.graphics.Color.parseColor("#757575"))
+        }
     }
     
     private fun resetScanner() {
