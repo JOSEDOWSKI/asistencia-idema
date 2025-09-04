@@ -12,9 +12,10 @@ import android.content.Context
     entities = [
         Empleado::class,
         RegistroAsistencia::class,
-        Dispositivo::class
+        Dispositivo::class,
+        Ausencia::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -23,6 +24,7 @@ abstract class AsistenciaDatabase : RoomDatabase() {
     abstract fun empleadoDao(): EmpleadoDao
     abstract fun registroAsistenciaDao(): RegistroAsistenciaDao
     abstract fun dispositivoDao(): DispositivoDao
+    abstract fun ausenciaDao(): AusenciaDao
     
     companion object {
         @Volatile
@@ -35,7 +37,7 @@ abstract class AsistenciaDatabase : RoomDatabase() {
                     AsistenciaDatabase::class.java,
                     "asistencia_database_v2"
                 )
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
                 INSTANCE = instance
                 instance
@@ -121,6 +123,33 @@ abstract class AsistenciaDatabase : RoomDatabase() {
                 } catch (e: Exception) {
                     // Tabla personal no existe, continuar
                 }
+            }
+        }
+        
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Agregar campo fotoPath a empleados
+                try {
+                    database.execSQL("ALTER TABLE empleados ADD COLUMN fotoPath TEXT")
+                } catch (e: Exception) {
+                    // Columna ya existe
+                }
+                
+                // Crear tabla de ausencias
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS ausencias (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        empleadoId TEXT NOT NULL,
+                        fecha TEXT NOT NULL,
+                        tipo TEXT NOT NULL,
+                        motivo TEXT NOT NULL,
+                        descripcion TEXT,
+                        documentoAdjunto TEXT,
+                        fechaCreacion INTEGER NOT NULL DEFAULT 0,
+                        fechaActualizacion INTEGER NOT NULL DEFAULT 0,
+                        FOREIGN KEY(empleadoId) REFERENCES empleados(id) ON DELETE CASCADE
+                    )
+                """)
             }
         }
     }

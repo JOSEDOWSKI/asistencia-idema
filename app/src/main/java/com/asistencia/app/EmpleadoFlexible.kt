@@ -10,6 +10,7 @@ data class EmpleadoFlexible(
     val apellidos: String,
     val tipoHorario: String = "FLEXIBLE",
     val horariosSemanales: Map<String, Pair<String, String>>, // Código día -> (entrada, salida)
+    val refrigeriosSemanales: Map<String, Pair<String, String>>, // Código día -> (inicio_refrigerio, fin_refrigerio)
     val diasActivos: List<String>, // Lista de códigos de días activos
     val activo: Boolean = true,
     val fechaCreacion: Long = System.currentTimeMillis()
@@ -24,10 +25,25 @@ data class EmpleadoFlexible(
         }
     }
     
+    // Función para obtener horario de refrigerio de un día específico
+    fun getRefrigerioDia(codigoDia: String): Pair<String, String>? {
+        return if (diasActivos.contains(codigoDia)) {
+            refrigeriosSemanales[codigoDia]
+        } else {
+            null
+        }
+    }
+    
     // Función para obtener horario del día actual
     fun getHorarioHoy(): Pair<String, String>? {
         val codigoDiaHoy = getDiaActualCodigo()
         return getHorarioDia(codigoDiaHoy)
+    }
+    
+    // Función para obtener horario de refrigerio del día actual
+    fun getRefrigerioHoy(): Pair<String, String>? {
+        val codigoDiaHoy = getDiaActualCodigo()
+        return getRefrigerioDia(codigoDiaHoy)
     }
     
     // Función para verificar si trabaja hoy
@@ -45,6 +61,17 @@ data class EmpleadoFlexible(
         // Obtener el primer horario disponible como referencia
         val primerHorario = horariosSemanales.values.first()
         return primerHorario
+    }
+    
+    // Función para obtener resumen de refrigerios (para compatibilidad)
+    fun getRefrigerioResumen(): Pair<String, String> {
+        if (refrigeriosSemanales.isEmpty()) {
+            return Pair("12:00", "13:00")
+        }
+        
+        // Obtener el primer refrigerio disponible como referencia
+        val primerRefrigerio = refrigeriosSemanales.values.first()
+        return primerRefrigerio
     }
     
     // Función para obtener descripción completa de horarios
@@ -88,15 +115,65 @@ data class EmpleadoFlexible(
         }
     }
     
-    // Función para calcular horas semanales totales
+    // Función para obtener descripción completa de refrigerios
+    fun getDescripcionRefrigerios(): String {
+        if (diasActivos.isEmpty()) {
+            return "Sin refrigerios configurados"
+        }
+        
+        val diasNombres = mapOf(
+            "L" to "Lun",
+            "M" to "Mar", 
+            "X" to "Mié",
+            "J" to "Jue",
+            "V" to "Vie",
+            "S" to "Sáb",
+            "D" to "Dom"
+        )
+        
+        // Agrupar días con el mismo refrigerio
+        val gruposRefrigerios = mutableMapOf<Pair<String, String>, MutableList<String>>()
+        
+        diasActivos.forEach { codigo ->
+            val refrigerio = refrigeriosSemanales[codigo]
+            if (refrigerio != null) {
+                if (!gruposRefrigerios.containsKey(refrigerio)) {
+                    gruposRefrigerios[refrigerio] = mutableListOf()
+                }
+                gruposRefrigerios[refrigerio]?.add(diasNombres[codigo] ?: codigo)
+            }
+        }
+        
+        // Generar descripción
+        return if (gruposRefrigerios.size == 1) {
+            val refrigerio = gruposRefrigerios.keys.first()
+            val dias = gruposRefrigerios[refrigerio]?.joinToString("") ?: ""
+            "$dias: ${refrigerio.first}-${refrigerio.second}"
+        } else {
+            gruposRefrigerios.map { (refrigerio, dias) ->
+                "${dias.joinToString("")}: ${refrigerio.first}-${refrigerio.second}"
+            }.joinToString(" | ")
+        }
+    }
+    
+    // Función para calcular horas semanales totales (EXCLUYENDO REFRIGERIOS)
     fun calcularHorasSemanales(): Pair<Int, Int> {
         var totalMinutos = 0
         
         diasActivos.forEach { codigo ->
             val horario = horariosSemanales[codigo]
+            val refrigerio = refrigeriosSemanales[codigo]
+            
             if (horario != null) {
                 val minutosDelDia = calcularMinutosDia(horario.first, horario.second)
-                totalMinutos += minutosDelDia
+                
+                // Restar tiempo de refrigerio si está configurado
+                if (refrigerio != null) {
+                    val minutosRefrigerio = calcularMinutosDia(refrigerio.first, refrigerio.second)
+                    totalMinutos += (minutosDelDia - minutosRefrigerio)
+                } else {
+                    totalMinutos += minutosDelDia
+                }
             }
         }
         
@@ -126,6 +203,7 @@ data class EmpleadoFlexible(
         if (!trabajaHoy()) return false
         
         val horarioHoy = getHorarioHoy() ?: return false
+        val refrigerioHoy = getRefrigerioHoy()
         val horaActual = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         
         return try {
@@ -134,8 +212,44 @@ data class EmpleadoFlexible(
             val entrada = formato.parse(horarioHoy.first)
             val salida = formato.parse(horarioHoy.second)
             
-            actual != null && entrada != null && salida != null &&
-            !actual.before(entrada) && !actual.after(salida)
+            if (actual != null && entrada != null && salida != null) {
+                val estaEnHorarioLaboral = !actual.before(entrada) && !actual.after(salida)
+                
+                // Si está en horario laboral, verificar que no esté en refrigerio
+                if (estaEnHorarioLaboral && refrigerioHoy != null) {
+                    val inicioRefrigerio = formato.parse(refrigerioHoy.first)
+                    val finRefrigerio = formato.parse(refrigerioHoy.second)
+                    
+                    if (inicioRefrigerio != null && finRefrigerio != null) {
+                        // Si está en horario de refrigerio, no está trabajando
+                        val estaEnRefrigerio = !actual.before(inicioRefrigerio) && !actual.after(finRefrigerio)
+                        return !estaEnRefrigerio
+                    }
+                }
+                
+                return estaEnHorarioLaboral
+            }
+            false
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
+    // Función para verificar si está en horario de refrigerio
+    fun estaEnRefrigerio(): Boolean {
+        if (!trabajaHoy()) return false
+        
+        val refrigerioHoy = getRefrigerioHoy() ?: return false
+        val horaActual = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+        
+        return try {
+            val formato = SimpleDateFormat("HH:mm", Locale.getDefault())
+            val actual = formato.parse(horaActual)
+            val inicioRefrigerio = formato.parse(refrigerioHoy.first)
+            val finRefrigerio = formato.parse(refrigerioHoy.second)
+            
+            actual != null && inicioRefrigerio != null && finRefrigerio != null &&
+            !actual.before(inicioRefrigerio) && !actual.after(finRefrigerio)
         } catch (e: Exception) {
             false
         }
@@ -145,6 +259,7 @@ data class EmpleadoFlexible(
     fun getEstadoActual(): String {
         return when {
             !trabajaHoy() -> "🏠 No trabaja hoy"
+            estaEnRefrigerio() -> "🍽️ En horario de refrigerio"
             estaEnHorarioTrabajo() -> "✅ En horario de trabajo"
             else -> {
                 val horarioHoy = getHorarioHoy()
@@ -159,6 +274,27 @@ data class EmpleadoFlexible(
                     "❓ Sin horario definido"
                 }
             }
+        }
+    }
+    
+    // Función para obtener información completa del día actual
+    fun getInfoDiaActual(): String {
+        if (!trabajaHoy()) {
+            return "🏠 No trabaja hoy"
+        }
+        
+        val horarioHoy = getHorarioHoy()
+        val refrigerioHoy = getRefrigerioHoy()
+        
+        return buildString {
+            append("📅 Trabaja hoy\n")
+            if (horarioHoy != null) {
+                append("⏰ Horario: ${horarioHoy.first} - ${horarioHoy.second}\n")
+            }
+            if (refrigerioHoy != null) {
+                append("🍽️ Refrigerio: ${refrigerioHoy.first} - ${refrigerioHoy.second}\n")
+            }
+            append("📊 Estado: ${getEstadoActual()}")
         }
     }
     
@@ -197,30 +333,17 @@ data class EmpleadoFlexible(
     // Función para convertir a EmpleadoSimple (compatibilidad)
     fun toEmpleadoSimple(): EmpleadoSimple {
         val horarioResumen = getHorarioResumen()
+        val refrigerioResumen = getRefrigerioResumen()
         return EmpleadoSimple(
             dni = dni,
             nombres = nombres,
             apellidos = apellidos,
             horaEntrada = horarioResumen.first,
             horaSalida = horarioResumen.second,
-            activo = activo
+            refrigerioInicio = refrigerioResumen.first,
+            refrigerioFin = refrigerioResumen.second,
+            esFlexible = true
         )
-    }
-    
-    // Función para obtener información detallada
-    fun getInformacionDetallada(): String {
-        val (horas, minutos) = calcularHorasSemanales()
-        val diasTrabajo = diasActivos.size
-        val estadoActual = getEstadoActual()
-        
-        return buildString {
-            append("👤 $nombres $apellidos\n")
-            append("🆔 DNI: $dni\n")
-            append("📅 Días de trabajo: $diasTrabajo días/semana\n")
-            append("⏱️ Horas semanales: ${horas}h ${minutos}m\n")
-            append("📋 Horarios: ${getDescripcionHorarios()}\n")
-            append("📍 Estado actual: $estadoActual")
-        }
     }
 }
 

@@ -43,6 +43,7 @@ enum class TipoEvento {
 }
 
 enum class ModoLectura {
+    UNIVERSAL,  // Lee automáticamente todos los tipos de códigos
     QR,
     DNI_PDF417,
     CODE128

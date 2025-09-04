@@ -81,128 +81,29 @@ class PersonalActivity : AppCompatActivity() {
         
         // Switch de tipo de horario
         val switchTipoHorario = dialogView.findViewById<Switch>(R.id.switchTipoHorario)
-        val tvTipoHorarioDescripcion = dialogView.findViewById<TextView>(R.id.tvTipoHorarioDescripcion)
         
-        // Elementos de horario fijo
+        // Elementos de horario regular
         val etHoraEntrada = dialogView.findViewById<EditText>(R.id.etHoraEntrada)
         val etHoraSalida = dialogView.findViewById<EditText>(R.id.etHoraSalida)
-        
-        // Elementos de horario flexible
-        val layoutHorarioFlexible = dialogView.findViewById<LinearLayout>(R.id.layoutHorarioFlexible)
-        val etHoraEntradaBase = dialogView.findViewById<EditText>(R.id.etHoraEntradaBase)
-        val etHoraSalidaBase = dialogView.findViewById<EditText>(R.id.etHoraSalidaBase)
-        val btnAplicarLunesViernes = dialogView.findViewById<Button>(R.id.btnAplicarLunesViernes)
-        val btnAplicarLunesSabado = dialogView.findViewById<Button>(R.id.btnAplicarLunesSabado)
-        
-        // Campos individuales por día
-        val etLunesEntrada = dialogView.findViewById<EditText>(R.id.etLunesEntrada)
-        val etLunesSalida = dialogView.findViewById<EditText>(R.id.etLunesSalida)
-        val etMartesEntrada = dialogView.findViewById<EditText>(R.id.etMartesEntrada)
-        val etMartesSalida = dialogView.findViewById<EditText>(R.id.etMartesSalida)
-        val etMiercolesEntrada = dialogView.findViewById<EditText>(R.id.etMiercolesEntrada)
-        val etMiercolesSalida = dialogView.findViewById<EditText>(R.id.etMiercolesSalida)
-        val etJuevesEntrada = dialogView.findViewById<EditText>(R.id.etJuevesEntrada)
-        val etJuevesSalida = dialogView.findViewById<EditText>(R.id.etJuevesSalida)
-        val etViernesEntrada = dialogView.findViewById<EditText>(R.id.etViernesEntrada)
-        val etViernesSalida = dialogView.findViewById<EditText>(R.id.etViernesSalida)
-        val etSabadoEntrada = dialogView.findViewById<EditText>(R.id.etSabadoEntrada)
-        val etSabadoSalida = dialogView.findViewById<EditText>(R.id.etSabadoSalida)
-        
-        // Elementos de refrigerio
-        val cbTieneRefrigerio = dialogView.findViewById<CheckBox>(R.id.cbTieneRefrigerio)
-        val layoutRefrigerio = dialogView.findViewById<LinearLayout>(R.id.layoutRefrigerio)
-        val etInicioRefrigerio = dialogView.findViewById<EditText>(R.id.etInicioRefrigerio)
-        val etFinRefrigerio = dialogView.findViewById<EditText>(R.id.etFinRefrigerio)
-        val tvDuracionRefrigerio = dialogView.findViewById<TextView>(R.id.tvDuracionRefrigerio)
-        
-        // Elementos de resumen
-        val tvHorasTotales = dialogView.findViewById<TextView>(R.id.tvHorasTotales)
-        val tvHorasRefrigerio = dialogView.findViewById<TextView>(R.id.tvHorasRefrigerio)
-        val tvHorasTrabajadas = dialogView.findViewById<TextView>(R.id.tvHorasTrabajadas)
+        val layoutHorarioRegular = dialogView.findViewById<LinearLayout>(R.id.layoutHorarioRegular)
         
         // Configurar Switch de tipo de horario
         switchTipoHorario.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
-                // Horario flexible activado
-                layoutHorarioFlexible.visibility = LinearLayout.VISIBLE
-                tvTipoHorarioDescripcion.text = "✅ Horario Flexible: Configuración individual por día"
+                // Horario flexible activado - ocultar horario regular
+                layoutHorarioRegular.visibility = LinearLayout.GONE
                 Toast.makeText(this, "✅ Horario Flexible: Podrás configurar cada día individualmente", Toast.LENGTH_SHORT).show()
             } else {
-                // Horario regular activado
-                layoutHorarioFlexible.visibility = LinearLayout.GONE
-                tvTipoHorarioDescripcion.text = "📅 Horario Regular: Lunes a Viernes con mismo horario"
+                // Horario regular activado - mostrar horario regular
+                layoutHorarioRegular.visibility = LinearLayout.VISIBLE
                 Toast.makeText(this, "📅 Horario Regular: Mismo horario de lunes a viernes", Toast.LENGTH_SHORT).show()
             }
         }
         
-        // Configurar botón de aplicar Lunes a Viernes
-        btnAplicarLunesViernes.setOnClickListener {
-            val entradaBase = etHoraEntradaBase.text.toString().trim()
-            val salidaBase = etHoraSalidaBase.text.toString().trim()
-            
-            if (entradaBase.isEmpty() || salidaBase.isEmpty()) {
-                Toast.makeText(this, "Complete los horarios base primero", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            
-            if (!validarFormatoHora(entradaBase) || !validarFormatoHora(salidaBase)) {
-                Toast.makeText(this, "Formato de hora inválido. Use HH:mm", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            
-            // Aplicar horarios de Lunes a Viernes
-            etLunesEntrada.setText(entradaBase)
-            etLunesSalida.setText(salidaBase)
-            etMartesEntrada.setText(entradaBase)
-            etMartesSalida.setText(salidaBase)
-            etMiercolesEntrada.setText(entradaBase)
-            etMiercolesSalida.setText(salidaBase)
-            etJuevesEntrada.setText(entradaBase)
-            etJuevesSalida.setText(salidaBase)
-            etViernesEntrada.setText(entradaBase)
-            etViernesSalida.setText(salidaBase)
-            
-            Toast.makeText(this, "✅ Horario aplicado de Lunes a Viernes", Toast.LENGTH_SHORT).show()
-        }
+        // Nota: Los botones de aplicación rápida y campos individuales por día
+        // se manejan en el modal de horario flexible que se abre después
         
-        // Configurar botón de aplicar Lunes a Sábado
-        btnAplicarLunesSabado.setOnClickListener {
-            val entradaBase = etHoraEntradaBase.text.toString().trim()
-            val salidaBase = etHoraSalidaBase.text.toString().trim()
-            
-            if (entradaBase.isEmpty() || salidaBase.isEmpty()) {
-                Toast.makeText(this, "Complete los horarios base primero", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            
-            if (!validarFormatoHora(entradaBase) || !validarFormatoHora(salidaBase)) {
-                Toast.makeText(this, "Formato de hora inválido. Use HH:mm", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            
-            // Aplicar horarios de Lunes a Sábado
-            etLunesEntrada.setText(entradaBase)
-            etLunesSalida.setText(salidaBase)
-            etMartesEntrada.setText(entradaBase)
-            etMartesSalida.setText(salidaBase)
-            etMiercolesEntrada.setText(entradaBase)
-            etMiercolesSalida.setText(salidaBase)
-            etJuevesEntrada.setText(entradaBase)
-            etJuevesSalida.setText(salidaBase)
-            etViernesEntrada.setText(entradaBase)
-            etViernesSalida.setText(salidaBase)
-            etSabadoEntrada.setText(entradaBase)
-            etSabadoSalida.setText(salidaBase)
-            
-            Toast.makeText(this, "✅ Horario aplicado de Lunes a Sábado", Toast.LENGTH_SHORT).show()
-        }
-        
-        // Configurar eventos de refrigerio
-        configurarEventosDialogo(
-            cbTieneRefrigerio, layoutRefrigerio, etHoraEntrada, etHoraSalida,
-            etInicioRefrigerio, etFinRefrigerio, tvDuracionRefrigerio,
-            tvHorasTotales, tvHorasRefrigerio, tvHorasTrabajadas
-        )
+        // Nota: La configuración de refrigerio se maneja en el modal de horario flexible
         
         // Si es edición, cargar datos existentes
         personalExistente?.let { personal ->
@@ -215,38 +116,10 @@ class PersonalActivity : AppCompatActivity() {
             // Configurar el switch según el tipo de horario
             switchTipoHorario.isChecked = personal.tipoHorario == "VARIABLE"
             if (personal.tipoHorario == "VARIABLE") {
-                layoutHorarioFlexible.visibility = LinearLayout.VISIBLE
-                etHoraEntradaBase.setText(personal.horaEntrada)
-                etHoraSalidaBase.setText(personal.horaSalida)
-                
-                // Cargar horarios individuales por día si existen
-                etLunesEntrada.setText(personal.horaEntrada)
-                etLunesSalida.setText(personal.horaSalida)
-                etMartesEntrada.setText(personal.horaEntrada)
-                etMartesSalida.setText(personal.horaSalida)
-                etMiercolesEntrada.setText(personal.horaEntrada)
-                etMiercolesSalida.setText(personal.horaSalida)
-                etJuevesEntrada.setText(personal.horaEntrada)
-                etJuevesSalida.setText(personal.horaSalida)
-                etViernesEntrada.setText(personal.horaEntrada)
-                etViernesSalida.setText(personal.horaSalida)
-                etSabadoEntrada.setText(personal.horaEntrada)
-                etSabadoSalida.setText(personal.horaSalida)
+                layoutHorarioRegular.visibility = LinearLayout.GONE
             } else {
-                layoutHorarioFlexible.visibility = LinearLayout.GONE
+                layoutHorarioRegular.visibility = LinearLayout.VISIBLE
             }
-            
-            cbTieneRefrigerio.isChecked = personal.tieneRefrigerio
-            if (personal.tieneRefrigerio) {
-                etInicioRefrigerio.setText(personal.inicioRefrigerio)
-                etFinRefrigerio.setText(personal.finRefrigerio)
-            }
-            
-            actualizarResumenHoras(
-                etHoraEntrada, etHoraSalida, cbTieneRefrigerio,
-                etInicioRefrigerio, etFinRefrigerio,
-                tvHorasTotales, tvHorasRefrigerio, tvHorasTrabajadas
-            )
         }
         
         // Mostrar diálogo
@@ -257,15 +130,7 @@ class PersonalActivity : AppCompatActivity() {
                 guardarPersonalConTipoHorario(
                     etDni, etNombre, switchTipoHorario,
                     etHoraEntrada, etHoraSalida,
-                    cbTieneRefrigerio, etInicioRefrigerio, etFinRefrigerio,
-                    personalExistente,
-                    // Campos individuales por día
-                    etLunesEntrada, etLunesSalida,
-                    etMartesEntrada, etMartesSalida,
-                    etMiercolesEntrada, etMiercolesSalida,
-                    etJuevesEntrada, etJuevesSalida,
-                    etViernesEntrada, etViernesSalida,
-                    etSabadoEntrada, etSabadoSalida
+                    personalExistente
                 )
             }
             .setNegativeButton("Cancelar", null)
@@ -1224,17 +1089,7 @@ class PersonalActivity : AppCompatActivity() {
         switchTipoHorario: Switch,
         etHoraEntrada: EditText,
         etHoraSalida: EditText,
-        cbTieneRefrigerio: CheckBox,
-        etInicioRefrigerio: EditText,
-        etFinRefrigerio: EditText,
-        personalExistente: Personal?,
-        // Campos individuales por día
-        etLunesEntrada: EditText, etLunesSalida: EditText,
-        etMartesEntrada: EditText, etMartesSalida: EditText,
-        etMiercolesEntrada: EditText, etMiercolesSalida: EditText,
-        etJuevesEntrada: EditText, etJuevesSalida: EditText,
-        etViernesEntrada: EditText, etViernesSalida: EditText,
-        etSabadoEntrada: EditText, etSabadoSalida: EditText
+        personalExistente: Personal?
     ) {
         val dni = etDni.text.toString().trim()
         val nombre = etNombre.text.toString().trim()
@@ -1258,50 +1113,11 @@ class PersonalActivity : AppCompatActivity() {
             return
         }
         
-        // Configurar refrigerio
-        val tieneRefrigerio = cbTieneRefrigerio.isChecked
-        var inicioRefrigerio = "12:00"
-        var finRefrigerio = "13:00"
-        var minutosRefrigerio = 60
-        
-        if (tieneRefrigerio) {
-            inicioRefrigerio = etInicioRefrigerio.text.toString().trim()
-            finRefrigerio = etFinRefrigerio.text.toString().trim()
-            
-            if (inicioRefrigerio.isEmpty() || finRefrigerio.isEmpty()) {
-                Toast.makeText(this, "Configure el horario de refrigerio", Toast.LENGTH_SHORT).show()
-                return
-            }
-            
-            if (!validarFormatoHora(inicioRefrigerio) || !validarFormatoHora(finRefrigerio)) {
-                Toast.makeText(this, "Formato de hora de refrigerio inválido", Toast.LENGTH_SHORT).show()
-                return
-            }
-            
-            // Calcular duración del refrigerio
-            try {
-                val formato = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-                val inicioTime = formato.parse(inicioRefrigerio)
-                val finTime = formato.parse(finRefrigerio)
-                
-                if (inicioTime != null && finTime != null) {
-                    minutosRefrigerio = ((finTime.time - inicioTime.time) / (1000 * 60)).toInt()
-                    if (minutosRefrigerio <= 0) {
-                        Toast.makeText(this, "El horario de refrigerio es inválido", Toast.LENGTH_SHORT).show()
-                        return
-                    }
-                    
-                    // Validar que el refrigerio esté dentro del horario laboral
-                    if (!validarRefrigerioEnHorario(horaEntrada, horaSalida, inicioRefrigerio, finRefrigerio)) {
-                        Toast.makeText(this, "El refrigerio debe estar dentro del horario laboral", Toast.LENGTH_SHORT).show()
-                        return
-                    }
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this, "Error en el formato de horario de refrigerio", Toast.LENGTH_SHORT).show()
-                return
-            }
-        }
+        // Configuración básica - refrigerio se maneja en modal de horario flexible
+        val tieneRefrigerio = false
+        val inicioRefrigerio = "12:00"
+        val finRefrigerio = "13:00"
+        val minutosRefrigerio = 60
         
         // Determinar tipo de horario según el Switch
         val tipoHorario = if (switchTipoHorario.isChecked) "VARIABLE" else "FIJO"

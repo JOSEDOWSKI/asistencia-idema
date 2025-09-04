@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_color"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Título -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📧 Configuración de Email"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:gravity="center"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Configuración del Servidor SMTP -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="📧 Configuración del Servidor SMTP"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginBottom="16dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Servidor SMTP:"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary" />
+
+                <EditText
+                    android:id="@+id/et_smtp_server"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="smtp.gmail.com"
+                    android:textSize="16sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Puerto:"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary" />
+
+                <EditText
+                    android:id="@+id/et_smtp_port"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="587"
+                    android:inputType="number"
+                    android:textSize="16sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Email de origen:"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary" />
+
+                <EditText
+                    android:id="@+id/et_email_from"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="tu-email@gmail.com"
+                    android:inputType="textEmailAddress"
+                    android:textSize="16sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Contraseña de aplicación:"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary" />
+
+                <EditText
+                    android:id="@+id/et_password"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Contraseña de aplicación"
+                    android:inputType="textPassword"
+                    android:textSize="16sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp"
+                    android:layout_marginBottom="12dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <Switch
+                        android:id="@+id/switch_ssl"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:layout_marginEnd="8dp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Usar SSL/TLS"
+                        android:textSize="14sp"
+                        android:textColor="@color/text_primary" />
+
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btn_test_conexion_email"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🔧 Probar Conexión"
+                    android:textSize="16sp"
+                    android:background="@drawable/button_secondary_selector"
+                    android:textColor="@color/text_primary" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Configuración de Envío Automático -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="⏰ Envío Automático"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginBottom="16dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <Switch
+                        android:id="@+id/switch_envio_automatico"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Enviar reporte automáticamente"
+                        android:textSize="14sp"
+                        android:textColor="@color/text_primary" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Hora de envío:"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary" />
+
+                <EditText
+                    android:id="@+id/et_hora_envio"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="18:00"
+                    android:text="18:00"
+                    android:textSize="16sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="💡 El reporte se enviará automáticamente todos los días laborables a la hora especificada"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"
+                    android:background="#F0F8FF"
+                    android:padding="8dp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Gestión de Destinatarios -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="👥 Destinatarios"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginBottom="16dp" />
+
+                <Button
+                    android:id="@+id/btn_agregar_destinatario"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="➕ Agregar Destinatario"
+                    android:textSize="16sp"
+                    android:background="@drawable/button_primary_selector"
+                    android:textColor="@color/white"
+                    android:layout_marginBottom="16dp" />
+
+                <LinearLayout
+                    android:id="@+id/destinatarios_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Botón Guardar -->
+        <Button
+            android:id="@+id/btn_guardar_config_email"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="💾 Guardar Configuración"
+            android:textSize="18sp"
+            android:background="@drawable/button_primary_selector"
+            android:textColor="@color/white"
+            android:layout_marginTop="16dp" />
+
+    </LinearLayout>
+
+</ScrollView>

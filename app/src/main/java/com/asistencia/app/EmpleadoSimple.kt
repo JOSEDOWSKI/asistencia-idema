@@ -7,5 +7,8 @@ data class EmpleadoSimple(
     val apellidos: String,
     val horaEntrada: String,
     val horaSalida: String,
+    val refrigerioInicio: String = "12:00",
+    val refrigerioFin: String = "13:00",
+    val esFlexible: Boolean = false,
     val activo: Boolean = true
 )

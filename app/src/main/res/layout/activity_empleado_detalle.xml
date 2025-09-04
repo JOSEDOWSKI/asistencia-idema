@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F5F5">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Header con foto y información básica -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="8dp"
+            app:cardBackgroundColor="@android:color/white">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <!-- Foto del empleado -->
+                <FrameLayout
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="16dp">
+
+                    <ImageView
+                        android:id="@+id/iv_foto_empleado"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:src="@drawable/ic_person_placeholder"
+                        android:scaleType="centerCrop"
+                        android:background="@drawable/circle_background" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/circle_stroke" />
+
+                </FrameLayout>
+
+                <!-- Nombre del empleado -->
+                <TextView
+                    android:id="@+id/tv_nombre_empleado"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Nombre del Empleado"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:textColor="#2C3E50"
+                    android:gravity="center"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- DNI -->
+                <TextView
+                    android:id="@+id/tv_dni_empleado"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="DNI: 12345678"
+                    android:textSize="16sp"
+                    android:textColor="#7F8C8D"
+                    android:gravity="center"
+                    android:layout_marginBottom="16dp" />
+
+                <!-- Estado del empleado -->
+                <TextView
+                    android:id="@+id/tv_estado_empleado"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="✅ Activo"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#27AE60"
+                    android:background="@drawable/status_background"
+                    android:padding="8dp"
+                    android:layout_marginBottom="16dp" />
+
+                <!-- Botón cambiar foto -->
+                <Button
+                    android:id="@+id/btn_cambiar_foto"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center"
+                    android:text="📸 Cambiar Foto"
+                    android:textSize="12sp"
+                    android:background="@drawable/button_secondary_selector"
+                    android:textColor="#2C3E50" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Tarjeta de Horario -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_horario"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@android:color/white">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🕐 Horario de Trabajo"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#2C3E50"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:id="@+id/tv_horario_empleado"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Cargando horario..."
+                    android:textSize="14sp"
+                    android:textColor="#34495E"
+                    android:lineSpacingExtra="4dp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Tarjeta de Estadísticas -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_estadisticas"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@android:color/white">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="📊 Estadísticas de Hoy"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#2C3E50"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:id="@+id/tv_estadisticas"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Cargando estadísticas..."
+                    android:textSize="14sp"
+                    android:textColor="#34495E"
+                    android:lineSpacingExtra="4dp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Tarjeta de Último Registro -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_registros"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@android:color/white">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="📝 Último Registro"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#2C3E50"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:id="@+id/tv_ultimo_registro"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Cargando último registro..."
+                    android:textSize="14sp"
+                    android:textColor="#34495E" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Tarjeta de Calendario -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_calendario"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@android:color/white">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="📅 Calendario de Asistencia"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#2C3E50"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🔴 Días trabajados | 🏷️ Ausencias | 📅 Día actual | 🟡 Seleccionado"
+                    android:textSize="12sp"
+                    android:textColor="#7F8C8D"
+                    android:layout_marginBottom="16dp" />
+
+                <com.asistencia.app.ui.CalendarView
+                    android:id="@+id/calendar_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="16dp">
+
+                    <Button
+                        android:id="@+id/btn_editar_horario"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:text="✏️ Editar Horario"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/white"
+                        android:background="@drawable/button_primary_selector"
+                        android:layout_marginEnd="8dp" />
+
+                    <Button
+                        android:id="@+id/btn_gestionar_ausencias"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:text="📅 Gestionar Ausencias"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/white"
+                        android:background="@drawable/button_warning_selector"
+                        android:layout_marginStart="8dp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Botones de acción -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="24dp">
+
+            <!-- Botón Editar -->
+            <Button
+                android:id="@+id/btn_editar_empleado"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="✏️ Editar Empleado"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:background="@drawable/button_primary_selector"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Botón Activar/Desactivar -->
+            <Button
+                android:id="@+id/btn_activar_desactivar"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="❌ Desactivar"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:background="@drawable/button_warning_selector"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Botón Eliminar -->
+            <Button
+                android:id="@+id/btn_eliminar_empleado"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="🗑️ Eliminar Empleado"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:background="@drawable/button_danger_selector" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

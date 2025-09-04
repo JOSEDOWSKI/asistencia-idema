@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/modal_background"
+    android:padding="24dp"
+    android:layout_margin="16dp"
+    android:elevation="8dp">
+
+    <!-- Header del modal -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="24dp">
+
+        <ImageView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_check_circle"
+            android:contentDescription="Icono de envío"
+            android:layout_marginEnd="16dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="📤 Enviar Reporte"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:gravity="center"
+            android:layout_marginBottom="20dp" />
+
+    </LinearLayout>
+
+    <!-- Descripción -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Selecciona cómo quieres enviar o exportar el reporte de asistencia:"
+        android:textSize="16sp"
+        android:textColor="@color/text_secondary"
+        android:gravity="center"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Opciones de envío -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginBottom="24dp">
+
+        <!-- Enviar por Email -->
+        <Button
+            android:id="@+id/btnEnviarEmail"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="📧 Enviar por Email"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:background="@drawable/button_primary_selector"
+            android:layout_marginBottom="12dp"
+            android:padding="16dp" />
+
+        <!-- Exportar Excel -->
+        <Button
+            android:id="@+id/btnExportarExcel"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="📊 Exportar Excel"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:background="@drawable/button_secondary_selector"
+            android:layout_marginBottom="12dp"
+            android:padding="16dp" />
+
+        <!-- Exportar CSV -->
+        <Button
+            android:id="@+id/btnExportarCSV"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="📄 Exportar CSV"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:background="@drawable/button_secondary_selector"
+            android:layout_marginBottom="12dp"
+            android:padding="16dp" />
+
+        <!-- Enviar Reporte de Pruebas -->
+        <Button
+            android:id="@+id/btnEnviarPruebas"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="🧪 Enviar Reporte de Pruebas"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:background="@drawable/button_secondary_selector"
+            android:layout_marginBottom="12dp"
+            android:padding="16dp" />
+
+    </LinearLayout>
+
+    <!-- Botón cancelar -->
+    <Button
+        android:id="@+id/btnCancelar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="❌ Cancelar"
+        android:textSize="16sp"
+        android:textColor="@color/white"
+        android:background="@drawable/button_cancel_selector"
+        android:padding="16dp" />
+
+</LinearLayout>

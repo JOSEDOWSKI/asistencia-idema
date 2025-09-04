@@ -79,25 +79,15 @@ class EmpleadosActivity : AppCompatActivity() {
         val btnAgregar = Button(this).apply {
             text = "➕ Agregar Empleado"
             textSize = 16f
+            textSize = 16f
             setPadding(20, 20, 20, 20)
+            setTextColor(android.graphics.Color.WHITE)
+            setBackgroundColor(android.graphics.Color.parseColor("#4CAF50")) // Color verde de Promesa
             setOnClickListener { 
                 mostrarDialogoAgregar()
             }
         }
         mainLayout.addView(btnAgregar)
-        
-        // Botón limpiar (para debug)
-        val btnLimpiar = Button(this).apply {
-            text = "🗑️ Limpiar Todos (Debug)"
-            textSize = 14f
-            setPadding(20, 20, 20, 20)
-            setBackgroundColor(android.graphics.Color.RED)
-            setTextColor(android.graphics.Color.WHITE)
-            setOnClickListener { 
-                limpiarTodos()
-            }
-        }
-        mainLayout.addView(btnLimpiar)
         
         // Separador
         val separator = View(this).apply {
@@ -424,7 +414,7 @@ class EmpleadosActivity : AppCompatActivity() {
             // Buscar y actualizar empleado
             val index = empleados.indexOfFirst { it.dni == dni }
             if (index != -1) {
-                empleados[index] = EmpleadoSimple(dni, nombres, apellidos, entrada, salida, activo)
+                empleados[index] = EmpleadoSimple(dni, nombres, apellidos, entrada, salida, "12:00", "13:00", false, activo)
                 
                 // Guardar cambios
                 val nuevaLista = gson.toJson(empleados)
@@ -542,7 +532,7 @@ class EmpleadosActivity : AppCompatActivity() {
             }
             
             // Agregar nuevo empleado
-            val nuevoEmpleado = EmpleadoSimple(dni, nombres, apellidos, entrada, salida, true)
+            val nuevoEmpleado = EmpleadoSimple(dni, nombres, apellidos, entrada, salida, "12:00", "13:00", false, true)
             empleados.add(nuevoEmpleado)
             
             // Guardar

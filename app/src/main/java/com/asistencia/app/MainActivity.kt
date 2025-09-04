@@ -6,6 +6,7 @@ import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.asistencia.app.repository.AsistenciaRepository
+import com.asistencia.app.utils.SecureNavigation
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -28,19 +29,19 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, ScannerActivity::class.java))
         }
         
-        // Nueva gestión de empleados mejorada
+        // Nueva gestión de empleados mejorada (con PIN)
         findViewById<Button>(R.id.btnGestionEmpleados).setOnClickListener {
-            startActivity(Intent(this, EmpleadosActivityMejorado::class.java))
+            SecureNavigation.navigateToActivity(this, EmpleadosActivityMejorado::class.java)
         }
         
-        // Reportes (mantener la actividad existente por ahora)
+        // Reportes (con PIN)
         findViewById<Button>(R.id.btnReportes).setOnClickListener {
-            startActivity(Intent(this, ReportesActivity::class.java))
+            SecureNavigation.navigateToActivity(this, ReportesActivity::class.java)
         }
         
-        // Nueva configuración
+        // Nueva configuración (con PIN)
         findViewById<Button>(R.id.btnConfiguracion).setOnClickListener {
-            startActivity(Intent(this, ConfiguracionActivity::class.java))
+            SecureNavigation.navigateToActivity(this, ConfiguracionActivity::class.java)
         }
     }
     
@@ -59,4 +60,5 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+    
 }

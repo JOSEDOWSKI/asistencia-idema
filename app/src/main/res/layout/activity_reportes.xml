@@ -28,59 +28,60 @@
             android:layout_marginTop="8dp">
 
             <Button
-                android:id="@+id/btnExportarCSV"
+                android:id="@+id/btnEnviar"
                 style="@style/SoftPrimaryButton"
                 android:layout_width="0dp"
-                android:layout_height="50dp"
+                android:layout_height="56dp"
                 android:layout_weight="1"
-                android:text="📄 Exportar CSV"
+                android:text="📤 Enviar"
                 android:layout_marginEnd="8dp" />
 
             <Button
                 android:id="@+id/btnLimpiarDatos"
-                style="@style/SoftButton"
                 android:layout_width="0dp"
-                android:layout_height="50dp"
+                android:layout_height="56dp"
                 android:layout_weight="1"
                 android:text="🗑️ Limpiar Datos"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:background="@drawable/button_secondary_selector"
+                android:layout_marginStart="8dp" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <Button
+                android:id="@+id/btnEnvioAutomatico"
+                style="@style/SoftPrimaryButton"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:text="⏰ Envío Automático"
+                android:layout_marginEnd="8dp" />
+
+            <Button
+                android:id="@+id/btnConfiguracionEmail"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:text="⚙️ Configurar Email"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:background="@drawable/button_secondary_selector"
                 android:layout_marginStart="8dp" />
 
         </LinearLayout>
 
     </LinearLayout>
 
-    <!-- Botón de estadísticas más suave -->
-    <Button
-        android:id="@+id/btnEstadisticasTardanzas"
-        style="@style/SoftButton"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:text="📈 Estadísticas de Tardanzas"
-        android:layout_marginBottom="16dp" />
 
-    <!-- Sección de estadísticas -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="@drawable/elegant_card_background"
-        android:padding="16dp"
-        android:layout_marginBottom="16dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="📈 Estadísticas del Día"
-            style="@style/SubtitleText"
-            android:layout_marginBottom="8dp" />
 
-        <LinearLayout
-            android:id="@+id/estadisticasContent"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" />
-
-    </LinearLayout>
 
     <!-- Título de registros -->
     <TextView

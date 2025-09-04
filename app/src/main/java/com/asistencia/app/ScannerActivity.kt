@@ -5,7 +5,10 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import android.widget.*
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -21,6 +24,7 @@ import com.google.android.gms.location.LocationServices
 import com.journeyapps.barcodescanner.DecoratedBarcodeView
 import kotlinx.coroutines.launch
 import android.content.Context
+import android.app.Dialog
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
@@ -40,6 +44,7 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
     private var currentLocation: Location? = null
     private var isProcessing = false
     private var esModoKiosco = false
+    private var modoLectura: ModoLectura = ModoLectura.QR
     
     companion object {
         private const val CAMERA_PERMISSION_REQUEST = 100
@@ -134,6 +139,13 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
         btnLinterna = findViewById(R.id.btn_linterna)
         progressBar = findViewById(R.id.progress_bar)
         
+        // Ocultar el texto de estado de la librería de escaneo
+        try {
+            barcodeView.setStatusText("")
+        } catch (e: Exception) {
+            // Si no funciona, intentamos con otra configuración
+        }
+        
         // CONFIGURAR CÁMARA FRONTAL INMEDIATAMENTE SI ES MODO KIOSCO
         if (esModoKiosco) {
             configurarCamaraFrontal()
@@ -226,6 +238,20 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
                     ) { finish() }
                 }
             }
+            LOCATION_PERMISSION_REQUEST -> {
+                val locationGranted = grantResults.isNotEmpty() && 
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED
+                
+                if (locationGranted) {
+                    // Obtener ubicación ahora que tenemos permiso
+                    fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                        currentLocation = location
+                        Toast.makeText(this, "📍 Ubicación obtenida", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Toast.makeText(this, "⚠️ Sin ubicación: registros sin coordenadas GPS", Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
     
@@ -233,13 +259,13 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
         lifecycleScope.launch {
             try {
                 // Intentar cargar configuración desde base de datos
-                var modoLectura = ModoLectura.QR
+                this@ScannerActivity.modoLectura = ModoLectura.QR
                 var modoOperacion = ModoOperacion.AUTOSERVICIO
                 var capturaUbicacion = false
                 
                 try {
                     val dispositivo = repository.getDispositivo()
-                    modoLectura = dispositivo.modoLectura
+                    this@ScannerActivity.modoLectura = dispositivo.modoLectura
                     modoOperacion = dispositivo.modoOperacion
                     capturaUbicacion = dispositivo.capturaUbicacion
                 } catch (dbError: Exception) {
@@ -248,11 +274,12 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
                     val modoLecturaIndex = sharedPreferences.getInt("modo_lectura", 0)
                     val modoOperacionIndex = sharedPreferences.getInt("modo_operacion", 0)
                     
-                    modoLectura = when (modoLecturaIndex) {
-                        0 -> ModoLectura.QR
-                        1 -> ModoLectura.DNI_PDF417
-                        2 -> ModoLectura.CODE128
-                        else -> ModoLectura.QR
+                    this@ScannerActivity.modoLectura = when (modoLecturaIndex) {
+                        0 -> ModoLectura.UNIVERSAL  // Modo universal por defecto
+                        1 -> ModoLectura.QR
+                        2 -> ModoLectura.DNI_PDF417
+                        3 -> ModoLectura.CODE128
+                        else -> ModoLectura.UNIVERSAL
                     }
                     
                     modoOperacion = when (modoOperacionIndex) {
@@ -346,6 +373,16 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
             
             // 6. Configurar formatos de código
             val formats = when (modoLectura) {
+                ModoLectura.UNIVERSAL -> listOf(
+                    com.google.zxing.BarcodeFormat.QR_CODE,
+                    com.google.zxing.BarcodeFormat.PDF_417,
+                    com.google.zxing.BarcodeFormat.CODE_39,
+                    com.google.zxing.BarcodeFormat.CODE_128,
+                    com.google.zxing.BarcodeFormat.EAN_13,
+                    com.google.zxing.BarcodeFormat.EAN_8,
+                    com.google.zxing.BarcodeFormat.UPC_A,
+                    com.google.zxing.BarcodeFormat.UPC_E
+                )
                 ModoLectura.QR -> listOf(com.google.zxing.BarcodeFormat.QR_CODE)
                 ModoLectura.DNI_PDF417 -> listOf(com.google.zxing.BarcodeFormat.PDF_417)
                 ModoLectura.CODE128 -> listOf(com.google.zxing.BarcodeFormat.CODE_128)
@@ -417,8 +454,9 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
     
     private fun getModoLecturaTexto(modo: ModoLectura): String {
         return when (modo) {
+            ModoLectura.UNIVERSAL -> "UNIVERSAL (Todos los códigos)"
             ModoLectura.QR -> "QR Code"
-            ModoLectura.DNI_PDF417 -> "DNI (PDF417)"
+            ModoLectura.DNI_PDF417 -> "DNI (Code 39)"
             ModoLectura.CODE128 -> "Código de Barras"
         }
     }
@@ -430,6 +468,13 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
             fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                 currentLocation = location
             }
+        } else {
+            // Solicitar permiso de ubicación si no lo tiene
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                LOCATION_PERMISSION_REQUEST
+            )
         }
     }
     
@@ -441,9 +486,138 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
         }
     }
     
-    private fun updateProximoEventoDisplay(mensaje: String = "Apunte la cámara al código para escanear") {
-        tvProximoEvento.text = mensaje
-        tvEmpleadoInfo.text = "Esperando escaneo..."
+    private fun updateProximoEventoDisplay(mensaje: String = "") {
+        if (mensaje.isEmpty()) {
+            val textoModo = getModoLecturaTexto(this.modoLectura)
+            tvProximoEvento.text = "Autoservicio-$textoModo"
+        } else {
+            tvProximoEvento.text = mensaje
+        }
+        tvEmpleadoInfo.text = "Apunte la cámara al código"
+    }
+    
+    private fun mostrarProximoEventoEsperado(empleado: EmpleadoSimple) {
+        try {
+            val horaActual = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date())
+            val fechaActual = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date())
+            
+            // Obtener último registro del empleado
+            val ultimoRegistro = obtenerUltimoRegistroEmpleado(empleado.dni, fechaActual)
+            
+            // Determinar próximo evento esperado
+            val proximoEvento = when {
+                ultimoRegistro == null -> "🌅 ENTRADA TURNO"
+                ultimoRegistro["tipoEvento"]?.contains("ENTRADA_TURNO") == true -> {
+                    // Si el último fue entrada, verificar si está en horario de refrigerio
+                    val estaEnRefrigerio = esHorarioDeRefrigerio(horaActual, empleado)
+                    if (estaEnRefrigerio) "🍽️ SALIDA REFRIGERIO" else "🏠 SALIDA TURNO"
+                }
+                ultimoRegistro["tipoEvento"]?.contains("SALIDA_REFRIGERIO") == true -> "🔄 ENTRADA POST REFRIGERIO"
+                ultimoRegistro["tipoEvento"]?.contains("ENTRADA_POST_REFRIGERIO") == true -> "🏠 SALIDA TURNO"
+                ultimoRegistro["tipoEvento"]?.contains("SALIDA_TURNO") == true -> "🌅 ENTRADA TURNO"
+                else -> "🌅 ENTRADA TURNO"
+            }
+            
+            // Mostrar mensaje informativo
+            val mensaje = "👤 ${empleado.nombres} ${empleado.apellidos}\n" +
+                         "📱 Próximo evento: $proximoEvento\n" +
+                         "⏰ Hora actual: $horaActual"
+            
+            tvProximoEvento.text = mensaje
+            tvProximoEvento.setTextColor(android.graphics.Color.parseColor("#2196F3"))
+            
+        } catch (e: Exception) {
+            tvProximoEvento.text = "Apunte la cámara al código para escanear"
+            tvProximoEvento.setTextColor(android.graphics.Color.WHITE)
+        }
+    }
+    
+    private fun mostrarModalAsistenciaExitosa(
+        empleado: EmpleadoSimple,
+        tipoEvento: String,
+        hora: String,
+        fecha: String,
+        horaEntrada: String,
+        horaSalida: String,
+        refrigerioInicio: String,
+        refrigerioFin: String,
+        estadoHorario: String,
+        esFlexible: Boolean
+    ) {
+        try {
+            // Crear el diálogo personalizado
+            val dialog = Dialog(this)
+            dialog.setContentView(R.layout.dialog_asistencia_exitosa)
+            
+            // Configurar el diálogo
+            dialog.window?.setLayout(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            dialog.setCancelable(false)
+            
+            // Configurar icono y título según el tipo de evento
+            val ivIconoEvento = dialog.findViewById<ImageView>(R.id.iv_icono_evento)
+            val tvTituloEvento = dialog.findViewById<TextView>(R.id.tv_titulo_evento)
+            
+            val (icono, titulo) = when (tipoEvento) {
+                "ENTRADA_TURNO" -> R.drawable.ic_check_circle to "🌅 ENTRADA TURNO REGISTRADA"
+                "SALIDA_REFRIGERIO" -> R.drawable.ic_check_circle to "🍽️ SALIDA REFRIGERIO REGISTRADA"
+                "ENTRADA_POST_REFRIGERIO" -> R.drawable.ic_check_circle to "🔄 ENTRADA POST REFRIGERIO REGISTRADA"
+                "SALIDA_TURNO" -> R.drawable.ic_check_circle to "🏠 SALIDA TURNO REGISTRADA"
+                else -> R.drawable.ic_check_circle to "✅ EVENTO REGISTRADO"
+            }
+            
+            ivIconoEvento.setImageResource(icono)
+            tvTituloEvento.text = titulo
+            
+            // Configurar información del empleado
+            dialog.findViewById<TextView>(R.id.tv_nombre_empleado).text = "${empleado.nombres} ${empleado.apellidos}"
+            dialog.findViewById<TextView>(R.id.tv_dni_empleado).text = "DNI: ${empleado.dni}"
+            dialog.findViewById<TextView>(R.id.tv_tipo_horario).text = "Tipo: ${if (esFlexible) "Horario Flexible" else "Horario Fijo"}"
+            
+            // Configurar detalles del evento
+            dialog.findViewById<TextView>(R.id.tv_fecha_evento).text = fecha
+            dialog.findViewById<TextView>(R.id.tv_hora_evento).text = hora
+            dialog.findViewById<TextView>(R.id.tv_horario_dia).text = "${horaEntrada ?: "N/A"} - ${horaSalida ?: "N/A"}"
+            dialog.findViewById<TextView>(R.id.tv_refrigerio_dia).text = "${refrigerioInicio ?: "N/A"} - ${refrigerioFin ?: "N/A"}"
+            
+            // Configurar estado y ubicación
+            val tvEstadoHorario = dialog.findViewById<TextView>(R.id.tv_estado_horario)
+            tvEstadoHorario.text = estadoHorario
+            
+            // Cambiar color según el estado
+            val colorEstado = when {
+                estadoHorario.contains("✅") -> Color.parseColor("#4CAF50") // Verde
+                estadoHorario.contains("⚠️") -> Color.parseColor("#FF9800") // Naranja
+                estadoHorario.contains("❌") -> Color.parseColor("#F44336") // Rojo
+                else -> Color.parseColor("#4CAF50") // Verde por defecto
+            }
+            tvEstadoHorario.setTextColor(colorEstado)
+            
+            // Configurar ubicación
+            val tvUbicacion = dialog.findViewById<TextView>(R.id.tv_ubicacion)
+            if (currentLocation != null) {
+                tvUbicacion.text = "📍 Ubicación: ${currentLocation!!.latitude}, ${currentLocation!!.longitude}"
+            } else {
+                tvUbicacion.text = "📍 Ubicación: No disponible"
+            }
+            
+            // Configurar botón continuar
+            dialog.findViewById<Button>(R.id.btn_continuar).setOnClickListener {
+                dialog.dismiss()
+                resetScanner()
+            }
+            
+            // Mostrar el diálogo
+            dialog.show()
+            
+        } catch (e: Exception) {
+            // Fallback al diálogo básico si hay error
+            Toast.makeText(this, "Error al mostrar modal: ${e.message}", Toast.LENGTH_LONG).show()
+            resetScanner()
+        }
     }
     
     // Implementación de ScannerService.ScannerCallback
@@ -459,6 +633,9 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
                 val empleado = buscarEmpleado(empleadoId)
                 
                 if (empleado != null) {
+                    // Mostrar próximo evento esperado
+                    mostrarProximoEventoEsperado(empleado)
+                    
                     if (esModoKiosco) {
                         procesarAsistenciaKiosco(empleado, empleadoId)
                     } else {
@@ -670,6 +847,31 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
     private fun extraerIdDelCodigo(rawCode: String, modo: ModoLectura): String {
         return try {
             when (modo) {
+                ModoLectura.UNIVERSAL -> {
+                    // En modo universal, detectar automáticamente el tipo de código
+                    when {
+                        rawCode.startsWith("BEGIN:VCARD") -> extraerIdDeVCard(rawCode)
+                        rawCode.startsWith("{") -> extraerIdDeJson(rawCode)
+                        rawCode.length == 8 && rawCode.all { it.isDigit() } -> rawCode
+                        else -> {
+                            val codigo = rawCode.trim()
+                            if (codigo.isNotEmpty()) {
+                                val numerosEncontrados = codigo.filter { it.isDigit() }
+                                if (numerosEncontrados.length == 8) {
+                                    numerosEncontrados
+                                } else if (numerosEncontrados.length > 8) {
+                                    numerosEncontrados.takeLast(8)
+                                } else if (numerosEncontrados.length > 0) {
+                                    numerosEncontrados.padStart(8, '0')
+                                } else {
+                                    codigo
+                                }
+                            } else {
+                                ""
+                            }
+                        }
+                    }
+                }
                 ModoLectura.QR -> {
                     // Intentar extraer ID de empleado del QR
                     when {
@@ -825,33 +1027,77 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
             Pair(empleado.horaEntrada, empleado.horaSalida)
         }
         
+        // Obtener horario de refrigerio
+        val (refrigerioInicio, refrigerioFin) = if (esFlexible && empleadoFlexible != null) {
+            empleadoFlexible.getRefrigerioHoy() ?: Pair(empleado.refrigerioInicio, empleado.refrigerioFin)
+        } else {
+            Pair(empleado.refrigerioInicio, empleado.refrigerioFin)
+        }
+        
         // Determinar si es entrada o salida basado en el último registro del empleado
         val ultimoRegistro = obtenerUltimoRegistroEmpleado(dni, fechaActual)
         val esEntrada = determinarSiEsEntrada(ultimoRegistro, horaActual, empleado)
-        val tipoEvento = if (esEntrada) "📥 ENTRADA" else "📤 SALIDA"
-        val emoji = if (esEntrada) "🌅" else "🏠"
         
-        // Verificar si está dentro del horario (usando horario específico del día)
-        val dentroHorario = if (esEntrada) {
-            horaActual <= horaEntrada || 
-            calcularDiferenciaMinutos(horaActual, horaEntrada) <= 15
+        // Verificar si está en horario de refrigerio
+        val estaEnRefrigerio = if (esFlexible && empleadoFlexible != null) {
+            empleadoFlexible.estaEnRefrigerio()
         } else {
-            horaActual >= horaSalida
+            // Lógica para empleados regulares
+            val formato = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+            val actual = formato.parse(horaActual)
+            val inicioRefrigerio = formato.parse(refrigerioInicio)
+            val finRefrigerio = formato.parse(refrigerioFin)
+            
+            actual != null && inicioRefrigerio != null && finRefrigerio != null &&
+            !actual.before(inicioRefrigerio) && !actual.after(finRefrigerio)
         }
         
-        val estadoHorario = if (dentroHorario) {
-            "✅ PUNTUAL"
-        } else {
-            if (esEntrada) {
-                val minutosRetraso = calcularDiferenciaMinutos(horaEntrada, horaActual)
-                if (minutosRetraso <= 15) {
-                    "⚠️ RETRASO RECUPERABLE ($minutosRetraso min)"
+        // Determinar tipo de evento usando la nueva lógica
+        val tipoEventoDeterminado = determinarTipoEvento(ultimoRegistro, horaActual, empleado)
+        val (tipoEvento, emoji) = when (tipoEventoDeterminado) {
+            "ENTRADA_TURNO" -> "🌅 ENTRADA TURNO" to "🌅"
+            "SALIDA_REFRIGERIO" -> "🍽️ SALIDA REFRIGERIO" to "🍽️"
+            "ENTRADA_POST_REFRIGERIO" -> "🔄 ENTRADA POST REFRIGERIO" to "🔄"
+            "SALIDA_TURNO" -> "🏠 SALIDA TURNO" to "🏠"
+            else -> "📋 EVENTO" to "📋"
+        }
+        
+        // Verificar si está dentro del horario (usando horario específico del día)
+        val estadoHorario = when {
+            tipoEvento.contains("REFRIGERIO") -> {
+                // Para eventos de refrigerio, verificar si está en el horario correcto
+                val dentroHorarioRefrigerio = horaActual >= refrigerioInicio && horaActual <= refrigerioFin
+                if (dentroHorarioRefrigerio) {
+                    "✅ PUNTUAL"
                 } else {
-                    "❌ TARDANZA ($minutosRetraso min)"
+                    "⚠️ FUERA DE HORARIO DE REFRIGERIO"
                 }
-            } else {
-                "⏰ SALIDA TEMPRANA"
             }
+            tipoEvento.contains("ENTRADA") && !tipoEvento.contains("REFRIGERIO") -> {
+                // Para entrada normal
+                val dentroHorario = horaActual <= horaEntrada || 
+                    calcularDiferenciaMinutos(horaActual, horaEntrada) <= 15
+                if (dentroHorario) {
+                    "✅ PUNTUAL"
+                } else {
+                    val minutosRetraso = calcularDiferenciaMinutos(horaEntrada, horaActual)
+                    if (minutosRetraso <= 15) {
+                        "⚠️ RETRASO RECUPERABLE ($minutosRetraso min)"
+                    } else {
+                        "❌ TARDANZA ($minutosRetraso min)"
+                    }
+                }
+            }
+            tipoEvento.contains("SALIDA") && !tipoEvento.contains("REFRIGERIO") -> {
+                // Para salida normal
+                val dentroHorario = horaActual >= horaSalida
+                if (dentroHorario) {
+                    "✅ PUNTUAL"
+                } else {
+                    "⏰ SALIDA TEMPRANA"
+                }
+            }
+            else -> "✅ PUNTUAL"
         }
         
         val mensaje = buildString {
@@ -863,33 +1109,45 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
             
             if (esFlexible) {
                 append("⏰ Horario hoy: $horaEntrada - $horaSalida\n")
+                append("🍽️ Refrigerio: $refrigerioInicio - $refrigerioFin\n")
                 append("📋 Tipo: Horario Flexible\n")
                 if (empleadoFlexible != null) {
                     append("📊 ${empleadoFlexible.getEstadoActual()}\n")
                 }
             } else {
                 append("⏰ Horario: $horaEntrada - $horaSalida\n")
+                append("🍽️ Refrigerio: $refrigerioInicio - $refrigerioFin\n")
                 append("📋 Tipo: Horario Fijo\n")
             }
             
-            append("\n📊 Estado: $estadoHorario\n\n")
-            append("✅ Registro guardado correctamente")
+            append("\n📊 Estado: $estadoHorario\n")
+            
+            // Agregar información de ubicación
+            if (currentLocation != null) {
+                append("📍 Ubicación: ${currentLocation!!.latitude}, ${currentLocation!!.longitude}\n")
+            } else {
+                append("📍 Ubicación: No disponible\n")
+            }
+            
+            append("\n✅ Registro guardado correctamente")
         }
         
-        // Guardar el registro en SharedPreferences
-        guardarRegistroFlexible(empleado, tipoEvento, horaActual, fechaActual, estadoHorario, esFlexible)
+        // Guardar el registro en SharedPreferences con el tipo de evento correcto
+        guardarRegistroFlexible(empleado, tipoEventoDeterminado, horaActual, fechaActual, estadoHorario, esFlexible)
         
-        AlertDialog.Builder(this)
-            .setTitle("✅ Asistencia Registrada")
-            .setMessage(mensaje)
-            .setPositiveButton("Continuar") { _, _ ->
-                resetScanner()
-            }
-            .setNegativeButton("Salir") { _, _ ->
-                finish()
-            }
-            .setCancelable(false)
-            .show()
+        // Mostrar modal personalizado moderno
+        mostrarModalAsistenciaExitosa(
+            empleado,
+            tipoEventoDeterminado,
+            horaActual,
+            fechaActual,
+            horaEntrada,
+            horaSalida,
+            refrigerioInicio,
+            refrigerioFin,
+            estadoHorario,
+            esFlexible
+        )
     }
     
     private fun calcularDiferenciaMinutos(hora1: String, hora2: String): Int {
@@ -936,28 +1194,42 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
             val ultimoTipoEvento = ultimoRegistro["tipoEvento"] ?: ""
             val ultimaHora = ultimoRegistro["hora"] ?: ""
             
-            // NUEVA LÓGICA MEJORADA para permitir múltiples entradas/salidas
+            // LÓGICA MEJORADA para manejar refrigerios y múltiples entradas/salidas
             when {
-                ultimoTipoEvento.contains("ENTRADA") -> {
-                    // Si el último fue ENTRADA, verificar si ha pasado suficiente tiempo para una nueva entrada
-                    val minutosDesdeUltimoRegistro = if (ultimaHora.isNotEmpty()) {
-                        calcularDiferenciaMinutos(ultimaHora, horaActual)
+                ultimoTipoEvento.contains("ENTRADA_TURNO") -> {
+                    // Si el último fue ENTRADA_TURNO, verificar si está en horario de refrigerio
+                    val estaEnRefrigerio = esHorarioDeRefrigerio(horaActual, empleado)
+                    if (estaEnRefrigerio) {
+                        false // Próximo es SALIDA_REFRIGERIO
                     } else {
-                        0
-                    }
-                    
-                    // Si han pasado más de 30 minutos desde la última entrada, permitir nueva entrada
-                    // Esto permite horarios partidos (ej: salió a almorzar y regresa)
-                    if (minutosDesdeUltimoRegistro > 30) {
-                        // Verificar si está en horario de entrada (mañana o tarde)
-                        esHorarioDeEntrada(horaActual, empleado)
-                    } else {
-                        false // Próximo es SALIDA (muy poco tiempo desde última entrada)
+                        // Verificar si ha pasado suficiente tiempo para una nueva entrada
+                        val minutosDesdeUltimoRegistro = if (ultimaHora.isNotEmpty()) {
+                            calcularDiferenciaMinutos(ultimaHora, horaActual)
+                        } else {
+                            0
+                        }
+                        
+                        // Si han pasado más de 30 minutos, permitir nueva entrada (horario partido)
+                        if (minutosDesdeUltimoRegistro > 30) {
+                            esHorarioDeEntrada(horaActual, empleado)
+                        } else {
+                            false // Próximo es SALIDA_TURNO
+                        }
                     }
                 }
                 
-                ultimoTipoEvento.contains("SALIDA") -> {
-                    // Si el último fue SALIDA, verificar si puede ser una nueva entrada
+                ultimoTipoEvento.contains("SALIDA_REFRIGERIO") -> {
+                    // Si el último fue SALIDA_REFRIGERIO, próximo es ENTRADA_POST_REFRIGERIO
+                    true // Es entrada post refrigerio
+                }
+                
+                ultimoTipoEvento.contains("ENTRADA_POST_REFRIGERIO") -> {
+                    // Si el último fue ENTRADA_POST_REFRIGERIO, próximo es SALIDA_TURNO
+                    false
+                }
+                
+                ultimoTipoEvento.contains("SALIDA_TURNO") -> {
+                    // Si el último fue SALIDA_TURNO, verificar si puede ser una nueva entrada
                     val minutosDesdeUltimoRegistro = if (ultimaHora.isNotEmpty()) {
                         calcularDiferenciaMinutos(ultimaHora, horaActual)
                     } else {
@@ -966,7 +1238,7 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
                     
                     // Si han pasado más de 15 minutos desde la salida, permitir nueva entrada
                     if (minutosDesdeUltimoRegistro > 15) {
-                        true // Permitir nueva ENTRADA
+                        true // Permitir nueva ENTRADA_TURNO
                     } else {
                         // Si es muy poco tiempo, verificar por horario
                         esHorarioDeEntrada(horaActual, empleado)
@@ -1011,6 +1283,101 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
         }
     }
     
+    private fun determinarTipoEvento(ultimoRegistro: Map<String, String>?, horaActual: String, empleado: EmpleadoSimple): String {
+        return try {
+            // Si no hay registro previo, es ENTRADA_TURNO
+            if (ultimoRegistro == null) {
+                return "ENTRADA_TURNO"
+            }
+            
+            val ultimoTipoEvento = ultimoRegistro["tipoEvento"] ?: ""
+            
+            // LÓGICA MEJORADA para determinar el tipo de evento
+            when {
+                ultimoTipoEvento.contains("ENTRADA_TURNO") -> {
+                    // Si el último fue ENTRADA_TURNO, verificar si está en horario de refrigerio
+                    val estaEnRefrigerio = esHorarioDeRefrigerio(horaActual, empleado)
+                    if (estaEnRefrigerio) {
+                        "SALIDA_REFRIGERIO"
+                    } else {
+                        "SALIDA_TURNO"
+                    }
+                }
+                
+                ultimoTipoEvento.contains("SALIDA_REFRIGERIO") -> {
+                    // Si el último fue SALIDA_REFRIGERIO, próximo es ENTRADA_POST_REFRIGERIO
+                    "ENTRADA_POST_REFRIGERIO"
+                }
+                
+                ultimoTipoEvento.contains("ENTRADA_POST_REFRIGERIO") -> {
+                    // Si el último fue ENTRADA_POST_REFRIGERIO, próximo es SALIDA_TURNO
+                    "SALIDA_TURNO"
+                }
+                
+                ultimoTipoEvento.contains("SALIDA_TURNO") -> {
+                    // Si el último fue SALIDA_TURNO, verificar si puede ser una nueva entrada
+                    val ultimaHora = ultimoRegistro["hora"] ?: ""
+                    val minutosDesdeUltimoRegistro = if (ultimaHora.isNotEmpty()) {
+                        calcularDiferenciaMinutos(ultimaHora, horaActual)
+                    } else {
+                        0
+                    }
+                    
+                    // Si han pasado más de 15 minutos desde la salida, permitir nueva entrada
+                    if (minutosDesdeUltimoRegistro > 15) {
+                        "ENTRADA_TURNO"
+                    } else {
+                        // Si es muy poco tiempo, verificar por horario
+                        if (esHorarioDeEntrada(horaActual, empleado)) {
+                            "ENTRADA_TURNO"
+                        } else {
+                            "SALIDA_TURNO"
+                        }
+                    }
+                }
+                
+                else -> {
+                    // Si no hay registro claro, usar lógica de horario
+                    if (esHorarioDeEntrada(horaActual, empleado)) {
+                        "ENTRADA_TURNO"
+                    } else {
+                        "SALIDA_TURNO"
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            // En caso de error, usar lógica de horario como fallback
+            if (esHorarioDeEntrada(horaActual, empleado)) {
+                "ENTRADA_TURNO"
+            } else {
+                "SALIDA_TURNO"
+            }
+        }
+    }
+    
+    private fun esHorarioDeRefrigerio(horaActual: String, empleado: EmpleadoSimple): Boolean {
+        return try {
+            val formato = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+            val actual = formato.parse(horaActual)
+            
+            // Verificar si es empleado flexible
+            val empleadoFlexible = buscarEmpleadoFlexible(empleado.dni)
+            val (inicioRefrigerio, finRefrigerio) = if (empleadoFlexible != null) {
+                empleadoFlexible.getRefrigerioHoy() ?: Pair(empleado.refrigerioInicio, empleado.refrigerioFin)
+            } else {
+                Pair(empleado.refrigerioInicio, empleado.refrigerioFin)
+            }
+            
+            val inicioRefrigerioParsed = formato.parse(inicioRefrigerio)
+            val finRefrigerioParsed = formato.parse(finRefrigerio)
+            
+            actual != null && inicioRefrigerioParsed != null && finRefrigerioParsed != null &&
+            !actual.before(inicioRefrigerioParsed) && !actual.after(finRefrigerioParsed)
+        } catch (e: Exception) {
+            false // En caso de error, asumir que no está en refrigerio
+        }
+    }
+    
     private fun guardarRegistroFlexible(empleado: EmpleadoSimple, tipoEvento: String, hora: String, fecha: String, estado: String, esFlexible: Boolean) {
         try {
             val sharedPreferences = getSharedPreferences("RegistrosApp", Context.MODE_PRIVATE)
@@ -1018,16 +1385,35 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
             val type = object : TypeToken<MutableList<Map<String, String>>>() {}.type
             val registros: MutableList<Map<String, String>> = Gson().fromJson(registrosJson, type) ?: mutableListOf()
             
+            // Obtener ubicación si está disponible
+            val ubicacionInfo = if (currentLocation != null) {
+                "📍 ${currentLocation!!.latitude}, ${currentLocation!!.longitude}"
+            } else {
+                "📍 Sin ubicación"
+            }
+            
+            // Mapear el tipo de evento interno a un formato legible
+            val tipoEventoLegible = when (tipoEvento) {
+                "ENTRADA_TURNO" -> "ENTRADA_TURNO"
+                "SALIDA_REFRIGERIO" -> "SALIDA_REFRIGERIO"
+                "ENTRADA_POST_REFRIGERIO" -> "ENTRADA_POST_REFRIGERIO"
+                "SALIDA_TURNO" -> "SALIDA_TURNO"
+                else -> tipoEvento
+            }
+            
             val nuevoRegistro = mapOf(
                 "dni" to empleado.dni,
                 "nombre" to "${empleado.nombres} ${empleado.apellidos}",
-                "tipoEvento" to tipoEvento,
+                "tipoEvento" to tipoEventoLegible,
                 "hora" to hora,
                 "fecha" to fecha,
                 "estado" to estado,
                 "esFlexible" to esFlexible.toString(),
                 "tipoHorario" to if (esFlexible) "FLEXIBLE" else "FIJO",
-                "timestamp" to System.currentTimeMillis().toString()
+                "timestamp" to System.currentTimeMillis().toString(),
+                "ubicacion" to ubicacionInfo,
+                "latitud" to (currentLocation?.latitude?.toString() ?: ""),
+                "longitud" to (currentLocation?.longitude?.toString() ?: "")
             )
             
             registros.add(nuevoRegistro)

@@ -26,7 +26,8 @@ data class Empleado(
     val refrigerioFlexibleJson: String? = null, // JSON con refrigerios por día
     
     val fechaCreacion: Long = System.currentTimeMillis(),
-    val fechaActualizacion: Long = System.currentTimeMillis()
+    val fechaActualizacion: Long = System.currentTimeMillis(),
+    val fotoPath: String? = null // Ruta de la foto del empleado
 )
 
 enum class TipoHorario {

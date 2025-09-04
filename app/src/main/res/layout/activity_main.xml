@@ -34,7 +34,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Sistema MVP con detección automática"
+            android:text="Desarrollado por Promesa"
             style="@style/HighContrastSecondaryText"
             android:layout_marginTop="8dp" />
 
@@ -69,7 +69,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="• Detección automática del próximo evento\n• Soporte para QR, DNI (PDF417) y Code128\n• Cálculo automático de tardanzas y recuperaciones"
+                android:text="• Detección automática del próximo evento\n• Soporte para QR, DNI (Code 39) y Code128\n• Cálculo automático de tardanzas y recuperaciones"
                 android:textSize="12sp"
                 android:textColor="@color/text_secondary"
                 android:lineSpacingExtra="2dp" />
@@ -88,24 +88,27 @@
             android:id="@+id/btnGestionEmpleados"
             style="@style/MainSecondaryButton"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="60dp"
             android:text="👥 Gestión de Empleados"
+            android:textSize="16sp"
             android:layout_marginBottom="12dp" />
 
         <Button
             android:id="@+id/btnReportes"
             style="@style/MainSecondaryButton"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="📊 Reportes y Estadísticas"
+            android:layout_height="60dp"
+            android:text="📊 Reportes"
+            android:textSize="16sp"
             android:layout_marginBottom="12dp" />
 
         <Button
             android:id="@+id/btnConfiguracion"
             style="@style/MainSecondaryButton"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="⚙️ Configuración del Sistema" />
+            android:layout_height="60dp"
+            android:text="⚙️ Configuración del Sistema"
+            android:textSize="16sp" />
 
     </LinearLayout>
 
@@ -113,7 +116,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="v2.0 - Sistema MVP Completo"
+        android:text="v3.0"
         android:textSize="12sp"
         android:textColor="@color/text_tertiary"
         android:gravity="center"

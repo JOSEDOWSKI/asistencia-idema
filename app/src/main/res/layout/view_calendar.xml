@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Header del calendario -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:id="@+id/prev_month_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:text="◀"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#3498DB"
+            android:gravity="center"
+            android:background="?android:attr/selectableItemBackgroundBorderless" />
+
+        <TextView
+            android:id="@+id/month_year_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Diciembre 2024"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#2C3E50"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/next_month_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:text="▶"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#3498DB"
+            android:gravity="center"
+            android:background="?android:attr/selectableItemBackgroundBorderless" />
+
+    </LinearLayout>
+
+    <!-- Grid del calendario -->
+    <GridLayout
+        android:id="@+id/calendar_grid"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:columnCount="7"
+        android:rowCount="7" />
+
+</LinearLayout>

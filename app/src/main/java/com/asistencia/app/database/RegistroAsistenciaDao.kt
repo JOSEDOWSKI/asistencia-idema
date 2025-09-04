@@ -66,4 +66,7 @@ interface RegistroAsistenciaDao {
     
     @Query("SELECT COUNT(*) FROM registros_asistencia WHERE estadoSync = 'PENDIENTE'")
     suspend fun getCountRegistrosPendientes(): Int
+    
+    @Query("SELECT * FROM registros_asistencia WHERE empleadoId = :empleadoId AND fecha BETWEEN :fechaInicio AND :fechaFin ORDER BY timestampDispositivo")
+    suspend fun getRegistrosByEmpleadoAndRango(empleadoId: String, fechaInicio: String, fechaFin: String): List<RegistroAsistencia>
 }

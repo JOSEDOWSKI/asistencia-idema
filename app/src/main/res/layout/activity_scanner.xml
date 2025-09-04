@@ -20,7 +20,8 @@
         android:background="#2E7D32"
         android:orientation="vertical"
         android:padding="16dp"
-        android:elevation="4dp">
+        android:elevation="4dp"
+        android:gravity="center">
 
         <TextView
             android:layout_width="wrap_content"
@@ -28,25 +29,28 @@
             android:text="📱 Control de Asistencias"
             android:textColor="@android:color/white"
             android:textSize="18sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:gravity="center" />
 
         <TextView
             android:id="@+id/tv_proximo_evento"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Apunte la cámara al código para escanear"
+            android:text="Autoservicio-QR Code"
             android:textColor="@android:color/white"
             android:textSize="14sp"
-            android:layout_marginTop="4dp" />
+            android:layout_marginTop="4dp"
+            android:gravity="center" />
 
         <TextView
             android:id="@+id/tv_empleado_info"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Esperando escaneo..."
+            android:text="Apunte la cámara al código"
             android:textColor="#E0FFFFFF"
             android:textSize="12sp"
-            android:layout_marginTop="2dp" />
+            android:layout_marginTop="2dp"
+            android:gravity="center" />
 
     </LinearLayout>
 

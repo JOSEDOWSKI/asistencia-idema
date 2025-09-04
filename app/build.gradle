@@ -2,6 +2,7 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'kotlin-kapt'
+    id 'com.google.dagger.hilt.android'
 }
 
 android {
@@ -12,10 +13,13 @@ android {
         applicationId "com.asistencia.app"
         minSdk 26  // Android 8.0 según requerimientos
         targetSdk 34
-        versionCode 2
-        versionName "2.0"
+        versionCode 3
+        versionName "3.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables {
+            useSupportLibrary true
+        }
     }
 
     buildTypes {
@@ -25,73 +29,141 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
     buildFeatures {
-        viewBinding false
+        viewBinding true
+        compose true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion '1.5.3'
+    }
+    packaging {
+        resources {
+            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+            excludes += 'META-INF/NOTICE.md'
+            excludes += 'META-INF/LICENSE.md'
+        }
     }
 }
 
 dependencies {
+    // Core Android
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.10.0'
+    implementation 'androidx.activity:activity-ktx:1.8.2'
+    implementation 'androidx.fragment:fragment-ktx:1.6.2'
+    
+    // Material Design 3
+    implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.recyclerview:recyclerview:1.3.2'
     implementation 'androidx.cardview:cardview:1.0.0'
     
-    // Room database para persistencia offline
-    implementation 'androidx.room:room-runtime:2.6.0'
-    implementation 'androidx.room:room-ktx:2.6.0'
-    kapt 'androidx.room:room-compiler:2.6.0'
+    // Jetpack Compose
+    implementation platform('androidx.compose:compose-bom:2023.10.01')
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.ui:ui-graphics'
+    implementation 'androidx.compose.ui:ui-tooling-preview'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.compose.material:material-icons-extended'
+    implementation 'androidx.activity:activity-compose:1.8.2'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0'
+    implementation 'androidx.navigation:navigation-compose:2.7.5'
     
-    // Camera and barcode scanning - ZXing para QR, PDF417 y Code128
+    // Room database
+    implementation 'androidx.room:room-runtime:2.6.1'
+    implementation 'androidx.room:room-ktx:2.6.1'
+    kapt 'androidx.room:room-compiler:2.6.1'
+    
+    // ViewModel y LiveData
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
+    
+    // Coroutines
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3'
+    
+    // Camera and barcode scanning
     implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
     implementation 'com.google.zxing:core:3.5.2'
-    
-    // Para lectura de PDF417 (DNI peruano)
     implementation 'com.google.mlkit:barcode-scanning:17.2.0'
     
-    // Networking para sincronización con backend
+    // Networking
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
     implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
     
-    // WorkManager para sincronización en background
-    implementation 'androidx.work:work-runtime-ktx:2.8.1'
+    // WorkManager
+    implementation 'androidx.work:work-runtime-ktx:2.9.0'
+    implementation 'androidx.startup:startup-runtime:1.1.1'
     
-    // Location services para GPS
+    // Location services
     implementation 'com.google.android.gms:play-services-location:21.0.1'
     
     // CSV export
     implementation 'com.opencsv:opencsv:5.8'
     
+    // Excel export (Apache POI)
+    implementation 'org.apache.poi:poi:5.2.3'
+    implementation 'org.apache.poi:poi-ooxml:5.2.3'
+    
+    // Security
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
+    
+    // JavaMail para envío de correos
+    implementation('com.sun.mail:android-mail:1.6.7') {
+        exclude group: 'javax.activation', module: 'activation'
+    }
+    implementation('com.sun.mail:android-activation:1.6.7') {
+        exclude group: 'javax.activation', module: 'activation'
+    }
+    
+    // OkHttp para conexiones HTTP
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
+    
     // JSON serialization
     implementation 'com.google.code.gson:gson:2.10.1'
-    
-    // ViewModel y LiveData
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0'
-    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.7.0'
-    
-    // Fragment KTX
-    implementation 'androidx.fragment:fragment-ktx:1.6.2'
     
     // Biometric authentication
     implementation 'androidx.biometric:biometric:1.1.0'
     
-    // Crypto para cifrado SQLite
+    // Security
     implementation 'androidx.security:security-crypto:1.1.0-alpha06'
     
     // UUID generation
     implementation 'com.fasterxml.uuid:java-uuid-generator:4.2.0'
     
+    // Dependency Injection - Hilt
+    implementation 'com.google.dagger:hilt-android:2.48'
+    kapt 'com.google.dagger:hilt-compiler:2.48'
+    
+    // Navigation Component
+    implementation 'androidx.navigation:navigation-fragment-ktx:2.7.5'
+    implementation 'androidx.navigation:navigation-ui-ktx:2.7.5'
+    implementation 'androidx.hilt:hilt-navigation-compose:1.1.0'
+    
+    // DataStore (reemplaza SharedPreferences)
+    implementation 'androidx.datastore:datastore-preferences:1.0.0'
+    
+    // Splash Screen API
+    implementation 'androidx.core:core-splashscreen:1.0.1'
+    
+    // Testing
     testImplementation 'junit:junit:4.13.2'
-    testImplementation 'androidx.room:room-testing:2.6.0'
+    testImplementation 'androidx.room:room-testing:2.6.1'
+    testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-    androidTestImplementation 'androidx.work:work-testing:2.8.1'
+    androidTestImplementation 'androidx.work:work-testing:2.9.0'
+    androidTestImplementation platform('androidx.compose:compose-bom:2023.10.01')
+    androidTestImplementation 'androidx.compose.ui:ui-test-junit4'
+    debugImplementation 'androidx.compose.ui:ui-tooling'
+    debugImplementation 'androidx.compose.ui:ui-test-manifest'
 }

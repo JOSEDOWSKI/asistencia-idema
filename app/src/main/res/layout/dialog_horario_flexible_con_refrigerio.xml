@@ -1,0 +1,1165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/modal_background"
+    android:padding="12dp"
+    android:layout_margin="16dp"
+    android:elevation="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Título -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⏰ Configurar Horario Flexible"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/promesa_dark"
+            android:gravity="center"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Descripción -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Configure los horarios de trabajo y refrigerio para cada día de la semana. Los refrigerios no se cuentan como horas laboradas."
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            android:gravity="center"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Configuración Rápida -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@color/ios_primary_light">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="⚡ Configuración Rápida"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginBottom="16dp" />
+
+                <!-- Horario base -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <EditText
+                        android:id="@+id/et_hora_base_entrada"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_weight="1"
+                        android:hint="Entrada base"
+                        android:inputType="time"
+                        android:background="@drawable/edittext_background"
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/text_secondary"
+                        android:padding="16dp"
+                        android:textSize="16sp"
+                        android:text="08:00"
+                        android:layout_marginEnd="12dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:text="a"
+                        android:textSize="18sp"
+                        android:textColor="@color/text_secondary"
+                        android:layout_marginHorizontal="8dp" />
+
+                    <EditText
+                        android:id="@+id/et_hora_base_salida"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_weight="1"
+                        android:hint="Salida base"
+                        android:inputType="time"
+                        android:background="@drawable/edittext_background"
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/text_secondary"
+                        android:padding="16dp"
+                        android:textSize="16sp"
+                        android:text="17:00"
+                        android:layout_marginStart="12dp" />
+
+                </LinearLayout>
+
+                <!-- Refrigerio -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="20dp">
+
+                    <EditText
+                        android:id="@+id/et_refrigerio_inicio"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_weight="1"
+                        android:hint="Refrigerio inicio"
+                        android:inputType="time"
+                        android:background="@drawable/edittext_background"
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/text_secondary"
+                        android:padding="16dp"
+                        android:textSize="16sp"
+                        android:text="12:00"
+                        android:layout_marginEnd="12dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:text="a"
+                        android:textSize="18sp"
+                        android:textColor="@color/text_secondary"
+                        android:layout_marginHorizontal="8dp" />
+
+                    <EditText
+                        android:id="@+id/et_refrigerio_fin"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_weight="1"
+                        android:hint="Refrigerio fin"
+                        android:inputType="time"
+                        android:background="@drawable/edittext_background"
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/text_secondary"
+                        android:padding="16dp"
+                        android:textSize="16sp"
+                        android:text="13:00"
+                        android:layout_marginStart="12dp" />
+
+                </LinearLayout>
+
+                <!-- Botones de acción rápida -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:orientation="horizontal"
+                    android:gravity="center">
+
+                    <Button
+                        android:id="@+id/btnAplicarLunesViernes"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_weight="1"
+                        android:text="📅 L-V"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/white"
+                        android:background="@drawable/button_secondary_selector"
+                        android:layout_marginEnd="8dp" />
+
+                    <Button
+                        android:id="@+id/btnAplicarLunesSabado"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_weight="1"
+                        android:text="📅 L-S"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/white"
+                        android:background="@drawable/button_secondary_selector"
+                        android:layout_marginStart="8dp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Botón para desactivar refrigerio -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <Button
+                android:id="@+id/btnDesactivarRefrigerio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🚫 Desactivar Refrigerio"
+                android:textSize="14sp"
+                android:background="@drawable/button_secondary_selector"
+                android:textColor="@color/text_primary" />
+
+        </LinearLayout>
+
+        <!-- Configuración por día -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📅 Configuración por Día"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/promesa_dark"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Lunes -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/item_background"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="🌅 Lunes"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/promesa_dark"
+                    android:layout_marginEnd="16dp" />
+
+                <Switch
+                    android:id="@+id/switch_lunes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:checked="true" />
+
+            </LinearLayout>
+
+            <!-- Horario de trabajo -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="⏰ Trabajo:"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_entrada_lunes"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="08:00"
+                    android:inputType="time"
+                    android:text="08:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="a"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_salida_lunes"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="17:00"
+                    android:inputType="time"
+                    android:text="17:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp" />
+
+            </LinearLayout>
+
+            <!-- Horario de refrigerio -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="🍽️ Refrigerio:"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_refrigerio_inicio_lunes"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="12:00"
+                    android:inputType="time"
+                    android:text="12:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="a"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_refrigerio_fin_lunes"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="13:00"
+                    android:inputType="time"
+                    android:text="13:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Martes -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/item_background"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="💼 Martes"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/promesa_dark"
+                    android:layout_marginEnd="16dp" />
+
+                <Switch
+                    android:id="@+id/switch_martes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:checked="true" />
+
+            </LinearLayout>
+
+            <!-- Horario de trabajo -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="⏰ Trabajo:"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_entrada_martes"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="08:00"
+                    android:inputType="time"
+                    android:text="08:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="a"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_salida_martes"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="17:00"
+                    android:inputType="time"
+                    android:text="17:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp" />
+
+            </LinearLayout>
+
+            <!-- Horario de refrigerio -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="🍽️ Refrigerio:"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_refrigerio_inicio_martes"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="12:00"
+                    android:inputType="time"
+                    android:text="12:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="a"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_refrigerio_fin_martes"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="13:00"
+                    android:inputType="time"
+                    android:text="13:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Miércoles -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/item_background"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="⚡ Miércoles"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/promesa_dark"
+                    android:layout_marginEnd="16dp" />
+
+                <Switch
+                    android:id="@+id/switch_miercoles"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:checked="true" />
+
+            </LinearLayout>
+
+            <!-- Horario de trabajo -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="⏰ Trabajo:"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_entrada_miercoles"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="08:00"
+                    android:inputType="time"
+                    android:text="08:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="a"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_salida_miercoles"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="17:00"
+                    android:inputType="time"
+                    android:text="17:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp" />
+
+            </LinearLayout>
+
+            <!-- Horario de refrigerio -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="🍽️ Refrigerio:"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_refrigerio_inicio_miercoles"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="12:00"
+                    android:inputType="time"
+                    android:text="12:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="a"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_refrigerio_fin_miercoles"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="13:00"
+                    android:inputType="time"
+                    android:text="13:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Jueves -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/item_background"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="🎯 Jueves"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/promesa_dark"
+                    android:layout_marginEnd="16dp" />
+
+                <Switch
+                    android:id="@+id/switch_jueves"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:checked="true" />
+
+            </LinearLayout>
+
+            <!-- Horario de trabajo -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="⏰ Trabajo:"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_entrada_jueves"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="08:00"
+                    android:inputType="time"
+                    android:text="08:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="a"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_salida_jueves"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="17:00"
+                    android:inputType="time"
+                    android:text="17:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp" />
+
+            </LinearLayout>
+
+            <!-- Horario de refrigerio -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="🍽️ Refrigerio:"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_refrigerio_inicio_jueves"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="12:00"
+                    android:inputType="time"
+                    android:text="12:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="a"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_refrigerio_fin_jueves"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="13:00"
+                    android:inputType="time"
+                    android:text="13:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Viernes -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/item_background"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="🎉 Viernes"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/promesa_dark"
+                    android:layout_marginEnd="16dp" />
+
+                <Switch
+                    android:id="@+id/switch_viernes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:checked="true" />
+
+            </LinearLayout>
+
+            <!-- Horario de trabajo -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="⏰ Trabajo:"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_entrada_viernes"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="08:00"
+                    android:inputType="time"
+                    android:text="08:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="a"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_salida_viernes"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="17:00"
+                    android:inputType="time"
+                    android:text="17:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp" />
+
+            </LinearLayout>
+
+            <!-- Horario de refrigerio -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="🍽️ Refrigerio:"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_refrigerio_inicio_viernes"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="12:00"
+                    android:inputType="time"
+                    android:text="12:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="a"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_refrigerio_fin_viernes"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="13:00"
+                    android:inputType="time"
+                    android:text="13:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Sábado -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/item_background"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="🌅 Sábado"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/promesa_dark"
+                    android:layout_marginEnd="16dp" />
+
+                <Switch
+                    android:id="@+id/switch_sabado"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:checked="false" />
+
+            </LinearLayout>
+
+            <!-- Horario de trabajo -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="⏰ Trabajo:"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_entrada_sabado"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="08:00"
+                    android:inputType="time"
+                    android:text="08:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="a"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_salida_sabado"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="13:00"
+                    android:inputType="time"
+                    android:text="13:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp" />
+
+            </LinearLayout>
+
+            <!-- Horario de refrigerio -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="🍽️ Refrigerio:"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_refrigerio_inicio_sabado"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="11:00"
+                    android:inputType="time"
+                    android:text="11:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="a"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_refrigerio_fin_sabado"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="11:30"
+                    android:inputType="time"
+                    android:text="11:30"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Domingo -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/item_background"
+            android:padding="16dp"
+            android:layout_marginBottom="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="🙏 Domingo"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/promesa_dark"
+                    android:layout_marginEnd="16dp" />
+
+                <Switch
+                    android:id="@+id/switch_domingo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:checked="false" />
+
+            </LinearLayout>
+
+            <!-- Horario de trabajo -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="⏰ Trabajo:"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_entrada_domingo"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="08:00"
+                    android:inputType="time"
+                    android:text="08:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="a"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_salida_domingo"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="13:00"
+                    android:inputType="time"
+                    android:text="13:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp" />
+
+            </LinearLayout>
+
+            <!-- Horario de refrigerio -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="🍽️ Refrigerio:"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_refrigerio_inicio_domingo"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="11:00"
+                    android:inputType="time"
+                    android:text="11:00"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="a"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_refrigerio_fin_domingo"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="11:30"
+                    android:inputType="time"
+                    android:text="11:30"
+                    android:textSize="14sp"
+                    android:background="@drawable/edittext_background"
+                    android:padding="12dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+
+
+    </LinearLayout>
+
+</ScrollView>

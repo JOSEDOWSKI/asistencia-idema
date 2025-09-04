@@ -24,8 +24,18 @@ class ScannerService(private val context: Context) {
         this.modoLectura = modo
         
         val formats = when (modo) {
+            ModoLectura.UNIVERSAL -> listOf(
+                BarcodeFormat.QR_CODE,
+                BarcodeFormat.PDF_417,
+                BarcodeFormat.CODE_39,
+                BarcodeFormat.CODE_128,
+                BarcodeFormat.EAN_13,
+                BarcodeFormat.EAN_8,
+                BarcodeFormat.UPC_A,
+                BarcodeFormat.UPC_E
+            )
             ModoLectura.QR -> listOf(BarcodeFormat.QR_CODE)
-            ModoLectura.DNI_PDF417 -> listOf(BarcodeFormat.PDF_417)
+            ModoLectura.DNI_PDF417 -> listOf(BarcodeFormat.PDF_417, BarcodeFormat.CODE_39)
             ModoLectura.CODE128 -> listOf(BarcodeFormat.CODE_128)
         }
         
@@ -37,8 +47,18 @@ class ScannerService(private val context: Context) {
         this.modoLectura = modo
         
         val formats = when (modo) {
+            ModoLectura.UNIVERSAL -> listOf(
+                BarcodeFormat.QR_CODE,
+                BarcodeFormat.PDF_417,
+                BarcodeFormat.CODE_39,
+                BarcodeFormat.CODE_128,
+                BarcodeFormat.EAN_13,
+                BarcodeFormat.EAN_8,
+                BarcodeFormat.UPC_A,
+                BarcodeFormat.UPC_E
+            )
             ModoLectura.QR -> listOf(BarcodeFormat.QR_CODE)
-            ModoLectura.DNI_PDF417 -> listOf(BarcodeFormat.PDF_417)
+            ModoLectura.DNI_PDF417 -> listOf(BarcodeFormat.PDF_417, BarcodeFormat.CODE_39)
             ModoLectura.CODE128 -> listOf(BarcodeFormat.CODE_128)
         }
         
@@ -93,6 +113,7 @@ class ScannerService(private val context: Context) {
             when (format) {
                 BarcodeFormat.QR_CODE -> procesarQR(rawCode)
                 BarcodeFormat.PDF_417 -> procesarPDF417(rawCode)
+                BarcodeFormat.CODE_39 -> procesarCode39(rawCode)
                 BarcodeFormat.CODE_128 -> procesarCode128(rawCode)
                 else -> callback?.onScanError("Formato de código no soportado")
             }
@@ -109,6 +130,7 @@ class ScannerService(private val context: Context) {
             when (format) {
                 BarcodeFormat.QR_CODE -> procesarQRKiosco(rawCode)
                 BarcodeFormat.PDF_417 -> procesarPDF417Kiosco(rawCode)
+                BarcodeFormat.CODE_39 -> procesarCode39Kiosco(rawCode)
                 BarcodeFormat.CODE_128 -> procesarCode128Kiosco(rawCode)
                 else -> callback?.onScanError("Formato de código no soportado en modo kiosco")
             }
@@ -287,6 +309,40 @@ class ScannerService(private val context: Context) {
         }
     }
     
+    private fun extraerDniDeCode39(rawCode: String): String? {
+        return try {
+            // Code 39 del DNI peruano generalmente contiene solo el número de DNI
+            // o el número con algunos caracteres adicionales
+            
+            // Limpiar el código de caracteres no deseados
+            val codigoLimpio = rawCode.trim().replace("*", "").replace(" ", "")
+            
+            // Buscar patrón de 8 dígitos consecutivos
+            val dniPattern = Pattern.compile("\\b(\\d{8})\\b")
+            val matcher = dniPattern.matcher(codigoLimpio)
+            
+            if (matcher.find()) {
+                matcher.group(1)
+            } else {
+                // Si no encuentra patrón exacto, buscar cualquier secuencia de 8 dígitos
+                val digitos = codigoLimpio.filter { it.isDigit() }
+                if (digitos.length >= 8) {
+                    // Tomar los primeros 8 dígitos encontrados
+                    val dni = digitos.take(8)
+                    if (dni.all { it.isDigit() }) {
+                        dni
+                    } else {
+                        null
+                    }
+                } else {
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
     // Funciones específicas para modo kiosco
     private fun procesarQRKiosco(rawCode: String) {
         // En modo kiosco, usar la misma lógica pero con procesamiento continuo
@@ -324,6 +380,24 @@ class ScannerService(private val context: Context) {
             callback?.onScanSuccess(dni, rawCode, ModoLectura.DNI_PDF417)
         } else {
             callback?.onScanError("DNI no válido en modo kiosco")
+        }
+    }
+    
+    private fun procesarCode39(rawCode: String) {
+        val dni = extraerDniDeCode39(rawCode)
+        if (dni != null) {
+            callback?.onScanSuccess(dni, rawCode, ModoLectura.DNI_PDF417)
+        } else {
+            callback?.onScanError("DNI no válido en código Code 39")
+        }
+    }
+    
+    private fun procesarCode39Kiosco(rawCode: String) {
+        val dni = extraerDniDeCode39(rawCode)
+        if (dni != null) {
+            callback?.onScanSuccess(dni, rawCode, ModoLectura.DNI_PDF417)
+        } else {
+            callback?.onScanError("DNI no válido en código Code 39")
         }
     }
     

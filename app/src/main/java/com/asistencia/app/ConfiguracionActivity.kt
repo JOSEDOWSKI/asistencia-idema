@@ -1,5 +1,6 @@
 package com.asistencia.app
 
+import android.content.Intent
 import android.os.Bundle
 import android.text.InputType
 import android.widget.*
@@ -9,7 +10,12 @@ import androidx.lifecycle.lifecycleScope
 import com.asistencia.app.database.ModoLectura
 import com.asistencia.app.database.ModoOperacion
 import com.asistencia.app.repository.AsistenciaRepository
+import com.asistencia.app.utils.PinManager
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import java.util.concurrent.TimeUnit
 
 class ConfiguracionActivity : AppCompatActivity() {
     
@@ -26,7 +32,8 @@ class ConfiguracionActivity : AppCompatActivity() {
     private lateinit var btnGuardarConfig: Button
     private lateinit var btnSincronizarAhora: Button
     private lateinit var tvEstadoSync: TextView
-    private lateinit var btnConfiguracionAvanzada: Button
+    private lateinit var btnConfigurarEmail: Button
+    private lateinit var btnConfigurarPin: Button
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,6 +46,9 @@ class ConfiguracionActivity : AppCompatActivity() {
         
         supportActionBar?.title = "⚙️ Configuración"
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        
+        // Registrar actividad para el sistema de PIN
+        PinManager.updateLastActivity(this)
     }
     
     private fun setupViews() {
@@ -53,7 +63,8 @@ class ConfiguracionActivity : AppCompatActivity() {
         btnGuardarConfig = findViewById(R.id.btn_guardar_config)
         btnSincronizarAhora = findViewById(R.id.btn_sincronizar_ahora)
         tvEstadoSync = findViewById(R.id.tv_estado_sync)
-        btnConfiguracionAvanzada = findViewById(R.id.btn_configuracion_avanzada)
+        btnConfigurarEmail = findViewById(R.id.btn_configurar_email)
+        btnConfigurarPin = findViewById(R.id.btn_configurar_pin)
         
         // Setup spinners
         setupModoLecturaSpinner()
@@ -63,7 +74,8 @@ class ConfiguracionActivity : AppCompatActivity() {
         btnGuardarConfig.setOnClickListener { guardarConfiguracion() }
         btnTestConexion.setOnClickListener { testearConexionApi() }
         btnSincronizarAhora.setOnClickListener { forzarSincronizacion() }
-        btnConfiguracionAvanzada.setOnClickListener { mostrarConfiguracionAvanzada() }
+        btnConfigurarEmail.setOnClickListener { configurarEmail() }
+        btnConfigurarPin.setOnClickListener { configurarPinOperador() }
         
         // Setup switches
         switchModoOffline.setOnCheckedChangeListener { _, isChecked ->
@@ -75,8 +87,9 @@ class ConfiguracionActivity : AppCompatActivity() {
     
     private fun setupModoLecturaSpinner() {
         val modos = arrayOf(
+            "🌐 UNIVERSAL (Todos los códigos)",  // Nuevo modo universal
             "📱 QR Code",
-            "🆔 DNI (PDF417)",
+            "🆔 DNI (Code 39)",
             "📊 Código de Barras (Code128)"
         )
         
@@ -217,9 +230,10 @@ class ConfiguracionActivity : AppCompatActivity() {
                     
                     // Cargar modo de lectura
                     val modoLecturaIndex = when (dispositivo.modoLectura) {
-                        ModoLectura.QR -> 0
-                        ModoLectura.DNI_PDF417 -> 1
-                        ModoLectura.CODE128 -> 2
+                        ModoLectura.UNIVERSAL -> 0
+                        ModoLectura.QR -> 1
+                        ModoLectura.DNI_PDF417 -> 2
+                        ModoLectura.CODE128 -> 3
                     }
                     spinnerModoLectura.setSelection(modoLecturaIndex)
                     
@@ -292,10 +306,11 @@ class ConfiguracionActivity : AppCompatActivity() {
             try {
                 // Obtener valores de UI
                 val modoLectura = when (spinnerModoLectura.selectedItemPosition) {
-                    0 -> ModoLectura.QR
-                    1 -> ModoLectura.DNI_PDF417
-                    2 -> ModoLectura.CODE128
-                    else -> ModoLectura.QR
+                    0 -> ModoLectura.UNIVERSAL  // Nuevo modo universal
+                    1 -> ModoLectura.QR
+                    2 -> ModoLectura.DNI_PDF417
+                    3 -> ModoLectura.CODE128
+                    else -> ModoLectura.UNIVERSAL
                 }
                 
                 val modoOperacion = when (spinnerModoOperacion.selectedItemPosition) {
@@ -365,36 +380,169 @@ class ConfiguracionActivity : AppCompatActivity() {
         val token = etApiToken.text.toString().trim()
         
         if (endpoint.isEmpty() || token.isEmpty()) {
-            Toast.makeText(this, "Complete el endpoint y token de API", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "❌ Complete el endpoint y token de API", Toast.LENGTH_SHORT).show()
             return
         }
         
-        // Aquí se implementaría el test real de conexión
-        // Por ahora simulamos el test
-        Toast.makeText(this, "🔄 Probando conexión...", Toast.LENGTH_SHORT).show()
+        // Validar formato de URL
+        if (!endpoint.startsWith("http://") && !endpoint.startsWith("https://")) {
+            Toast.makeText(this, "❌ El endpoint debe empezar con http:// o https://", Toast.LENGTH_SHORT).show()
+            return
+        }
         
-        // Simular delay de red
+        // Validar token
+        if (token.length < 10) {
+            Toast.makeText(this, "❌ El token debe tener al menos 10 caracteres", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        // Mostrar progreso
+        val progressDialog = AlertDialog.Builder(this)
+            .setTitle("🔄 Probando Conexión API")
+            .setMessage("Verificando conectividad con el servidor...")
+            .setCancelable(false)
+            .create()
+        progressDialog.show()
+        
         lifecycleScope.launch {
-            kotlinx.coroutines.delay(2000)
-            
-            // Simular resultado (en implementación real, hacer llamada HTTP)
-            val exito = endpoint.startsWith("https://") && token.length > 10
-            
-            if (exito) {
-                Toast.makeText(this@ConfiguracionActivity, 
-                    "✅ Conexión exitosa", 
-                    Toast.LENGTH_SHORT).show()
-            } else {
+            try {
+                val resultado = realizarTestConexion(endpoint, token)
+                
+                progressDialog.dismiss()
+                
+                if (resultado.exito) {
+                    AlertDialog.Builder(this@ConfiguracionActivity)
+                        .setTitle("✅ Conexión Exitosa")
+                        .setMessage("""
+                            🎉 ¡Conexión API establecida correctamente!
+                            
+                            ✅ Servidor: $endpoint
+                            ✅ Token: ${token.take(8)}...
+                            ✅ Tiempo de respuesta: ${resultado.tiempoRespuesta}ms
+                            ✅ Estado: ${resultado.estado}
+                            
+                            La configuración API está lista para sincronizar datos.
+                        """.trimIndent())
+                        .setPositiveButton("OK", null)
+                        .show()
+                } else {
+                    AlertDialog.Builder(this@ConfiguracionActivity)
+                        .setTitle("❌ Error de Conexión")
+                        .setMessage("""
+                            No se pudo conectar al servidor API.
+                            
+                            ❌ Error: ${resultado.error}
+                            🌐 Endpoint: $endpoint
+                            
+                            🔧 Verifique:
+                            • URL del endpoint correcta
+                            • Token de autenticación válido
+                            • Conexión a internet estable
+                            • Servidor API funcionando
+                            • Firewall/restricciones de red
+                        """.trimIndent())
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
+                
+            } catch (e: Exception) {
+                progressDialog.dismiss()
                 AlertDialog.Builder(this@ConfiguracionActivity)
                     .setTitle("❌ Error de Conexión")
-                    .setMessage("No se pudo conectar al servidor.\n\nVerifique:\n• URL del endpoint\n• Token de autenticación\n• Conexión a internet")
+                    .setMessage("""
+                        Error al probar la conexión API:
+                        
+                        ❌ ${e.message}
+                        
+                        🔧 Verifique:
+                        • Formato de URL correcto
+                        • Token válido
+                        • Conexión a internet
+                    """.trimIndent())
                     .setPositiveButton("OK", null)
                     .show()
             }
         }
     }
     
+    private suspend fun realizarTestConexion(endpoint: String, token: String): TestResult {
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val client = OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .build()
+            
+            val tiempoInicio = System.currentTimeMillis()
+            
+            try {
+                // Construir URL de prueba
+                val urlPrueba = if (endpoint.endsWith("/")) {
+                    "${endpoint}health"
+                } else {
+                    "$endpoint/health"
+                }
+                
+                val request = Request.Builder()
+                    .url(urlPrueba)
+                    .addHeader("Authorization", "Bearer $token")
+                    .addHeader("Content-Type", "application/json")
+                    .addHeader("User-Agent", "AppAsistencia/1.0")
+                    .get()
+                    .build()
+                
+                val response: Response = client.newCall(request).execute()
+                val tiempoRespuesta = System.currentTimeMillis() - tiempoInicio
+                
+                return@withContext if (response.isSuccessful) {
+                    TestResult(
+                        exito = true,
+                        tiempoRespuesta = tiempoRespuesta,
+                        estado = "HTTP ${response.code}",
+                        error = null
+                    )
+                } else {
+                    TestResult(
+                        exito = false,
+                        tiempoRespuesta = tiempoRespuesta,
+                        estado = "HTTP ${response.code}",
+                        error = "Servidor respondió con código ${response.code}"
+                    )
+                }
+                
+            } catch (e: Exception) {
+                val tiempoRespuesta = System.currentTimeMillis() - tiempoInicio
+                return@withContext TestResult(
+                    exito = false,
+                    tiempoRespuesta = tiempoRespuesta,
+                    estado = "Error",
+                    error = e.message ?: "Error desconocido"
+                )
+            }
+        }
+    }
+    
+    data class TestResult(
+        val exito: Boolean,
+        val tiempoRespuesta: Long,
+        val estado: String,
+        val error: String?
+    )
+    
     private fun forzarSincronizacion() {
+        // Verificar si hay configuración API
+        val endpoint = etApiEndpoint.text.toString().trim()
+        val token = etApiToken.text.toString().trim()
+        
+        if (endpoint.isEmpty() || token.isEmpty()) {
+            AlertDialog.Builder(this)
+                .setTitle("❌ Configuración API Requerida")
+                .setMessage("Para sincronizar datos, primero debe configurar el endpoint y token de API.")
+                .setPositiveButton("OK", null)
+                .show()
+            return
+        }
+        
         lifecycleScope.launch {
             try {
                 val pendientes = repository.getCountRegistrosPendientes()
@@ -406,14 +554,52 @@ class ConfiguracionActivity : AppCompatActivity() {
                     return@launch
                 }
                 
-                Toast.makeText(this@ConfiguracionActivity, 
-                    "🔄 Sincronizando $pendientes registros...", 
-                    Toast.LENGTH_SHORT).show()
+                // Mostrar progreso
+                val progressDialog = AlertDialog.Builder(this@ConfiguracionActivity)
+                    .setTitle("🔄 Sincronizando Datos")
+                    .setMessage("Enviando $pendientes registros al servidor...")
+                    .setCancelable(false)
+                    .create()
+                progressDialog.show()
                 
-                repository.forzarSincronizacion()
+                // Realizar sincronización
+                val resultado = repository.forzarSincronizacion()
                 
-                // Actualizar estado después de un delay
-                kotlinx.coroutines.delay(3000)
+                progressDialog.dismiss()
+                
+                if (resultado.exito) {
+                    AlertDialog.Builder(this@ConfiguracionActivity)
+                        .setTitle("✅ Sincronización Exitosa")
+                        .setMessage("""
+                            🎉 ¡Datos sincronizados correctamente!
+                            
+                            ✅ Registros enviados: ${resultado.registrosEnviados}
+                            ✅ Tiempo de sincronización: ${resultado.tiempoSincronizacion}ms
+                            ✅ Servidor: $endpoint
+                            
+                            Los datos están ahora disponibles en el servidor central.
+                        """.trimIndent())
+                        .setPositiveButton("OK", null)
+                        .show()
+                } else {
+                    AlertDialog.Builder(this@ConfiguracionActivity)
+                        .setTitle("❌ Error de Sincronización")
+                        .setMessage("""
+                            Error al sincronizar datos con el servidor.
+                            
+                            ❌ Error: ${resultado.error}
+                            📊 Registros intentados: ${resultado.registrosEnviados}
+                            
+                            🔧 Verifique:
+                            • Conexión a internet
+                            • Configuración API correcta
+                            • Servidor API funcionando
+                        """.trimIndent())
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
+                
+                // Actualizar estado
                 actualizarEstadoSync()
                 
             } catch (e: Exception) {
@@ -443,20 +629,9 @@ class ConfiguracionActivity : AppCompatActivity() {
         }
     }
     
-    private fun mostrarConfiguracionAvanzada() {
-        AlertDialog.Builder(this)
-            .setTitle("⚙️ Configuración Avanzada")
-            .setMessage("Seleccione una opción:")
-            .setPositiveButton("🔐 Configurar PIN") { _, _ ->
-                configurarPinOperador()
-            }
-            .setNeutralButton("📊 Ver Estadísticas") { _, _ ->
-                mostrarEstadisticas()
-            }
-            .setNegativeButton("🗑️ Limpiar Datos") { _, _ ->
-                mostrarOpcionesLimpieza()
-            }
-            .show()
+    private fun configurarEmail() {
+        val intent = Intent(this, EmailConfigActivity::class.java)
+        startActivity(intent)
     }
     
     private fun configurarPinOperador() {
@@ -466,12 +641,11 @@ class ConfiguracionActivity : AppCompatActivity() {
         
         AlertDialog.Builder(this)
             .setTitle("🔐 Configurar PIN del Operador")
-            .setMessage("Configure un PIN para bloquear la aplicación después de inactividad:")
+            .setMessage("Configure un PIN para proteger acceso a:\n• Gestión de Empleados\n• Configuración\n• Reportes\n\nEl PIN se requiere después de 5 minutos de inactividad.")
             .setView(input)
             .setPositiveButton("Guardar") { _, _ ->
                 val pin = input.text.toString()
-                if (pin.length == 4 && pin.all { it.isDigit() }) {
-                    // Aquí se guardaría el PIN hasheado
+                if (com.asistencia.app.utils.PinManager.setPin(this, pin)) {
                     Toast.makeText(this, "✅ PIN configurado correctamente", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(this, "❌ El PIN debe tener exactamente 4 dígitos", Toast.LENGTH_SHORT).show()
@@ -481,42 +655,7 @@ class ConfiguracionActivity : AppCompatActivity() {
             .show()
     }
     
-    private fun mostrarEstadisticas() {
-        lifecycleScope.launch {
-            try {
-                val pendientes = repository.getCountRegistrosPendientes()
-                val fecha = com.asistencia.app.utils.HorarioUtils.getCurrentDateString()
-                val estadisticas = repository.getEstadisticasDelDia(fecha)
-                
-                val mensaje = """
-                    📊 ESTADÍSTICAS DEL SISTEMA
-                    
-                    📅 Hoy ($fecha):
-                    • Total registros: ${estadisticas.totalRegistros}
-                    • Empleados presentes: ${estadisticas.empleadosPresentes}
-                    • Tardanzas: ${estadisticas.tardanzas}
-                    
-                    🔄 Sincronización:
-                    • Registros pendientes: $pendientes
-                    
-                    💾 Base de datos:
-                    • Estado: Operativa
-                    • Última actualización: ${java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date())}
-                """.trimIndent()
-                
-                AlertDialog.Builder(this@ConfiguracionActivity)
-                    .setTitle("📊 Estadísticas del Sistema")
-                    .setMessage(mensaje)
-                    .setPositiveButton("OK", null)
-                    .show()
-                
-            } catch (e: Exception) {
-                Toast.makeText(this@ConfiguracionActivity, 
-                    "Error al obtener estadísticas: ${e.message}", 
-                    Toast.LENGTH_LONG).show()
-            }
-        }
-    }
+
     
     private fun mostrarOpcionesLimpieza() {
         AlertDialog.Builder(this)
@@ -551,8 +690,9 @@ class ConfiguracionActivity : AppCompatActivity() {
     
     private fun mostrarResumenConfiguracion(dispositivo: com.asistencia.app.database.Dispositivo) {
         val modoLecturaTexto = when (dispositivo.modoLectura) {
+            ModoLectura.UNIVERSAL -> "UNIVERSAL (Todos los códigos)"
             ModoLectura.QR -> "QR Code"
-            ModoLectura.DNI_PDF417 -> "DNI (PDF417)"
+            ModoLectura.DNI_PDF417 -> "DNI (Code 39)"
             ModoLectura.CODE128 -> "Código de Barras (Code128)"
         }
         
@@ -591,8 +731,9 @@ class ConfiguracionActivity : AppCompatActivity() {
         apiEndpoint: String?
     ) {
         val modoLecturaTexto = when (modoLectura) {
+            ModoLectura.UNIVERSAL -> "UNIVERSAL (Todos los códigos)"
             ModoLectura.QR -> "QR Code"
-            ModoLectura.DNI_PDF417 -> "DNI (PDF417)"
+            ModoLectura.DNI_PDF417 -> "DNI (Code 39)"
             ModoLectura.CODE128 -> "Código de Barras (Code128)"
         }
         

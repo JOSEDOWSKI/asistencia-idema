@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material Design 3 Theme -->
+    <style name="Theme.AsistenciaApp" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Primary brand color -->
+        <item name="colorPrimary">@color/promesa_green</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/promesa_light</item>
+        <item name="colorOnPrimaryContainer">@color/promesa_dark</item>
+        
+        <!-- Secondary brand color -->
+        <item name="colorSecondary">@color/promesa_secondary</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="colorSecondaryContainer">@color/surface_variant</item>
+        <item name="colorOnSecondaryContainer">@color/text_primary</item>
+        
+        <!-- Tertiary brand color -->
+        <item name="colorTertiary">@color/promesa_accent</item>
+        <item name="colorOnTertiary">@color/white</item>
+        <item name="colorTertiaryContainer">@color/success_background</item>
+        <item name="colorOnTertiaryContainer">@color/success_color</item>
+        
+        <!-- Error colors -->
+        <item name="colorError">@color/error_color</item>
+        <item name="colorOnError">@color/white</item>
+        <item name="colorErrorContainer">@color/error_background</item>
+        <item name="colorOnErrorContainer">@color/error_color</item>
+        
+        <!-- Surface colors -->
+        <item name="colorSurface">@color/surface_color</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorSurfaceVariant">@color/surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
+        
+        <!-- Background colors -->
+        <item name="android:colorBackground">@color/background_color</item>
+        <item name="colorOnBackground">@color/text_primary</item>
+        
+        <!-- Outline colors -->
+        <item name="colorOutline">@color/outline_color</item>
+        <item name="colorOutlineVariant">@color/outline_variant</item>
+        
+        <!-- Status bar and navigation bar -->
+        <item name="android:statusBarColor">@color/promesa_green</item>
+        <item name="android:navigationBarColor">@color/promesa_green</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+
+    <!-- Legacy AppTheme for backward compatibility -->
+    <style name="AppTheme" parent="Theme.AsistenciaApp" />
+</resources>

@@ -1,22 +1,28 @@
 package com.asistencia.app
 
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.View
 import android.widget.*
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.asistencia.app.utils.PinManager
+import com.asistencia.app.utils.ReporteEmailSender
+import com.asistencia.app.utils.EmailConfigManager
+import com.asistencia.app.workers.EmailWorker
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
 class ReportesActivity : AppCompatActivity() {
     
     private lateinit var registrosList: LinearLayout
-    private lateinit var estadisticasContent: LinearLayout
     private val gson = Gson()
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,6 +33,10 @@ class ReportesActivity : AppCompatActivity() {
             initializeViews()
             setupClickListeners()
             loadRegistros()
+            
+            // Registrar actividad para el sistema de PIN
+            PinManager.updateLastActivity(this)
+            
         } catch (e: Exception) {
             showError("Error al inicializar reportes: ${e.message}")
         }
@@ -34,7 +44,6 @@ class ReportesActivity : AppCompatActivity() {
     
     private fun initializeViews() {
         registrosList = findViewById(R.id.registrosList)
-        estadisticasContent = findViewById(R.id.estadisticasContent)
         
         // Configurar action bar
         try {
@@ -46,9 +55,10 @@ class ReportesActivity : AppCompatActivity() {
     }
     
     private fun setupClickListeners() {
-        findViewById<Button>(R.id.btnExportarCSV).setOnClickListener { exportarDatos() }
+        findViewById<Button>(R.id.btnEnviar).setOnClickListener { mostrarModalEnviar() }
         findViewById<Button>(R.id.btnLimpiarDatos).setOnClickListener { limpiarRegistros() }
-        findViewById<Button>(R.id.btnEstadisticasTardanzas).setOnClickListener { mostrarEstadisticasDetalladas() }
+        findViewById<Button>(R.id.btnEnvioAutomatico).setOnClickListener { configurarEnvioAutomatico() }
+        findViewById<Button>(R.id.btnConfiguracionEmail).setOnClickListener { configurarEmail() }
     }
     
     private fun loadRegistros() {
@@ -70,9 +80,6 @@ class ReportesActivity : AppCompatActivity() {
     private fun updateRegistrosList(registros: List<Map<String, String>>) {
         try {
             registrosList.removeAllViews()
-            
-            // Actualizar estadísticas
-            updateEstadisticas(registros)
             
             if (registros.isEmpty()) {
                 val emptyText = TextView(this).apply {
@@ -205,6 +212,58 @@ class ReportesActivity : AppCompatActivity() {
         return layout
     }
     
+    private fun mostrarModalEnviar() {
+        try {
+            val dialogView = layoutInflater.inflate(R.layout.dialog_enviar_reporte, null)
+            
+            // Configurar el diálogo
+            val dialog = AlertDialog.Builder(this)
+                .setView(dialogView)
+                .setCancelable(false)
+                .create()
+            
+            // Configurar botones del modal
+            dialogView.findViewById<Button>(R.id.btnEnviarEmail).setOnClickListener {
+                dialog.dismiss()
+                enviarReportePorEmail()
+            }
+            
+            dialogView.findViewById<Button>(R.id.btnExportarExcel).setOnClickListener {
+                dialog.dismiss()
+                exportarExcel()
+            }
+            
+            dialogView.findViewById<Button>(R.id.btnExportarCSV).setOnClickListener {
+                dialog.dismiss()
+                exportarDatos()
+            }
+            
+            dialogView.findViewById<Button>(R.id.btnEnviarPruebas).setOnClickListener {
+                dialog.dismiss()
+                enviarReportePruebas()
+            }
+            
+            dialogView.findViewById<Button>(R.id.btnCancelar).setOnClickListener {
+                dialog.dismiss()
+            }
+            
+            // Mostrar el modal
+            dialog.show()
+            
+        } catch (e: Exception) {
+            showError("Error al mostrar modal: ${e.message}")
+        }
+    }
+    
+    private fun configurarEmail() {
+        try {
+            val intent = Intent(this, EmailConfigActivity::class.java)
+            startActivity(intent)
+        } catch (e: Exception) {
+            showError("Error al abrir configuración de email: ${e.message}")
+        }
+    }
+    
     private fun limpiarRegistros() {
         try {
             androidx.appcompat.app.AlertDialog.Builder(this)
@@ -223,175 +282,7 @@ class ReportesActivity : AppCompatActivity() {
         }
     }
     
-    private fun updateEstadisticas(registros: List<Map<String, String>>) {
-        try {
-            estadisticasContent.removeAllViews()
-            
-            if (registros.isEmpty()) {
-                val noDataText = TextView(this).apply {
-                    text = "No hay datos para mostrar estadísticas"
-                    textSize = 14f
-                    setTextColor(android.graphics.Color.GRAY)
-                }
-                estadisticasContent?.addView(noDataText)
-                return
-            }
-            
-            // Agrupar registros por empleado y fecha
-            val registrosPorEmpleado = registros.groupBy { "${it["dni"]}_${it["fecha"]}" }
-            
-            var totalEmpleados = 0
-            var totalHorasTrabajadas = 0
-            var totalMinutosTrabajados = 0
-            var empleadosPuntuales = 0
-            var empleadosConTardanza = 0
-            
-            val detalleEmpleados = mutableListOf<String>()
-            
-            registrosPorEmpleado.forEach { (key, registrosEmpleado) ->
-                val dni = registrosEmpleado.first()["dni"] ?: ""
-                val nombre = registrosEmpleado.first()["nombre"] ?: ""
-                val fecha = registrosEmpleado.first()["fecha"] ?: ""
-                
-                totalEmpleados++
-                
-                // Calcular horas trabajadas para este empleado
-                val horasTrabajadas = calcularHorasTrabajadasEmpleado(registrosEmpleado, dni)
-                totalHorasTrabajadas += horasTrabajadas.first
-                totalMinutosTrabajados += horasTrabajadas.second
-                
-                // Verificar puntualidad
-                val tieneTardanza = registrosEmpleado.any { 
-                    it["estado"]?.contains("TARDANZA") == true || 
-                    it["estado"]?.contains("RETRASO") == true 
-                }
-                
-                if (tieneTardanza) {
-                    empleadosConTardanza++
-                } else {
-                    empleadosPuntuales++
-                }
-                
-                // Agregar detalle del empleado
-                val horasTexto = if (horasTrabajadas.first > 0 || horasTrabajadas.second > 0) {
-                    "${horasTrabajadas.first}h ${horasTrabajadas.second}m"
-                } else {
-                    "Sin jornada completa"
-                }
-                
-                val estadoTexto = if (tieneTardanza) "⚠️ Con tardanza" else "✅ Puntual"
-                detalleEmpleados.add("• $nombre: $horasTexto - $estadoTexto")
-            }
-            
-            // Convertir minutos extra a horas
-            val horasExtra = totalMinutosTrabajados / 60
-            totalHorasTrabajadas += horasExtra
-            totalMinutosTrabajados %= 60
-            
-            // Mostrar estadísticas generales
-            val statsGenerales = TextView(this).apply {
-                text = buildString {
-                    append("👥 Empleados registrados: $totalEmpleados\n")
-                    append("⏰ Total horas trabajadas: ${totalHorasTrabajadas}h ${totalMinutosTrabajados}m\n")
-                    append("✅ Empleados puntuales: $empleadosPuntuales\n")
-                    append("⚠️ Empleados con tardanza: $empleadosConTardanza\n")
-                    append("📊 Promedio por empleado: ${if (totalEmpleados > 0) "${(totalHorasTrabajadas * 60 + totalMinutosTrabajados) / totalEmpleados / 60}h ${((totalHorasTrabajadas * 60 + totalMinutosTrabajados) / totalEmpleados) % 60}m" else "0h 0m"}")
-                }
-                textSize = 14f
-                setTextColor(android.graphics.Color.BLACK)
-                setPadding(0, 0, 0, 16)
-            }
-            estadisticasContent?.addView(statsGenerales)
-            
-            // Mostrar detalle por empleado si hay pocos empleados
-            if (totalEmpleados <= 5 && detalleEmpleados.isNotEmpty()) {
-                val detalleTitle = TextView(this).apply {
-                    text = "📋 Detalle por empleado:"
-                    textSize = 14f
-                    setTextColor(android.graphics.Color.BLACK)
-                    setTypeface(null, android.graphics.Typeface.BOLD)
-                    setPadding(0, 8, 0, 4)
-                }
-                estadisticasContent?.addView(detalleTitle)
-                
-                val detalleText = TextView(this).apply {
-                    text = detalleEmpleados.joinToString("\n")
-                    textSize = 12f
-                    setTextColor(android.graphics.Color.GRAY)
-                }
-                estadisticasContent?.addView(detalleText)
-            }
-            
-        } catch (e: Exception) {
-            showError("Error al calcular estadísticas: ${e.message}")
-        }
-    }
-    
-    private fun calcularHorasTrabajadasEmpleado(registrosEmpleado: List<Map<String, String>>, dni: String): Pair<Int, Int> {
-        try {
-            // Buscar entrada y salida del empleado
-            val entrada = registrosEmpleado.find { it["tipoEvento"]?.contains("ENTRADA") == true }
-            val salida = registrosEmpleado.find { it["tipoEvento"]?.contains("SALIDA") == true }
-            
-            if (entrada == null || salida == null) {
-                return Pair(0, 0) // No hay jornada completa
-            }
-            
-            val horaEntrada = entrada["hora"] ?: return Pair(0, 0)
-            val horaSalida = salida["hora"] ?: return Pair(0, 0)
-            
-            // Calcular diferencia en minutos
-            val minutosTotal = calcularDiferenciaMinutos(horaEntrada, horaSalida)
-            
-            // Descontar tiempo de refrigerio (asumimos 1 hora estándar si no hay registros específicos)
-            val minutosRefrigerio = obtenerMinutosRefrigerio(dni)
-            val minutosTrabajadasNeto = maxOf(0, minutosTotal - minutosRefrigerio)
-            
-            val horas = minutosTrabajadasNeto / 60
-            val minutos = minutosTrabajadasNeto % 60
-            
-            return Pair(horas, minutos)
-            
-        } catch (e: Exception) {
-            return Pair(0, 0)
-        }
-    }
-    
-    private fun calcularDiferenciaMinutos(hora1: String, hora2: String): Int {
-        return try {
-            val formato = SimpleDateFormat("HH:mm", Locale.getDefault())
-            val time1 = formato.parse(hora1)
-            val time2 = formato.parse(hora2)
-            
-            if (time1 != null && time2 != null) {
-                val diferencia = time2.time - time1.time
-                (diferencia / (1000 * 60)).toInt()
-            } else {
-                0
-            }
-        } catch (e: Exception) {
-            0
-        }
-    }
-    
-    private fun obtenerMinutosRefrigerio(dni: String): Int {
-        try {
-            // Buscar el empleado en la lista para obtener su horario de refrigerio
-            val sharedPreferences = getSharedPreferences("EmpleadosApp", Context.MODE_PRIVATE)
-            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
-            val type = object : TypeToken<List<EmpleadoSimple>>() {}.type
-            val empleados: List<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: emptyList()
-            
-            val empleado = empleados.find { it.dni == dni }
-            
-            // Por ahora, asumimos 60 minutos de refrigerio estándar
-            // En el futuro, esto se puede configurar por empleado
-            return 60 // 1 hora de refrigerio estándar
-            
-        } catch (e: Exception) {
-            return 60 // Valor por defecto
-        }
-    }
+
     
     private fun exportarDatos() {
         try {
@@ -443,7 +334,7 @@ class ReportesActivity : AppCompatActivity() {
             val diaSemana = obtenerDiaSemana(fecha)
             val empleado = empleados.find { it.dni == registro["dni"] }
             val horarioAsignado = empleado?.let { "${it.horaEntrada} - ${it.horaSalida}" } ?: "No definido"
-            val minutosDiferencia = calcularMinutosDiferencia(registro, empleado)
+            val minutosDiferencia = "N/A"
             
             csv.append("\"${registro["fecha"]}\",")
             csv.append("\"$diaSemana\",")
@@ -484,141 +375,6 @@ class ReportesActivity : AppCompatActivity() {
         } catch (e: Exception) {
             emptyList()
         }
-    }
-    
-    private fun calcularMinutosDiferencia(registro: Map<String, String>, empleado: EmpleadoSimple?): String {
-        return try {
-            if (empleado == null) return "N/A"
-            
-            val horaRegistro = registro["hora"] ?: return "N/A"
-            val tipoEvento = registro["tipoEvento"] ?: return "N/A"
-            
-            val horaEsperada = if (tipoEvento.contains("ENTRADA")) {
-                empleado.horaEntrada
-            } else if (tipoEvento.contains("SALIDA")) {
-                empleado.horaSalida
-            } else {
-                return "N/A"
-            }
-            
-            val diferencia = calcularDiferenciaMinutos(horaEsperada, horaRegistro)
-            when {
-                diferencia > 0 -> "+$diferencia min (tarde)"
-                diferencia < 0 -> "${diferencia} min (temprano)"
-                else -> "0 min (puntual)"
-            }
-        } catch (e: Exception) {
-            "Error"
-        }
-    }
-    
-    private fun mostrarEstadisticasDetalladas() {
-        try {
-            val sharedPreferences = getSharedPreferences("RegistrosApp", Context.MODE_PRIVATE)
-            val registrosJson = sharedPreferences.getString("registros_list", "[]")
-            val type = object : TypeToken<List<Map<String, String>>>() {}.type
-            val registros: List<Map<String, String>> = gson.fromJson(registrosJson, type) ?: emptyList()
-            
-            if (registros.isEmpty()) {
-                showMessage("No hay datos para mostrar estadísticas detalladas")
-                return
-            }
-            
-            val estadisticasDetalladas = generarEstadisticasDetalladas(registros)
-            
-            val scrollView = ScrollView(this)
-            val textView = TextView(this).apply {
-                text = estadisticasDetalladas
-                textSize = 12f
-                setPadding(16, 16, 16, 16)
-                setTextIsSelectable(true)
-                setTypeface(android.graphics.Typeface.MONOSPACE)
-            }
-            scrollView.addView(textView)
-            
-            androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("📈 Estadísticas Detalladas de Tardanzas")
-                .setView(scrollView)
-                .setPositiveButton("Copiar") { _, _ ->
-                    copiarAlPortapapeles(estadisticasDetalladas)
-                }
-                .setNegativeButton("Cerrar", null)
-                .show()
-                
-        } catch (e: Exception) {
-            showError("Error al generar estadísticas detalladas: ${e.message}")
-        }
-    }
-    
-    private fun generarEstadisticasDetalladas(registros: List<Map<String, String>>): String {
-        val stats = StringBuilder()
-        val empleados = cargarEmpleados()
-        
-        stats.append("📊 REPORTE DETALLADO DE ASISTENCIA\n")
-        stats.append("=" .repeat(50) + "\n\n")
-        
-        // Agrupar por empleado
-        val registrosPorEmpleado = registros.groupBy { it["dni"] }
-        
-        registrosPorEmpleado.forEach { (dni, registrosEmpleado) ->
-            val empleado = empleados.find { it.dni == dni }
-            val nombre = registrosEmpleado.first()["nombre"] ?: "Empleado"
-            
-            stats.append("👤 $nombre (DNI: $dni)\n")
-            stats.append("-".repeat(30) + "\n")
-            
-            if (empleado != null) {
-                stats.append("⏰ Horario: ${empleado.horaEntrada} - ${empleado.horaSalida}\n")
-                stats.append("📋 Estado: ${if (empleado.activo) "Activo" else "Inactivo"}\n\n")
-            }
-            
-            // Agrupar por fecha
-            val registrosPorFecha = registrosEmpleado.groupBy { it["fecha"] }
-            
-            registrosPorFecha.forEach { (fecha, registrosDia) ->
-                val timestamp = registrosDia.first()["timestamp"]?.toLongOrNull() ?: 0L
-                val diaSemana = obtenerDiaSemana(Date(timestamp))
-                
-                stats.append("📅 $fecha ($diaSemana)\n")
-                
-                registrosDia.sortedBy { it["hora"] }.forEach { registro ->
-                    val hora = registro["hora"] ?: ""
-                    val tipoEvento = registro["tipoEvento"] ?: ""
-                    val estado = registro["estado"] ?: ""
-                    val diferencia = calcularMinutosDiferencia(registro, empleado)
-                    
-                    val icono = when {
-                        tipoEvento.contains("ENTRADA") -> "🔵"
-                        tipoEvento.contains("SALIDA") -> "🔴"
-                        else -> "⚪"
-                    }
-                    
-                    stats.append("  $icono $hora - $tipoEvento ($diferencia)\n")
-                    stats.append("     Estado: $estado\n")
-                }
-                stats.append("\n")
-            }
-            stats.append("\n")
-        }
-        
-        // Resumen general
-        stats.append("📈 RESUMEN GENERAL\n")
-        stats.append("=" .repeat(50) + "\n")
-        
-        val totalRegistros = registros.size
-        val totalEmpleados = registrosPorEmpleado.size
-        val registrosConTardanza = registros.count { 
-            it["estado"]?.contains("TARDANZA") == true || 
-            it["estado"]?.contains("RETRASO") == true 
-        }
-        
-        stats.append("📊 Total de registros: $totalRegistros\n")
-        stats.append("👥 Total de empleados: $totalEmpleados\n")
-        stats.append("⚠️ Registros con tardanza: $registrosConTardanza\n")
-        stats.append("✅ Registros puntuales: ${totalRegistros - registrosConTardanza}\n")
-        stats.append("📈 Porcentaje de puntualidad: ${if (totalRegistros > 0) "%.1f%%".format((totalRegistros - registrosConTardanza) * 100.0 / totalRegistros) else "0%"}\n")
-        
-        return stats.toString()
     }
     
     private fun exportarCSV(csvContent: String) {
@@ -778,6 +534,354 @@ class ReportesActivity : AppCompatActivity() {
     
     private fun showMessage(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+    
+    private fun enviarReportePorEmail() {
+        // Verificar si hay configuración de email
+        if (!EmailConfigManager.isConfigComplete(this)) {
+            AlertDialog.Builder(this)
+                .setTitle("📧 Configuración Requerida")
+                .setMessage("Para enviar reportes por email, primero debe configurar el servidor SMTP y agregar destinatarios.\n\n¿Desea ir a la configuración de email?")
+                .setPositiveButton("Configurar Email") { _, _ ->
+                    val intent = Intent(this, EmailConfigActivity::class.java)
+                    startActivity(intent)
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+            return
+        }
+        
+        // Obtener fecha actual
+        val fechaActual = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
+        
+        // Mostrar diálogo de confirmación
+        AlertDialog.Builder(this)
+            .setTitle("📧 Enviar Reporte por Email")
+            .setMessage("¿Desea enviar el reporte de asistencia del $fechaActual a todos los destinatarios configurados?")
+            .setPositiveButton("Enviar") { _, _ ->
+                enviarReporteEmail(fechaActual)
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+    
+    private fun enviarReporteEmail(fecha: String) {
+        val emailSender = ReporteEmailSender(this)
+        
+        // Mostrar progreso
+        val progressDialog = AlertDialog.Builder(this)
+            .setTitle("📧 Enviando Reporte")
+            .setMessage("Generando y enviando reporte...")
+            .setCancelable(false)
+            .create()
+        progressDialog.show()
+        
+        emailSender.enviarReporteDiario(fecha, object : ReporteEmailSender.EmailCallback {
+            override fun onSuccess(message: String) {
+                progressDialog.dismiss()
+                AlertDialog.Builder(this@ReportesActivity)
+                    .setTitle("✅ Reporte Enviado")
+                    .setMessage(message)
+                    .setPositiveButton("OK", null)
+                    .show()
+            }
+            
+            override fun onError(error: String) {
+                progressDialog.dismiss()
+                AlertDialog.Builder(this@ReportesActivity)
+                    .setTitle("❌ Error al Enviar")
+                    .setMessage(error)
+                    .setPositiveButton("OK", null)
+                    .show()
+            }
+        })
+    }
+    
+    private fun configurarEnvioAutomatico() {
+        // Verificar si hay configuración de email
+        if (!EmailConfigManager.isConfigComplete(this)) {
+            AlertDialog.Builder(this)
+                .setTitle("📧 Configuración Requerida")
+                .setMessage("Para configurar el envío automático, primero debe configurar el servidor SMTP y agregar destinatarios.\n\n¿Desea ir a la configuración de email?")
+                .setPositiveButton("Configurar Email") { _, _ ->
+                    val intent = Intent(this, EmailConfigActivity::class.java)
+                    startActivity(intent)
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+            return
+        }
+        
+        // Mostrar opciones de configuración
+        val opciones = arrayOf(
+            "⏰ Activar Envío Automático",
+            "⏰ Desactivar Envío Automático",
+            "📧 Enviar Reporte Ahora",
+            "⏰ Configurar Horario",
+            "📧 Ver Destinatarios"
+        )
+        
+        AlertDialog.Builder(this)
+            .setTitle("⏰ Configurar Envío Automático")
+            .setItems(opciones) { _, which ->
+                when (which) {
+                    0 -> activarEnvioAutomatico()
+                    1 -> desactivarEnvioAutomatico()
+                    2 -> enviarReporteAhora()
+                    3 -> configurarHorarioEnvio()
+                    4 -> mostrarDestinatarios()
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+    
+    private fun activarEnvioAutomatico() {
+        val config = EmailConfigManager.loadEmailConfig(this)
+        val nuevaConfig = config.copy(enviarAutomatico = true)
+        EmailConfigManager.saveEmailConfig(this, nuevaConfig)
+        
+        // Programar envío automático
+        EmailWorker.programarEnvioAutomatico(this)
+        
+        Toast.makeText(this, "✅ Envío automático activado", Toast.LENGTH_SHORT).show()
+        
+        AlertDialog.Builder(this)
+            .setTitle("✅ Envío Automático Activado")
+            .setMessage("""
+                El reporte se enviará automáticamente todos los días laborables a las ${config.horaEnvio}.
+                
+                📧 Destinatarios: ${EmailConfigManager.getDestinatariosActivos(this).size}
+                ⏰ Hora: ${config.horaEnvio}
+                📅 Días: Lunes a Viernes
+                
+                🔄 Sistema programado y funcionando
+            """.trimIndent())
+            .setPositiveButton("OK", null)
+            .show()
+    }
+    
+    private fun desactivarEnvioAutomatico() {
+        val config = EmailConfigManager.loadEmailConfig(this)
+        val nuevaConfig = config.copy(enviarAutomatico = false)
+        EmailConfigManager.saveEmailConfig(this, nuevaConfig)
+        
+        // Cancelar envío automático
+        EmailWorker.cancelarEnvioAutomatico(this)
+        
+        Toast.makeText(this, "❌ Envío automático desactivado", Toast.LENGTH_SHORT).show()
+        
+        AlertDialog.Builder(this)
+            .setTitle("❌ Envío Automático Desactivado")
+            .setMessage("""
+                El envío automático ha sido desactivado.
+                
+                Los reportes ya no se enviarán automáticamente.
+                Puedes activarlo nuevamente cuando lo necesites.
+            """.trimIndent())
+            .setPositiveButton("OK", null)
+            .show()
+    }
+    
+    private fun configurarHorarioEnvio() {
+        val intent = Intent(this, EmailConfigActivity::class.java)
+        startActivity(intent)
+    }
+    
+    private fun mostrarDestinatarios() {
+        val destinatarios = EmailConfigManager.getDestinatariosActivos(this)
+        
+        if (destinatarios.isEmpty()) {
+            AlertDialog.Builder(this)
+                .setTitle("📧 Sin Destinatarios")
+                .setMessage("No hay destinatarios configurados para el envío automático.")
+                .setPositiveButton("Configurar", { _, _ ->
+                    val intent = Intent(this, EmailConfigActivity::class.java)
+                    startActivity(intent)
+                })
+                .setNegativeButton("Cancelar", null)
+                .show()
+        } else {
+            val listaDestinatarios = destinatarios.joinToString("\n") { "• ${it.nombre} (${it.email})" }
+            
+            AlertDialog.Builder(this)
+                .setTitle("📧 Destinatarios Configurados")
+                .setMessage("""
+                    Los siguientes destinatarios recibirán los reportes automáticos:
+                    
+                    $listaDestinatarios
+                    
+                    Total: ${destinatarios.size} destinatarios
+                """.trimIndent())
+                .setPositiveButton("OK", null)
+                .show()
+        }
+    }
+    
+    private fun enviarReporteAhora() {
+        val fechaActual = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
+        
+        AlertDialog.Builder(this)
+            .setTitle("📧 Enviar Reporte Ahora")
+            .setMessage("¿Desea enviar el reporte de asistencia del $fechaActual inmediatamente?")
+            .setPositiveButton("Enviar") { _, _ ->
+                enviarReporteEmail(fechaActual)
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+    
+    private fun enviarReportePruebas() {
+        // Verificar si hay configuración de email
+        if (!EmailConfigManager.isConfigComplete(this)) {
+            AlertDialog.Builder(this)
+                .setTitle("📧 Configuración Requerida")
+                .setMessage("Para enviar reportes por email, primero debe configurar el servidor SMTP y agregar destinatarios.\n\n¿Desea ir a la configuración de email?")
+                .setPositiveButton("Configurar Email") { _, _ ->
+                    val intent = Intent(this, EmailConfigActivity::class.java)
+                    startActivity(intent)
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+            return
+        }
+        
+        val fechaActual = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
+        
+        AlertDialog.Builder(this)
+            .setTitle("🧪 Enviar Reporte de Pruebas")
+            .setMessage("""
+                ¿Desea enviar un reporte de pruebas inmediatamente?
+                
+                📅 Fecha: $fechaActual
+                📧 Destinatarios: ${EmailConfigManager.getDestinatariosActivos(this).size}
+                
+                Este reporte incluirá todos los registros de asistencia disponibles para pruebas.
+            """.trimIndent())
+            .setPositiveButton("🧪 Enviar Prueba") { _, _ ->
+                enviarReporteEmailPruebas(fechaActual)
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+    
+    private fun enviarReporteEmailPruebas(fecha: String) {
+        val emailSender = ReporteEmailSender(this)
+        
+        // Mostrar progreso
+        val progressDialog = AlertDialog.Builder(this)
+            .setTitle("🧪 Enviando Reporte de Pruebas")
+            .setMessage("Generando y enviando reporte de pruebas...")
+            .setCancelable(false)
+            .create()
+        progressDialog.show()
+        
+        emailSender.enviarReporteDiario(fecha, object : ReporteEmailSender.EmailCallback {
+            override fun onSuccess(message: String) {
+                progressDialog.dismiss()
+                AlertDialog.Builder(this@ReportesActivity)
+                    .setTitle("✅ Reporte de Pruebas Enviado")
+                    .setMessage("""
+                        🎉 ¡Reporte de pruebas enviado exitosamente!
+                        
+                        $message
+                        
+                        📧 Verifica tu bandeja de entrada para confirmar la recepción.
+                        🧪 Este reporte incluye todos los datos de asistencia disponibles.
+                    """.trimIndent())
+                    .setPositiveButton("OK", null)
+                    .show()
+            }
+            
+            override fun onError(error: String) {
+                progressDialog.dismiss()
+                AlertDialog.Builder(this@ReportesActivity)
+                    .setTitle("❌ Error al Enviar Pruebas")
+                    .setMessage("""
+                        Error al enviar el reporte de pruebas:
+                        
+                        ❌ $error
+                        
+                        🔧 Verifica:
+                        • Configuración SMTP correcta
+                        • Conexión a internet
+                        • Destinatarios válidos
+                        • Credenciales de email
+                    """.trimIndent())
+                    .setPositiveButton("OK", null)
+                    .show()
+            }
+        })
+    }
+    
+    private fun exportarExcel() {
+        try {
+            // Cargar registros
+            val sharedPreferences = getSharedPreferences("RegistrosApp", Context.MODE_PRIVATE)
+            val registrosJson = sharedPreferences.getString("registros_list", "[]")
+            val registros = gson.fromJson<List<Map<String, String>>>(registrosJson, object : TypeToken<List<Map<String, String>>>() {}.type) ?: emptyList()
+            
+            if (registros.isEmpty()) {
+                Toast.makeText(this, "❌ No hay datos para exportar", Toast.LENGTH_SHORT).show()
+                return
+            }
+            
+            // Generar contenido Excel (formato CSV mejorado)
+            val fechaActual = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(Date())
+            val nombreArchivo = "reporte_asistencia_$fechaActual.csv"
+            
+            val csvContent = StringBuilder()
+            csvContent.append("Empleado,DNI,Evento,Fecha,Hora,Estado,Ubicación,Latitud,Longitud\n")
+            
+            registros.forEach { registro ->
+                val nombre = registro["nombre"] ?: ""
+                val dni = registro["dni"] ?: ""
+                val evento = registro["tipoEvento"] ?: ""
+                val fecha = registro["fecha"] ?: ""
+                val hora = registro["hora"] ?: ""
+                val estado = registro["estado"] ?: ""
+                val ubicacion = registro["ubicacion"] ?: ""
+                val latitud = registro["latitud"] ?: ""
+                val longitud = registro["longitud"] ?: ""
+                
+                csvContent.append("$nombre,$dni,$evento,$fecha,$hora,$estado,$ubicacion,$latitud,$longitud\n")
+            }
+            
+            // Guardar archivo
+            val archivo = File(getExternalFilesDir(null), nombreArchivo)
+            archivo.writeText(csvContent.toString())
+            
+            // Compartir archivo
+            val uri = androidx.core.content.FileProvider.getUriForFile(
+                this,
+                "${packageName}.fileprovider",
+                archivo
+            )
+            
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/csv"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_SUBJECT, "📊 Reporte de Asistencia - $fechaActual")
+                putExtra(Intent.EXTRA_TEXT, 
+                    "📊 REPORTE DE ASISTENCIA EN FORMATO EXCEL\n" +
+                    "=" .repeat(40) + "\n\n" +
+                    "Archivo: $nombreArchivo\n" +
+                    "Registros: ${registros.size}\n" +
+                    "Generado: ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date())}\n\n" +
+                    "📱 Generado por App de Control de Asistencia\n" +
+                    "#AsistenciaLaboral #ControlHorario #ReporteExcel"
+                )
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            
+            val chooser = Intent.createChooser(intent, "📊 Compartir Reporte Excel")
+            startActivity(chooser)
+            
+            showMessage("📊 Exportando reporte en formato Excel...")
+            
+        } catch (e: Exception) {
+            showError("Error al exportar Excel: ${e.message}")
+        }
     }
     
     override fun onSupportNavigateUp(): Boolean {

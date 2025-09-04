@@ -55,7 +55,7 @@
                     android:id="@+id/spinner_modo_lectura"
                     style="@style/ModernSpinner"
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
+                    android:layout_height="64dp"
                     android:contentDescription="Seleccionar modo de lectura de códigos" />
 
             </LinearLayout>
@@ -95,7 +95,7 @@
                     android:id="@+id/spinner_modo_operacion"
                     style="@style/ModernSpinner"
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
+                    android:layout_height="64dp"
                     android:contentDescription="Seleccionar modo de operación del sistema" />
 
             </LinearLayout>
@@ -201,6 +201,48 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
+        <!-- Sección Confirmación de Asistencia -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="✅ Confirmación de Asistencia"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#2C3E50"
+                    android:drawablePadding="8dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Activar modal de confirmación antes de registrar asistencia"
+                    style="@style/HighContrastSecondaryText"
+                    android:layout_marginBottom="16dp" />
+
+                <Switch
+                    android:id="@+id/switch_confirmacion_asistencia"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:checked="false"
+                    android:text="Requerir confirmación antes de registrar"
+                    android:textSize="14sp"
+                    android:textColor="#2C3E50" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
         <!-- Sección Configuración de API -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
@@ -263,7 +305,7 @@
                 <Button
                     android:id="@+id/btn_test_conexion"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
+                    android:layout_height="56dp"
                     android:text="🔍 Probar Conexión"
                     android:textColor="@android:color/white"
                     android:textStyle="bold" />
@@ -305,7 +347,7 @@
                 <Button
                     android:id="@+id/btn_sincronizar_ahora"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
+                    android:layout_height="56dp"
                     android:text="🚀 Sincronizar Ahora"
                     android:textColor="@android:color/white"
                     android:textStyle="bold" />
@@ -313,32 +355,101 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Botones de Acción -->
-        <LinearLayout
+        <!-- Sección Configuración de Email -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_marginTop="16dp">
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp">
 
-            <Button
-                android:id="@+id/btn_guardar_config"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:text="💾 Guardar Configuración"
-                android:textColor="@android:color/white"
-                android:textStyle="bold"
-                android:textSize="16sp"
-                android:layout_marginBottom="12dp" />
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <Button
-                android:id="@+id/btn_configuracion_avanzada"
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="📧 Configuración de Email"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#2C3E50"
+                    android:layout_marginBottom="16dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Configure el envío automático de reportes por email"
+                    android:textSize="14sp"
+                    android:textColor="#7F8C8D"
+                    android:layout_marginBottom="16dp" />
+
+                <Button
+                    android:id="@+id/btn_configurar_email"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="📧 Configurar Email"
+                    android:textColor="@android:color/white"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Sección Configuración de PIN -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:text="⚙️ Configuración Avanzada"
-                android:textColor="#2C3E50"
-                android:textStyle="bold" />
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-        </LinearLayout>
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🔐 Configuración de PIN"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#2C3E50"
+                    android:layout_marginBottom="16dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Configure un PIN para proteger acceso a funciones sensibles"
+                    android:textSize="14sp"
+                    android:textColor="#7F8C8D"
+                    android:layout_marginBottom="16dp" />
+
+                <Button
+                    android:id="@+id/btn_configurar_pin"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="🔐 Configurar PIN"
+                    android:textColor="@android:color/white"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Botón Guardar Configuración -->
+        <Button
+            android:id="@+id/btn_guardar_config"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="💾 Guardar Configuración"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="24dp" />
 
     </LinearLayout>
 </ScrollView>

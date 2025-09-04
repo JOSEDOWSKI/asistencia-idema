@@ -1,14 +1,24 @@
 package com.asistencia.app
 
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import android.widget.*
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.app.Dialog
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.asistencia.app.utils.PinManager
+import com.asistencia.app.database.Empleado
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class EmpleadosActivityMejorado : AppCompatActivity() {
     
@@ -24,8 +34,20 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
             // Usar SharedPreferences como respaldo
             sharedPreferences = getSharedPreferences("EmpleadosApp", Context.MODE_PRIVATE)
             
-            createLayout()
-            loadEmpleados()
+            // Verificar si se abrió para editar un empleado
+            val editarEmpleado = intent.getBooleanExtra("EDITAR_EMPLEADO", false)
+            val empleadoId = intent.getStringExtra("EMPLEADO_ID")
+            
+            if (editarEmpleado && empleadoId != null) {
+                // Abrir directamente el editor de horarios para el empleado
+                abrirEditorDirecto(empleadoId)
+            } else {
+                createLayout()
+                loadEmpleados()
+            }
+            
+            // Registrar actividad para el sistema de PIN
+            PinManager.updateLastActivity(this)
             
         } catch (e: Exception) {
             // Si todo falla, mostrar mensaje básico
@@ -57,6 +79,59 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
         setContentView(layout)
     }
     
+    private fun abrirEditorDirecto(empleadoId: String) {
+        try {
+            // Buscar el empleado en la base de datos Room
+            CoroutineScope(Dispatchers.Main).launch {
+                try {
+                    val empleado = buscarEmpleadoEnBD(empleadoId)
+                    if (empleado != null) {
+                        // Si es un empleado de la base de datos, mostrar opciones
+                        mostrarOpcionesEmpleadoBD(empleado)
+                    } else {
+                        // Si no se encuentra, mostrar error y cerrar
+                        showMessage("❌ No se encontró el empleado para editar")
+                        finish()
+                    }
+                } catch (e: Exception) {
+                    showMessage("❌ Error al buscar empleado: ${e.message}")
+                    finish()
+                }
+            }
+        } catch (e: Exception) {
+            showMessage("❌ Error al abrir editor: ${e.message}")
+            finish()
+        }
+    }
+    
+    private fun mostrarOpcionesEmpleadoBD(empleado: Empleado) {
+        val opciones = arrayOf("✏️ Editar Horario", "📋 Ver Detalles", "❌ Cancelar")
+        
+        AlertDialog.Builder(this)
+            .setTitle("👤 ${empleado.nombres} ${empleado.apellidos}")
+            .setItems(opciones) { _, which ->
+                when (which) {
+                    0 -> editarHorarioEmpleadoBD(empleado)
+                    1 -> verDetallesEmpleadoBD(empleado)
+                    2 -> finish()
+                }
+            }
+            .setCancelable(false)
+            .show()
+    }
+    
+    private fun editarHorarioEmpleadoBD(empleado: Empleado) {
+        // Por ahora, mostrar mensaje de que la edición de empleados de BD está en desarrollo
+        showMessage("🚧 Edición de empleados de base de datos en desarrollo")
+        finish()
+    }
+    
+    private fun verDetallesEmpleadoBD(empleado: Empleado) {
+        // Por ahora, mostrar mensaje y cerrar
+        showMessage("📋 Detalles del empleado: ${empleado.nombres} ${empleado.apellidos}")
+        finish()
+    }
+    
     private fun createLayout() {
         mainLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -79,24 +154,13 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
             text = "➕ Agregar Empleado"
             textSize = 16f
             setPadding(20, 20, 20, 20)
+            setTextColor(android.graphics.Color.WHITE)
+            setBackgroundColor(android.graphics.Color.parseColor("#4CAF50")) // Color verde de Promesa
             setOnClickListener { 
                 mostrarDialogoAgregar()
             }
         }
         mainLayout.addView(btnAgregar)
-        
-        // Botón limpiar (para debug)
-        val btnLimpiar = Button(this).apply {
-            text = "🗑️ Limpiar Todos (Debug)"
-            textSize = 14f
-            setPadding(20, 20, 20, 20)
-            setBackgroundColor(android.graphics.Color.RED)
-            setTextColor(android.graphics.Color.WHITE)
-            setOnClickListener { 
-                limpiarTodos()
-            }
-        }
-        mainLayout.addView(btnLimpiar)
         
         // Separador
         val separator = View(this).apply {
@@ -268,20 +332,7 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
             setPadding(0, 8, 0, 0)
         }
         
-        val btnEditar = Button(this).apply {
-            text = "✏️ Editar"
-            textSize = 12f
-            setPadding(12, 8, 12, 8)
-            setBackgroundColor(android.graphics.Color.parseColor("#4CAF50"))
-            setTextColor(android.graphics.Color.WHITE)
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                setMargins(0, 0, 4, 0)
-            }
-            setOnClickListener {
-                editarEmpleado(empleado)
-            }
-        }
-        botonesLayout.addView(btnEditar)
+        // Botón Editar eliminado - no funcionaba correctamente
         
         val btnEliminar = Button(this).apply {
             text = "🗑️ Eliminar"
@@ -397,21 +448,7 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
         }
         botonesLayout.addView(btnDetalles)
         
-        val btnEditar = Button(this).apply {
-            text = "✏️ Editar"
-            textSize = 12f
-            setPadding(12, 8, 12, 8)
-            setBackgroundColor(android.graphics.Color.parseColor("#FF9800"))
-            setTextColor(android.graphics.Color.WHITE)
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                setMargins(2, 0, 2, 0)
-            }
-            setOnClickListener {
-                // TODO: Implementar edición de horarios flexibles
-                showMessage("🚧 Función de edición en desarrollo")
-            }
-        }
-        botonesLayout.addView(btnEditar)
+        // Botón Editar eliminado - no funcionaba correctamente
         
         val btnEliminar = Button(this).apply {
             text = "🗑️ Eliminar"
@@ -437,90 +474,102 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
     
     private fun mostrarDetallesCompletoEmpleado(empleado: EmpleadoSimple) {
         try {
-            // Verificar si es empleado flexible
-            val empleadoFlexible = buscarEmpleadoFlexiblePorDni(empleado.dni)
-            
-            val mensaje = if (empleadoFlexible != null) {
-                // Es empleado flexible - mostrar información completa
-                buildString {
-                    append("👤 EMPLEADO CON HORARIO FLEXIBLE\n\n")
-                    append("📝 Nombre: ${empleadoFlexible.nombres} ${empleadoFlexible.apellidos}\n")
-                    append("🆔 DNI: ${empleadoFlexible.dni}\n")
-                    append("📊 Estado: ${if (empleadoFlexible.activo) "✅ Activo" else "❌ Inactivo"}\n\n")
-                    
-                    append("📅 HORARIOS POR DÍA:\n")
-                    val diasCodigos = listOf("L", "M", "X", "J", "V", "S", "D")
-                    val diasNombres = listOf("🌅 Lunes", "💼 Martes", "⚡ Miércoles", "🔥 Jueves", "🎯 Viernes", "🏖️ Sábado", "🏠 Domingo")
-                    
-                    diasCodigos.forEachIndexed { index, codigo ->
-                        val horario = empleadoFlexible.getHorarioDia(codigo)
-                        val nombreDia = diasNombres[index]
-                        if (horario != null) {
-                            append("$nombreDia: ${horario.first} - ${horario.second}\n")
-                        } else {
-                            append("$nombreDia: No trabaja\n")
-                        }
+            // Usar coroutine para buscar el empleado en la base de datos
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                val empleadoCompleto = buscarEmpleadoEnBD(empleado.dni)
+                
+                if (empleadoCompleto != null) {
+                    // Abrir la nueva actividad de detalle
+                    val intent = Intent(this@EmpleadosActivityMejorado, EmpleadoDetalleActivity::class.java).apply {
+                        putExtra(EmpleadoDetalleActivity.EXTRA_EMPLEADO_ID, empleadoCompleto.id)
                     }
-                    append("\n")
-                    
-                    val (horasSemanales, minutosSemanales) = empleadoFlexible.calcularHorasSemanales()
-                    append("⏱️ Total semanal: ${horasSemanales}h ${minutosSemanales}min\n\n")
-                    
-                    append("📊 Estado actual: ${empleadoFlexible.getEstadoActual()}\n")
-                    
-                    if (empleadoFlexible.trabajaHoy()) {
-                        val horarioHoy = empleadoFlexible.getHorarioHoy()
-                        if (horarioHoy != null) {
-                            append("🕐 Horario hoy: ${horarioHoy.first} - ${horarioHoy.second}")
-                        }
-                    } else {
-                        append("🏠 Hoy no trabaja")
-                    }
-                }
-            } else {
-                // Es empleado fijo - mostrar información básica
-                buildString {
-                    append("👤 EMPLEADO CON HORARIO FIJO\n\n")
-                    append("📝 Nombre: ${empleado.nombres} ${empleado.apellidos}\n")
-                    append("🆔 DNI: ${empleado.dni}\n")
-                    append("📊 Estado: ${if (empleado.activo) "✅ Activo" else "❌ Inactivo"}\n\n")
-                    
-                    append("📅 HORARIO FIJO:\n")
-                    append("🕐 Entrada: ${empleado.horaEntrada}\n")
-                    append("🕕 Salida: ${empleado.horaSalida}\n\n")
-                    
-                    append("📋 Días laborables: Lunes a Viernes\n")
-                    append("⏱️ Horas diarias: ${calcularHorasDiarias(empleado.horaEntrada, empleado.horaSalida)}\n")
-                    append("⏱️ Total semanal: ${calcularHorasSemanales(empleado.horaEntrada, empleado.horaSalida)} horas\n\n")
-                    
-                    val horaActual = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date())
-                    val estadoActual = determinarEstadoActual(horaActual, empleado.horaEntrada, empleado.horaSalida)
-                    append("📊 Estado actual: $estadoActual")
+                    startActivity(intent)
+                } else {
+                    // Si no está en la BD, mostrar opciones
+                    mostrarOpcionesEmpleadoBasico(empleado)
                 }
             }
-            
-            AlertDialog.Builder(this)
-                .setTitle("📋 Información Completa del Empleado")
-                .setMessage(mensaje)
-                .setPositiveButton("Cerrar", null)
-                .setNeutralButton("✏️ Editar") { _, _ ->
-                    if (empleadoFlexible != null) {
-                        showMessage("🚧 Edición de horarios flexibles en desarrollo")
-                    } else {
-                        editarEmpleado(empleado)
-                    }
-                }
-                .setNegativeButton("🗑️ Eliminar") { _, _ ->
-                    if (empleadoFlexible != null) {
-                        eliminarEmpleadoFlexible(empleadoFlexible)
-                    } else {
-                        eliminarEmpleado(empleado)
-                    }
-                }
-                .show()
                 
         } catch (e: Exception) {
             showMessage("Error al mostrar detalles: ${e.message}")
+        }
+    }
+    
+    private fun mostrarOpcionesEmpleadoBasico(empleado: EmpleadoSimple) {
+        val opciones = arrayOf("📱 Ver Detalle Básico", "🔄 Migrar a Base de Datos", "✏️ Editar")
+        
+        AlertDialog.Builder(this)
+            .setTitle("👤 ${empleado.nombres} ${empleado.apellidos}")
+            .setMessage("Este empleado está en modo básico. ¿Qué desea hacer?")
+            .setItems(opciones) { _, which ->
+                when (which) {
+                    0 -> mostrarDetalleBasico(empleado)
+                    1 -> migrarEmpleadoABD(empleado)
+                    2 -> editarEmpleado(empleado)
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+    
+    private fun mostrarDetalleBasico(empleado: EmpleadoSimple) {
+        val mensaje = buildString {
+            append("👤 EMPLEADO EN MODO BÁSICO\n\n")
+            append("📝 Nombre: ${empleado.nombres} ${empleado.apellidos}\n")
+            append("🆔 DNI: ${empleado.dni}\n")
+            append("⏰ Horario: ${empleado.horaEntrada} - ${empleado.horaSalida}\n")
+            append("📊 Estado: ${if (empleado.activo) "✅ Activo" else "❌ Inactivo"}\n\n")
+            append("💡 Para acceder a todas las funciones:\n")
+            append("• Migre el empleado a la base de datos\n")
+            append("• O use el modo de edición básico")
+        }
+        
+        AlertDialog.Builder(this)
+            .setTitle("📋 Detalle del Empleado")
+            .setMessage(mensaje)
+            .setPositiveButton("🔄 Migrar a BD") { _, _ ->
+                migrarEmpleadoABD(empleado)
+            }
+            .setNegativeButton("Cerrar", null)
+            .show()
+    }
+    
+    private fun migrarEmpleadoABD(empleado: EmpleadoSimple) {
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                val empleadoBD = com.asistencia.app.database.Empleado(
+                    dni = empleado.dni,
+                    nombres = empleado.nombres,
+                    apellidos = empleado.apellidos,
+                    tipoHorario = com.asistencia.app.database.TipoHorario.REGULAR,
+                    horaEntradaRegular = empleado.horaEntrada,
+                    horaSalidaRegular = empleado.horaSalida,
+                    activo = empleado.activo
+                )
+                
+                val repository = com.asistencia.app.repository.AsistenciaRepository(this@EmpleadosActivityMejorado)
+                repository.insertEmpleado(empleadoBD)
+                
+                showMessage("✅ Empleado migrado exitosamente a la base de datos")
+                
+                // Ahora abrir la nueva actividad
+                val intent = Intent(this@EmpleadosActivityMejorado, EmpleadoDetalleActivity::class.java).apply {
+                    putExtra(EmpleadoDetalleActivity.EXTRA_EMPLEADO_ID, empleadoBD.id)
+                }
+                startActivity(intent)
+                
+            } catch (e: Exception) {
+                showMessage("❌ Error al migrar: ${e.message}")
+            }
+        }
+    }
+    
+    private suspend fun buscarEmpleadoEnBD(dni: String): com.asistencia.app.database.Empleado? {
+        return try {
+            val repository = com.asistencia.app.repository.AsistenciaRepository(this)
+            repository.getEmpleadoByDni(dni)
+        } catch (e: Exception) {
+            null
         }
     }
     
@@ -617,9 +666,6 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
                 .setTitle("📋 Detalles del Empleado")
                 .setMessage(mensaje)
                 .setPositiveButton("Cerrar", null)
-                .setNeutralButton("✏️ Editar") { _, _ ->
-                    editarEmpleado(empleado)
-                }
                 .setNegativeButton("🗑️ Eliminar") { _, _ ->
                     eliminarEmpleado(empleado)
                 }
@@ -632,23 +678,208 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
     
     private fun mostrarDetallesEmpleadoFlexible(empleado: EmpleadoFlexible) {
         try {
-            val mensaje = empleado.getInformacionDetallada()
+            val mensaje = empleado.getInfoDiaActual()
             
             AlertDialog.Builder(this)
                 .setTitle("📋 Detalles del Empleado Flexible")
                 .setMessage(mensaje)
                 .setPositiveButton("Cerrar", null)
-                .setNeutralButton("⏰ Editar Horarios") { _, _ ->
-                    // TODO: Implementar edición de horarios flexibles
-                    showMessage("🚧 Función de edición en desarrollo")
+                .setNeutralButton("⏰ Editar Horarios") { dialog, which ->
+                    editarHorarioFlexible(empleado)
                 }
-                .setNegativeButton("🗑️ Eliminar") { _, _ ->
+                .setNegativeButton("🗑️ Eliminar") { dialog, which ->
                     eliminarEmpleadoFlexible(empleado)
                 }
                 .show()
                 
         } catch (e: Exception) {
             showMessage("Error al mostrar detalles: ${e.message}")
+        }
+    }
+    
+    private fun editarHorarioFlexible(empleado: EmpleadoFlexible) {
+        try {
+            // Crear el diálogo personalizado
+            val dialog = Dialog(this)
+            dialog.setContentView(R.layout.dialog_editar_horario_flexible)
+            
+            // Configurar el diálogo
+            dialog.window?.setLayout(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            dialog.setCancelable(true) // Permitir cerrar con botón atrás nativo
+            
+            // Configurar información del empleado
+            dialog.findViewById<TextView>(R.id.tv_nombre_empleado_editar).text = "${empleado.nombres} ${empleado.apellidos}"
+            dialog.findViewById<TextView>(R.id.tv_dni_empleado_editar).text = "DNI: ${empleado.dni}"
+            
+            // Cargar horarios actuales
+            cargarHorariosActualesEnDialogo(dialog, empleado)
+            
+            // Los botones de acción rápida se han eliminado para simplificar la interfaz
+            
+            // Configurar botones principales
+            dialog.findViewById<Button>(R.id.btn_cancelar_editar).setOnClickListener {
+                dialog.dismiss()
+            }
+            
+            dialog.findViewById<Button>(R.id.btn_guardar_editar).setOnClickListener {
+                guardarHorarioFlexibleEditado(dialog, empleado)
+                dialog.dismiss()
+            }
+            
+            // Mostrar el diálogo
+            dialog.show()
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al abrir editor de horarios: ${e.message}")
+        }
+    }
+    
+    private fun cargarHorariosActualesEnDialogo(dialog: Dialog, empleado: EmpleadoFlexible) {
+        try {
+            val dias = listOf("L", "M", "X", "J", "V", "S", "D")
+            val nombresDias = listOf("lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo")
+            
+            dias.forEachIndexed { index, codigo ->
+                val nombreDia = nombresDias[index]
+                val horario = empleado.horariosSemanales[codigo]
+                val refrigerio = empleado.refrigeriosSemanales[codigo]
+                val estaActivo = empleado.diasActivos.contains(codigo)
+                
+                // Configurar switch del día
+                val switchId = resources.getIdentifier("switch_${nombreDia}_editar", "id", packageName)
+                val switchDia = dialog.findViewById<CheckBox>(switchId)
+                switchDia?.isChecked = estaActivo
+                
+                // Configurar campos de entrada y salida
+                val etEntradaId = resources.getIdentifier("et_${nombreDia}_entrada_editar", "id", packageName)
+                val etEntrada = dialog.findViewById<EditText>(etEntradaId)
+                etEntrada?.setText(horario?.first ?: "08:00")
+                
+                val etSalidaId = resources.getIdentifier("et_${nombreDia}_salida_editar", "id", packageName)
+                val etSalida = dialog.findViewById<EditText>(etSalidaId)
+                etSalida?.setText(horario?.second ?: "17:00")
+                
+                // Configurar campos de refrigerio
+                val etRefrigerioInicioId = resources.getIdentifier("et_${nombreDia}_refrigerio_inicio_editar", "id", packageName)
+                val etRefrigerioInicio = dialog.findViewById<EditText>(etRefrigerioInicioId)
+                etRefrigerioInicio?.setText(refrigerio?.first ?: "12:00")
+                
+                val etRefrigerioFinId = resources.getIdentifier("et_${nombreDia}_refrigerio_fin_editar", "id", packageName)
+                val etRefrigerioFin = dialog.findViewById<EditText>(etRefrigerioFinId)
+                etRefrigerioFin?.setText(refrigerio?.second ?: "13:00")
+            }
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al cargar horarios: ${e.message}")
+        }
+    }
+    
+    // Los botones de acción rápida se han eliminado para simplificar la interfaz
+    
+    // La función de aplicar horario rápido se ha eliminado
+    
+    private fun desactivarRefrigerioEnDialogo(dialog: Dialog) {
+        try {
+            val nombresDias = listOf("lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo")
+            
+            nombresDias.forEach { nombreDia ->
+                val etRefrigerioInicioId = resources.getIdentifier("et_${nombreDia}_refrigerio_inicio_editar", "id", packageName)
+                val etRefrigerioInicio = dialog.findViewById<EditText>(etRefrigerioInicioId)
+                etRefrigerioInicio?.setText("")
+                
+                val etRefrigerioFinId = resources.getIdentifier("et_${nombreDia}_refrigerio_fin_editar", "id", packageName)
+                val etRefrigerioFin = dialog.findViewById<EditText>(etRefrigerioFinId)
+                etRefrigerioFin?.setText("")
+            }
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al desactivar refrigerio: ${e.message}")
+        }
+    }
+    
+    private fun guardarHorarioFlexibleEditado(dialog: Dialog, empleado: EmpleadoFlexible) {
+        try {
+            val horarios = mutableMapOf<String, Pair<String, String>>()
+            val refrigerios = mutableMapOf<String, Pair<String, String>>()
+            val diasActivos = mutableListOf<String>()
+            
+            val dias = listOf("L", "M", "X", "J", "V", "S", "D")
+            val nombresDias = listOf("lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo")
+            
+            dias.forEachIndexed { index, codigo ->
+                val nombreDia = nombresDias[index]
+                
+                // Obtener switch del día
+                val switchId = resources.getIdentifier("switch_${nombreDia}_editar", "id", packageName)
+                val switchDia = dialog.findViewById<CheckBox>(switchId)
+                
+                if (switchDia?.isChecked == true) {
+                    // Obtener horarios
+                    val etEntradaId = resources.getIdentifier("et_${nombreDia}_entrada_editar", "id", packageName)
+                    val etEntrada = dialog.findViewById<EditText>(etEntradaId)
+                    val entrada = etEntrada?.text.toString().trim()
+                    
+                    val etSalidaId = resources.getIdentifier("et_${nombreDia}_salida_editar", "id", packageName)
+                    val etSalida = dialog.findViewById<EditText>(etSalidaId)
+                    val salida = etSalida?.text.toString().trim()
+                    
+                    if (entrada.isNotEmpty() && salida.isNotEmpty()) {
+                        horarios[codigo] = Pair(entrada, salida)
+                        
+                        // Obtener refrigerio
+                        val etRefrigerioInicioId = resources.getIdentifier("et_${nombreDia}_refrigerio_inicio_editar", "id", packageName)
+                        val etRefrigerioInicio = dialog.findViewById<EditText>(etRefrigerioInicioId)
+                        val refrigerioInicio = etRefrigerioInicio?.text.toString().trim()
+                        
+                        val etRefrigerioFinId = resources.getIdentifier("et_${nombreDia}_refrigerio_fin_editar", "id", packageName)
+                        val etRefrigerioFin = dialog.findViewById<EditText>(etRefrigerioFinId)
+                        val refrigerioFin = etRefrigerioFin?.text.toString().trim()
+                        
+                        if (refrigerioInicio.isNotEmpty() && refrigerioFin.isNotEmpty()) {
+                            refrigerios[codigo] = Pair(refrigerioInicio, refrigerioFin)
+                        }
+                        
+                        diasActivos.add(codigo)
+                    }
+                }
+            }
+            
+            if (diasActivos.isEmpty()) {
+                showMessage("❌ Debe configurar al menos un día de trabajo")
+                return
+            }
+            
+            // Actualizar empleado flexible
+            val empleadoActualizado = empleado.copy(
+                horariosSemanales = horarios,
+                refrigeriosSemanales = refrigerios,
+                diasActivos = diasActivos
+            )
+            
+            // Guardar cambios
+            val empleadosFlexiblesJson = sharedPreferences.getString("empleados_flexibles", "[]")
+            val type = object : TypeToken<MutableList<EmpleadoFlexible>>() {}.type
+            val empleadosFlexibles: MutableList<EmpleadoFlexible> = gson.fromJson(empleadosFlexiblesJson, type) ?: mutableListOf()
+            
+            val index = empleadosFlexibles.indexOfFirst { it.dni == empleado.dni }
+            if (index != -1) {
+                empleadosFlexibles[index] = empleadoActualizado
+                
+                val nuevaLista = gson.toJson(empleadosFlexibles)
+                sharedPreferences.edit().putString("empleados_flexibles", nuevaLista).apply()
+                
+                showMessage("✅ Horario flexible actualizado para ${empleado.nombres} ${empleado.apellidos}")
+                loadEmpleados()
+            } else {
+                showMessage("❌ No se encontró el empleado para actualizar")
+            }
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al guardar horario flexible: ${e.message}")
         }
     }
     
@@ -741,7 +972,7 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
             // Buscar y actualizar empleado
             val index = empleados.indexOfFirst { it.dni == dni }
             if (index != -1) {
-                empleados[index] = EmpleadoSimple(dni, nombres, apellidos, entrada, salida, activo)
+                empleados[index] = EmpleadoSimple(dni, nombres, apellidos, entrada, salida, "12:00", "13:00", false, activo)
                 
                 // Guardar cambios
                 val nuevaLista = gson.toJson(empleados)
@@ -899,33 +1130,12 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
             }
             dialogLayout.addView(etApellidos)
             
-            val etEntrada = EditText(this).apply {
-                hint = "Hora entrada (ej: 07:00)"
-                inputType = android.text.InputType.TYPE_CLASS_TEXT
-                textSize = 16f
-            }
-            dialogLayout.addView(etEntrada)
-            
-            val etSalida = EditText(this).apply {
-                hint = "Hora salida (ej: 13:00)"
-                inputType = android.text.InputType.TYPE_CLASS_TEXT
-                textSize = 16f
-            }
-            dialogLayout.addView(etSalida)
+
             
             AlertDialog.Builder(this)
                 .setTitle("➕ Agregar Empleado")
                 .setView(dialogLayout)
-                .setPositiveButton("Guardar") { _, _ ->
-                    guardarEmpleado(
-                        etDni.text.toString().trim(),
-                        etNombres.text.toString().trim(),
-                        etApellidos.text.toString().trim(),
-                        etEntrada.text.toString().trim(),
-                        etSalida.text.toString().trim()
-                    )
-                }
-                .setNeutralButton("⏰ Horario Flexible") { _, _ ->
+                .setPositiveButton("Continuar") { _, _ ->
                     mostrarDialogoHorarioFlexible(
                         etDni.text.toString().trim(),
                         etNombres.text.toString().trim(),
@@ -979,7 +1189,7 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
             }
             
             // Agregar nuevo empleado
-            val nuevoEmpleado = EmpleadoSimple(dni, nombres, apellidos, entrada, salida, true)
+            val nuevoEmpleado = EmpleadoSimple(dni, nombres, apellidos, entrada, salida, "12:00", "13:00", false, true)
             empleados.add(nuevoEmpleado)
             
             // Guardar
@@ -1007,6 +1217,33 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
         }
     }
     
+    private fun limpiarDuplicados() {
+        try {
+            // Cargar empleados flexibles
+            val empleadosFlexiblesJson = sharedPreferences.getString("empleados_flexibles", "[]")
+            val typeFlexible = object : TypeToken<List<EmpleadoFlexible>>() {}.type
+            val empleadosFlexibles: List<EmpleadoFlexible> = gson.fromJson(empleadosFlexiblesJson, typeFlexible) ?: emptyList()
+            
+            // Cargar empleados regulares
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val typeSimple = object : TypeToken<List<EmpleadoSimple>>() {}.type
+            val empleados: List<EmpleadoSimple> = gson.fromJson(empleadosJson, typeSimple) ?: emptyList()
+            
+            // Filtrar empleados regulares que NO sean flexibles
+            val empleadosRegularesFiltrados = empleados.filter { !it.esFlexible }
+            
+            // Guardar solo empleados regulares no flexibles
+            val nuevaListaRegulares = gson.toJson(empleadosRegularesFiltrados)
+            sharedPreferences.edit().putString("empleados_list", nuevaListaRegulares).apply()
+            
+            showMessage("✅ Duplicados eliminados")
+            loadEmpleados()
+            
+        } catch (e: Exception) {
+            showMessage("Error al limpiar duplicados: ${e.message}")
+        }
+    }
+    
     private fun mostrarDialogoHorarioFlexible(dni: String, nombres: String, apellidos: String) {
         try {
             // Validaciones básicas primero
@@ -1030,8 +1267,8 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
                 return
             }
             
-            // Crear diálogo de horario flexible
-            val dialogView = layoutInflater.inflate(R.layout.dialog_horario_flexible, null)
+            // Crear diálogo de horario flexible CON REFRIGERIO
+            val dialogView = layoutInflater.inflate(R.layout.dialog_horario_flexible_con_refrigerio, null)
             
             // Configurar el diálogo
             val dialog = AlertDialog.Builder(this)
@@ -1055,36 +1292,37 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
     
     private fun configurarDialogoHorarioFlexible(dialogView: View) {
         try {
-            // Configurar aplicación rápida
-            val etHoraBaseEntrada = dialogView.findViewById<EditText>(R.id.et_hora_base_entrada)
-            val etHoraBaseSalida = dialogView.findViewById<EditText>(R.id.et_hora_base_salida)
-            val btnAplicarLV = dialogView.findViewById<Button>(R.id.btn_aplicar_lv)
-            val btnAplicarLS = dialogView.findViewById<Button>(R.id.btn_aplicar_ls)
-            
-            // Configurar valores por defecto
-            etHoraBaseEntrada.setText("08:00")
-            etHoraBaseSalida.setText("17:00")
+            // Configurar botones de aplicación rápida
+            val btnAplicarLV = dialogView.findViewById<Button>(R.id.btnAplicarLunesViernes)
+            val btnAplicarLS = dialogView.findViewById<Button>(R.id.btnAplicarLunesSabado)
+            val btnDesactivarRefrigerio = dialogView.findViewById<Button>(R.id.btnDesactivarRefrigerio)
             
             // Aplicar horario L-V (Lunes a Viernes)
             btnAplicarLV.setOnClickListener {
-                val entrada = etHoraBaseEntrada.text.toString()
-                val salida = etHoraBaseSalida.text.toString()
+                val entrada = dialogView.findViewById<EditText>(R.id.et_hora_base_entrada).text.toString().ifEmpty { "08:00" }
+                val salida = dialogView.findViewById<EditText>(R.id.et_hora_base_salida).text.toString().ifEmpty { "17:00" }
+                val refrigerioInicio = dialogView.findViewById<EditText>(R.id.et_refrigerio_inicio).text.toString().ifEmpty { "12:00" }
+                val refrigerioFin = dialogView.findViewById<EditText>(R.id.et_refrigerio_fin).text.toString().ifEmpty { "13:00" }
                 
-                if (entrada.isNotEmpty() && salida.isNotEmpty()) {
-                    aplicarHorarioADias(dialogView, entrada, salida, listOf("L", "M", "X", "J", "V"))
-                    showMessage("✅ Horario aplicado L-V: $entrada - $salida")
-                }
+                aplicarHorarioYRefrigerioADias(dialogView, entrada, salida, refrigerioInicio, refrigerioFin, listOf("L", "M", "X", "J", "V"))
+                showMessage("✅ Horario aplicado L-V: $entrada-$salida (Refrigerio: $refrigerioInicio-$refrigerioFin)")
             }
             
             // Aplicar horario L-S (Lunes a Sábado)
             btnAplicarLS.setOnClickListener {
-                val entrada = etHoraBaseEntrada.text.toString()
-                val salida = etHoraBaseSalida.text.toString()
+                val entrada = dialogView.findViewById<EditText>(R.id.et_hora_base_entrada).text.toString().ifEmpty { "08:00" }
+                val salida = dialogView.findViewById<EditText>(R.id.et_hora_base_salida).text.toString().ifEmpty { "17:00" }
+                val refrigerioInicio = dialogView.findViewById<EditText>(R.id.et_refrigerio_inicio).text.toString().ifEmpty { "12:00" }
+                val refrigerioFin = dialogView.findViewById<EditText>(R.id.et_refrigerio_fin).text.toString().ifEmpty { "13:00" }
                 
-                if (entrada.isNotEmpty() && salida.isNotEmpty()) {
-                    aplicarHorarioADias(dialogView, entrada, salida, listOf("L", "M", "X", "J", "V", "S"))
-                    showMessage("✅ Horario aplicado L-S: $entrada - $salida")
-                }
+                aplicarHorarioYRefrigerioADias(dialogView, entrada, salida, refrigerioInicio, refrigerioFin, listOf("L", "M", "X", "J", "V", "S"))
+                showMessage("✅ Horario aplicado L-S: $entrada-$salida (Refrigerio: $refrigerioInicio-$refrigerioFin)")
+            }
+            
+            // Desactivar refrigerio
+            btnDesactivarRefrigerio.setOnClickListener {
+                desactivarRefrigerioEnTodosLosDias(dialogView)
+                showMessage("🚫 Refrigerio desactivado en todos los días")
             }
             
             // Configurar switches de días
@@ -1095,37 +1333,70 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
         }
     }
     
-    private fun aplicarHorarioADias(dialogView: View, entrada: String, salida: String, dias: List<String>) {
+    private fun aplicarHorarioYRefrigerioADias(dialogView: View, entrada: String, salida: String, refrigerioInicio: String, refrigerioFin: String, dias: List<String>) {
         dias.forEach { dia ->
             try {
-                // Usar los nuevos IDs únicos para cada día
-                val (switchId, layoutId, entradaId, salidaId) = when (dia) {
-                    "L" -> arrayOf(R.id.switch_lunes, R.id.layout_horarios_lunes, R.id.et_entrada_lunes, R.id.et_salida_lunes)
-                    "M" -> arrayOf(R.id.switch_martes, R.id.layout_horarios_martes, R.id.et_entrada_martes, R.id.et_salida_martes)
-                    "X" -> arrayOf(R.id.switch_miercoles, R.id.layout_horarios_miercoles, R.id.et_entrada_miercoles, R.id.et_salida_miercoles)
-                    "J" -> arrayOf(R.id.switch_jueves, R.id.layout_horarios_jueves, R.id.et_entrada_jueves, R.id.et_salida_jueves)
-                    "V" -> arrayOf(R.id.switch_viernes, R.id.layout_horarios_viernes, R.id.et_entrada_viernes, R.id.et_salida_viernes)
-                    "S" -> arrayOf(R.id.switch_sabado, R.id.layout_horarios_sabado, R.id.et_entrada_sabado, R.id.et_salida_sabado)
-                    "D" -> arrayOf(R.id.switch_domingo, R.id.layout_horarios_domingo, R.id.et_entrada_domingo, R.id.et_salida_domingo)
+                // Obtener IDs para el día específico
+                val (switchId, entradaId, salidaId, refrigerioInicioId, refrigerioFinId) = when (dia) {
+                    "L" -> arrayOf(R.id.switch_lunes, R.id.et_entrada_lunes, R.id.et_salida_lunes, R.id.et_refrigerio_inicio_lunes, R.id.et_refrigerio_fin_lunes)
+                    "M" -> arrayOf(R.id.switch_martes, R.id.et_entrada_martes, R.id.et_salida_martes, R.id.et_refrigerio_inicio_martes, R.id.et_refrigerio_fin_martes)
+                    "X" -> arrayOf(R.id.switch_miercoles, R.id.et_entrada_miercoles, R.id.et_salida_miercoles, R.id.et_refrigerio_inicio_miercoles, R.id.et_refrigerio_fin_miercoles)
+                    "J" -> arrayOf(R.id.switch_jueves, R.id.et_entrada_jueves, R.id.et_salida_jueves, R.id.et_refrigerio_inicio_jueves, R.id.et_refrigerio_fin_jueves)
+                    "V" -> arrayOf(R.id.switch_viernes, R.id.et_entrada_viernes, R.id.et_salida_viernes, R.id.et_refrigerio_inicio_viernes, R.id.et_refrigerio_fin_viernes)
+                    "S" -> arrayOf(R.id.switch_sabado, R.id.et_entrada_sabado, R.id.et_salida_sabado, R.id.et_refrigerio_inicio_sabado, R.id.et_refrigerio_fin_sabado)
+                    "D" -> arrayOf(R.id.switch_domingo, R.id.et_entrada_domingo, R.id.et_salida_domingo, R.id.et_refrigerio_inicio_domingo, R.id.et_refrigerio_fin_domingo)
                     else -> return@forEach
                 }
                 
                 val switchActivo = dialogView.findViewById<Switch>(switchId)
-                val layoutHorarios = dialogView.findViewById<LinearLayout>(layoutId)
                 val etEntrada = dialogView.findViewById<EditText>(entradaId)
                 val etSalida = dialogView.findViewById<EditText>(salidaId)
+                val etRefrigerioInicio = dialogView.findViewById<EditText>(refrigerioInicioId)
+                val etRefrigerioFin = dialogView.findViewById<EditText>(refrigerioFinId)
                 
-                // Activar el día y mostrar horarios
+                // Activar el día
                 switchActivo?.isChecked = true
-                layoutHorarios?.visibility = View.VISIBLE
                 
-                // Establecer horarios
+                // Aplicar horarios de trabajo
                 etEntrada?.setText(entrada)
                 etSalida?.setText(salida)
                 
+                // Aplicar horarios de refrigerio
+                etRefrigerioInicio?.setText(refrigerioInicio)
+                etRefrigerioFin?.setText(refrigerioFin)
+                
             } catch (e: Exception) {
-                // Continuar con el siguiente día si hay error
-                showMessage("Error configurando $dia: ${e.message}")
+                showMessage("Error aplicando horario a $dia: ${e.message}")
+            }
+        }
+    }
+    
+    private fun desactivarRefrigerioEnTodosLosDias(dialogView: View) {
+        val dias = listOf("L", "M", "X", "J", "V", "S", "D")
+        
+        dias.forEach { dia ->
+            try {
+                // Obtener IDs para el día específico
+                val (refrigerioInicioId, refrigerioFinId) = when (dia) {
+                    "L" -> Pair(R.id.et_refrigerio_inicio_lunes, R.id.et_refrigerio_fin_lunes)
+                    "M" -> Pair(R.id.et_refrigerio_inicio_martes, R.id.et_refrigerio_fin_martes)
+                    "X" -> Pair(R.id.et_refrigerio_inicio_miercoles, R.id.et_refrigerio_fin_miercoles)
+                    "J" -> Pair(R.id.et_refrigerio_inicio_jueves, R.id.et_refrigerio_fin_jueves)
+                    "V" -> Pair(R.id.et_refrigerio_inicio_viernes, R.id.et_refrigerio_fin_viernes)
+                    "S" -> Pair(R.id.et_refrigerio_inicio_sabado, R.id.et_refrigerio_fin_sabado)
+                    "D" -> Pair(R.id.et_refrigerio_inicio_domingo, R.id.et_refrigerio_fin_domingo)
+                    else -> return@forEach
+                }
+                
+                val etRefrigerioInicio = dialogView.findViewById<EditText>(refrigerioInicioId)
+                val etRefrigerioFin = dialogView.findViewById<EditText>(refrigerioFinId)
+                
+                // Desactivar refrigerio (establecer horarios vacíos)
+                etRefrigerioInicio?.setText("")
+                etRefrigerioFin?.setText("")
+                
+            } catch (e: Exception) {
+                showMessage("Error desactivando refrigerio en $dia: ${e.message}")
             }
         }
     }
@@ -1135,25 +1406,21 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
         
         dias.forEach { dia ->
             try {
-                // Usar los nuevos IDs únicos para cada día
-                val (switchId, layoutId) = when (dia) {
-                    "L" -> Pair(R.id.switch_lunes, R.id.layout_horarios_lunes)
-                    "M" -> Pair(R.id.switch_martes, R.id.layout_horarios_martes)
-                    "X" -> Pair(R.id.switch_miercoles, R.id.layout_horarios_miercoles)
-                    "J" -> Pair(R.id.switch_jueves, R.id.layout_horarios_jueves)
-                    "V" -> Pair(R.id.switch_viernes, R.id.layout_horarios_viernes)
-                    "S" -> Pair(R.id.switch_sabado, R.id.layout_horarios_sabado)
-                    "D" -> Pair(R.id.switch_domingo, R.id.layout_horarios_domingo)
+                // Usar los IDs correctos del modal de horario flexible con refrigerio
+                val entradaId = when (dia) {
+                    "L" -> R.id.et_entrada_lunes
+                    "M" -> R.id.et_entrada_martes
+                    "X" -> R.id.et_entrada_miercoles
+                    "J" -> R.id.et_entrada_jueves
+                    "V" -> R.id.et_entrada_viernes
+                    "S" -> R.id.et_entrada_sabado
                     else -> return@forEach
                 }
                 
-                val switchActivo = dialogView.findViewById<Switch>(switchId)
-                val layoutHorarios = dialogView.findViewById<LinearLayout>(layoutId)
+                val etEntrada = dialogView.findViewById<EditText>(entradaId)
                 
-                // Configurar el switch
-                switchActivo?.setOnCheckedChangeListener { _, isChecked ->
-                    layoutHorarios?.visibility = if (isChecked) View.VISIBLE else View.GONE
-                }
+                // El nuevo modal no tiene switches individuales por día
+                // Los campos siempre están visibles
                 
             } catch (e: Exception) {
                 showMessage("Error configurando switch $dia: ${e.message}")
@@ -1163,8 +1430,9 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
     
     private fun guardarEmpleadoConHorarioFlexible(dni: String, nombres: String, apellidos: String, dialogView: View) {
         try {
-            // Recopilar horarios de todos los días
+            // Recopilar horarios y refrigerios de todos los días
             val horarios = mutableMapOf<String, Pair<String, String>>()
+            val refrigerios = mutableMapOf<String, Pair<String, String>>()
             val diasActivos = mutableListOf<String>()
             
             val dias = mapOf(
@@ -1179,31 +1447,28 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
             
             dias.forEach { (codigo, nombre) ->
                 try {
-                    // Usar los nuevos IDs únicos para cada día
-                    val (switchId, entradaId, salidaId) = when (codigo) {
-                        "L" -> Triple(R.id.switch_lunes, R.id.et_entrada_lunes, R.id.et_salida_lunes)
-                        "M" -> Triple(R.id.switch_martes, R.id.et_entrada_martes, R.id.et_salida_martes)
-                        "X" -> Triple(R.id.switch_miercoles, R.id.et_entrada_miercoles, R.id.et_salida_miercoles)
-                        "J" -> Triple(R.id.switch_jueves, R.id.et_entrada_jueves, R.id.et_salida_jueves)
-                        "V" -> Triple(R.id.switch_viernes, R.id.et_entrada_viernes, R.id.et_salida_viernes)
-                        "S" -> Triple(R.id.switch_sabado, R.id.et_entrada_sabado, R.id.et_salida_sabado)
-                        "D" -> Triple(R.id.switch_domingo, R.id.et_entrada_domingo, R.id.et_salida_domingo)
-                        else -> return@forEach
-                    }
-                    
-                    val switchActivo = dialogView.findViewById<Switch>(switchId)
-                    val etEntrada = dialogView.findViewById<EditText>(entradaId)
-                    val etSalida = dialogView.findViewById<EditText>(salidaId)
-                    
-                    if (switchActivo?.isChecked == true) {
-                        val entrada = etEntrada?.text.toString().trim() ?: ""
-                        val salida = etSalida?.text.toString().trim() ?: ""
-                        
-                        if (entrada.isNotEmpty() && salida.isNotEmpty()) {
-                            horarios[codigo] = Pair(entrada, salida)
-                            diasActivos.add(codigo)
-                        }
-                    }
+                // Usar los IDs correctos del modal de horario flexible con refrigerio
+                val (entradaId, salidaId) = when (codigo) {
+                    "L" -> Pair(R.id.et_entrada_lunes, R.id.et_salida_lunes)
+                    "M" -> Pair(R.id.et_entrada_martes, R.id.et_salida_martes)
+                    "X" -> Pair(R.id.et_entrada_miercoles, R.id.et_salida_miercoles)
+                    "J" -> Pair(R.id.et_entrada_jueves, R.id.et_salida_jueves)
+                    "V" -> Pair(R.id.et_entrada_viernes, R.id.et_salida_viernes)
+                    "S" -> Pair(R.id.et_entrada_sabado, R.id.et_salida_sabado)
+                    "D" -> Pair(R.id.et_entrada_domingo, R.id.et_salida_domingo)
+                    else -> return@forEach
+                }
+                
+                val etEntrada = dialogView.findViewById<EditText>(entradaId)
+                val etSalida = dialogView.findViewById<EditText>(salidaId)
+                
+                val entrada = etEntrada?.text.toString().trim() ?: ""
+                val salida = etSalida?.text.toString().trim() ?: ""
+                
+                if (entrada.isNotEmpty() && salida.isNotEmpty()) {
+                    horarios[codigo] = Pair(entrada, salida)
+                    diasActivos.add(codigo)
+                }
                 } catch (e: Exception) {
                     showMessage("Error procesando $nombre: ${e.message}")
                 }
@@ -1221,6 +1486,7 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
                 apellidos = apellidos,
                 tipoHorario = "FLEXIBLE",
                 horariosSemanales = horarios,
+                refrigeriosSemanales = refrigerios, // Refrigerios configurados
                 diasActivos = diasActivos,
                 activo = true
             )
@@ -1245,31 +1511,18 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
             val type = object : TypeToken<MutableList<EmpleadoFlexible>>() {}.type
             val empleadosFlexibles: MutableList<EmpleadoFlexible> = gson.fromJson(empleadosFlexiblesJson, type) ?: mutableListOf()
             
+            // Verificar si ya existe un empleado con el mismo DNI
+            if (empleadosFlexibles.any { it.dni == empleado.dni }) {
+                showMessage("❌ Ya existe un empleado con DNI ${empleado.dni}")
+                return
+            }
+            
             // Agregar nuevo empleado
             empleadosFlexibles.add(empleado)
             
             // Guardar lista actualizada
             val nuevaLista = gson.toJson(empleadosFlexibles)
             sharedPreferences.edit().putString("empleados_flexibles", nuevaLista).apply()
-            
-            // También crear un empleado simple equivalente para compatibilidad
-            val empleadoSimpleEquivalente = EmpleadoSimple(
-                dni = empleado.dni,
-                nombres = empleado.nombres,
-                apellidos = empleado.apellidos,
-                horaEntrada = "FLEXIBLE",
-                horaSalida = "FLEXIBLE",
-                activo = empleado.activo
-            )
-            
-            // Guardar también en lista simple para compatibilidad
-            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
-            val typeSimple = object : TypeToken<MutableList<EmpleadoSimple>>() {}.type
-            val empleados: MutableList<EmpleadoSimple> = gson.fromJson(empleadosJson, typeSimple) ?: mutableListOf()
-            empleados.add(empleadoSimpleEquivalente)
-            
-            val nuevaListaSimple = gson.toJson(empleados)
-            sharedPreferences.edit().putString("empleados_list", nuevaListaSimple).apply()
             
         } catch (e: Exception) {
             showMessage("❌ Error al guardar empleado flexible: ${e.message}")
