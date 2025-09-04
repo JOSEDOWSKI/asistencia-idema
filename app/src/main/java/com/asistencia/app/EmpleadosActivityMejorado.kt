@@ -133,67 +133,103 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
     }
     
     private fun createLayout() {
-        mainLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(32, 32, 32, 32)
-            setBackgroundColor(android.graphics.Color.WHITE)
+        // Usar el layout XML en lugar de crear dinámicamente
+        setContentView(R.layout.activity_empleados)
+        
+        // Configurar botones del layout XML
+        val btnAgregar = findViewById<Button>(R.id.btn_agregar_empleado)
+        val btnImportar = findViewById<Button>(R.id.btn_importar_empleados)
+        val etBuscar = findViewById<EditText>(R.id.et_buscar_empleado)
+        val tvCount = findViewById<TextView>(R.id.tv_empleados_count)
+        val layoutEmpty = findViewById<LinearLayout>(R.id.layout_empty_state)
+        
+        // Configurar listeners
+        btnAgregar.setOnClickListener {
+            mostrarDialogoAgregar()
         }
         
-        // Título
-        val title = TextView(this).apply {
-            text = "👥 Gestión de Empleados"
-            textSize = 24f
-            setPadding(0, 0, 0, 32)
-            setTextColor(android.graphics.Color.BLACK)
-            gravity = android.view.Gravity.CENTER
+        btnImportar.setOnClickListener {
+            mostrarDialogoImportarEmpleados()
         }
-        mainLayout.addView(title)
         
-        // Botón agregar
-        val btnAgregar = Button(this).apply {
-            text = "➕ Agregar Empleado"
-            textSize = 16f
-            setPadding(20, 20, 20, 20)
-            setTextColor(android.graphics.Color.WHITE)
-            setBackgroundColor(android.graphics.Color.parseColor("#4CAF50")) // Color verde de Promesa
-            setOnClickListener { 
-                mostrarDialogoAgregar()
+        // Configurar búsqueda
+        etBuscar.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                filtrarEmpleados(s.toString())
             }
-        }
-        mainLayout.addView(btnAgregar)
+        })
         
-        // Separador
-        val separator = View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 
-                3
-            ).apply {
-                setMargins(0, 32, 0, 32)
+        // Inicializar variables para compatibilidad
+        mainLayout = findViewById(R.id.layout_empty_state) // Usar como referencia
+        empleadosList = findViewById(R.id.layout_empty_state) // Usar como referencia
+    }
+    
+    private fun filtrarEmpleados(query: String) {
+        try {
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<List<EmpleadoSimple>>() {}.type
+            val empleados: List<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: emptyList()
+            
+            val empleadosFlexibles = cargarEmpleadosFlexibles()
+            
+            if (query.isEmpty()) {
+                updateEmpleadosList(empleados)
+            } else {
+                val empleadosFiltrados = empleados.filter { 
+                    it.nombres.contains(query, ignoreCase = true) || 
+                    it.apellidos.contains(query, ignoreCase = true) ||
+                    it.dni.contains(query, ignoreCase = true)
+                }
+                
+                val empleadosFlexiblesFiltrados = empleadosFlexibles.filter {
+                    it.nombres.contains(query, ignoreCase = true) ||
+                    it.apellidos.contains(query, ignoreCase = true) ||
+                    it.dni.contains(query, ignoreCase = true)
+                }
+                
+                // Actualizar contador
+                val tvCount = findViewById<TextView>(R.id.tv_empleados_count)
+                val totalFiltrados = empleadosFiltrados.size + empleadosFlexiblesFiltrados.size
+                tvCount.text = "Mostrando: $totalFiltrados empleados (${empleadosFiltrados.size} fijos, ${empleadosFlexiblesFiltrados.size} flexibles)"
+                
+                // Configurar RecyclerView con empleados filtrados
+                val recyclerView = findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler_empleados)
+                val layoutEmpty = findViewById<LinearLayout>(R.id.layout_empty_state)
+                
+                if (totalFiltrados == 0) {
+                    recyclerView.visibility = View.GONE
+                    layoutEmpty.visibility = View.VISIBLE
+                } else {
+                    recyclerView.visibility = View.VISIBLE
+                    layoutEmpty.visibility = View.GONE
+                    
+                    recyclerView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+                    
+                    val empleadosCombinados = mutableListOf<Any>()
+                    empleadosCombinados.addAll(empleadosFiltrados)
+                    empleadosCombinados.addAll(empleadosFlexiblesFiltrados)
+                    
+                    val adapter = SimpleEmpleadosAdapter(empleadosCombinados) { empleado ->
+                        when (empleado) {
+                            is EmpleadoSimple -> mostrarDetallesCompletoEmpleado(empleado)
+                            is EmpleadoFlexible -> mostrarDetallesEmpleadoFlexible(empleado)
+                        }
+                    }
+                    recyclerView.adapter = adapter
+                }
             }
-            setBackgroundColor(android.graphics.Color.GRAY)
+        } catch (e: Exception) {
+            showMessage("Error al filtrar empleados: ${e.message}")
         }
-        mainLayout.addView(separator)
-        
-        // Título lista
-        val listTitle = TextView(this).apply {
-            text = "📋 Empleados:"
-            textSize = 18f
-            setPadding(0, 0, 0, 16)
-            setTextColor(android.graphics.Color.BLACK)
-        }
-        mainLayout.addView(listTitle)
-        
-        // Lista de empleados
-        empleadosList = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
-        mainLayout.addView(empleadosList)
-        
-        setContentView(mainLayout)
     }
     
     private fun loadEmpleados() {
         try {
+            // Ejecutar migración de empleados existentes
+            migrarEmpleadosExistentes()
+            
             val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
             val type = object : TypeToken<List<EmpleadoSimple>>() {}.type
             val empleados: List<EmpleadoSimple> = gson.fromJson(empleadosJson, type) ?: emptyList()
@@ -206,46 +242,107 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
         }
     }
     
+    private fun migrarEmpleadosExistentes() {
+        try {
+            // Verificar si ya se ejecutó la migración
+            val migracionEjecutada = sharedPreferences.getBoolean("migracion_refrigerio_ejecutada", false)
+            if (migracionEjecutada) {
+                return // Ya se ejecutó la migración
+            }
+            
+            // Cargar empleados flexibles existentes
+            val empleadosFlexiblesJson = sharedPreferences.getString("empleados_flexibles", "[]")
+            val type = object : TypeToken<List<EmpleadoFlexible>>() {}.type
+            val empleadosFlexibles: List<EmpleadoFlexible> = gson.fromJson(empleadosFlexiblesJson, type) ?: emptyList()
+            
+            var empleadosActualizados = false
+            
+            // Verificar cada empleado flexible
+            empleadosFlexibles.forEach { empleadoFlexible ->
+                // Si el empleado no tiene refrigerios configurados, agregar refrigerios por defecto
+                if (empleadoFlexible.refrigeriosSemanales.isEmpty()) {
+                    val refrigeriosPorDefecto = mutableMapOf<String, Pair<String, String>>()
+                    
+                    // Agregar refrigerio por defecto para cada día activo
+                    empleadoFlexible.diasActivos.forEach { dia ->
+                        refrigeriosPorDefecto[dia] = Pair("12:00", "13:00")
+                    }
+                    
+                    // Crear empleado actualizado
+                    val empleadoActualizado = empleadoFlexible.copy(
+                        refrigeriosSemanales = refrigeriosPorDefecto
+                    )
+                    
+                    // Actualizar en la lista
+                    val index = empleadosFlexibles.indexOf(empleadoFlexible)
+                    if (index >= 0) {
+                        empleadosFlexibles.toMutableList()[index] = empleadoActualizado
+                        empleadosActualizados = true
+                    }
+                }
+            }
+            
+            // Guardar empleados actualizados si hubo cambios
+            if (empleadosActualizados) {
+                val nuevaLista = gson.toJson(empleadosFlexibles)
+                sharedPreferences.edit()
+                    .putString("empleados_flexibles", nuevaLista)
+                    .putBoolean("migracion_refrigerio_ejecutada", true)
+                    .apply()
+                
+                showMessage("✅ Migración completada: Refrigerios por defecto agregados a empleados existentes")
+            } else {
+                // Marcar migración como ejecutada aunque no haya cambios
+                sharedPreferences.edit()
+                    .putBoolean("migracion_refrigerio_ejecutada", true)
+                    .apply()
+            }
+            
+        } catch (e: Exception) {
+            showMessage("⚠️ Error en migración: ${e.message}")
+        }
+    }
+    
     private fun updateEmpleadosList(empleados: List<EmpleadoSimple>) {
         try {
-            empleadosList.removeAllViews()
-            
             // Cargar también empleados flexibles
             val empleadosFlexibles = cargarEmpleadosFlexibles()
             val totalEmpleados = empleados.size + empleadosFlexibles.size
             
-            if (totalEmpleados == 0) {
-                val emptyText = TextView(this).apply {
-                    text = "No hay empleados registrados"
-                    textSize = 14f
-                    setPadding(16, 16, 16, 16)
-                    setTextColor(android.graphics.Color.GRAY)
-                    gravity = android.view.Gravity.CENTER
-                }
-                empleadosList.addView(emptyText)
-            } else {
-                // Mostrar empleados simples
-                empleados.forEach { empleado ->
-                    val empleadoView = createEmpleadoView(empleado, false)
-                    empleadosList.addView(empleadoView)
-                }
-                
-                // Mostrar empleados flexibles
-                empleadosFlexibles.forEach { empleadoFlexible ->
-                    val empleadoView = createEmpleadoFlexibleView(empleadoFlexible)
-                    empleadosList.addView(empleadoView)
-                }
-            }
+            // Actualizar contador
+            val tvCount = findViewById<TextView>(R.id.tv_empleados_count)
+            tvCount.text = "Total: $totalEmpleados empleados (${empleados.size} fijos, ${empleadosFlexibles.size} flexibles)"
             
-            // Mostrar contador
-            val contador = TextView(this).apply {
-                text = "Total: $totalEmpleados empleados (${empleados.size} fijos, ${empleadosFlexibles.size} flexibles)"
-                textSize = 12f
-                setPadding(0, 16, 0, 0)
-                setTextColor(android.graphics.Color.GRAY)
-                gravity = android.view.Gravity.CENTER
+            // Configurar RecyclerView
+            val recyclerView = findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler_empleados)
+            val layoutEmpty = findViewById<LinearLayout>(R.id.layout_empty_state)
+            
+            if (totalEmpleados == 0) {
+                // Mostrar estado vacío
+                recyclerView.visibility = View.GONE
+                layoutEmpty.visibility = View.VISIBLE
+            } else {
+                // Mostrar lista
+                recyclerView.visibility = View.VISIBLE
+                layoutEmpty.visibility = View.GONE
+                
+                // Configurar RecyclerView
+                recyclerView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+                
+                // Crear lista combinada de empleados
+                val empleadosCombinados = mutableListOf<Any>()
+                empleadosCombinados.addAll(empleados)
+                empleadosCombinados.addAll(empleadosFlexibles)
+                
+                // Configurar adapter simple
+                val adapter = SimpleEmpleadosAdapter(empleadosCombinados) { empleado ->
+                    when (empleado) {
+                        is EmpleadoSimple -> mostrarDetallesCompletoEmpleado(empleado)
+                        is EmpleadoFlexible -> mostrarDetallesEmpleadoFlexible(empleado)
+                    }
+                }
+                recyclerView.adapter = adapter
             }
-            empleadosList.addView(contador)
             
         } catch (e: Exception) {
             showMessage("Error al mostrar lista: ${e.message}")
@@ -1448,26 +1545,35 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
             dias.forEach { (codigo, nombre) ->
                 try {
                 // Usar los IDs correctos del modal de horario flexible con refrigerio
-                val (entradaId, salidaId) = when (codigo) {
-                    "L" -> Pair(R.id.et_entrada_lunes, R.id.et_salida_lunes)
-                    "M" -> Pair(R.id.et_entrada_martes, R.id.et_salida_martes)
-                    "X" -> Pair(R.id.et_entrada_miercoles, R.id.et_salida_miercoles)
-                    "J" -> Pair(R.id.et_entrada_jueves, R.id.et_salida_jueves)
-                    "V" -> Pair(R.id.et_entrada_viernes, R.id.et_salida_viernes)
-                    "S" -> Pair(R.id.et_entrada_sabado, R.id.et_salida_sabado)
-                    "D" -> Pair(R.id.et_entrada_domingo, R.id.et_salida_domingo)
+                val (entradaId, salidaId, refrigerioInicioId, refrigerioFinId) = when (codigo) {
+                    "L" -> arrayOf(R.id.et_entrada_lunes, R.id.et_salida_lunes, R.id.et_refrigerio_inicio_lunes, R.id.et_refrigerio_fin_lunes)
+                    "M" -> arrayOf(R.id.et_entrada_martes, R.id.et_salida_martes, R.id.et_refrigerio_inicio_martes, R.id.et_refrigerio_fin_martes)
+                    "X" -> arrayOf(R.id.et_entrada_miercoles, R.id.et_salida_miercoles, R.id.et_refrigerio_inicio_miercoles, R.id.et_refrigerio_fin_miercoles)
+                    "J" -> arrayOf(R.id.et_entrada_jueves, R.id.et_salida_jueves, R.id.et_refrigerio_inicio_jueves, R.id.et_refrigerio_fin_jueves)
+                    "V" -> arrayOf(R.id.et_entrada_viernes, R.id.et_salida_viernes, R.id.et_refrigerio_inicio_viernes, R.id.et_refrigerio_fin_viernes)
+                    "S" -> arrayOf(R.id.et_entrada_sabado, R.id.et_salida_sabado, R.id.et_refrigerio_inicio_sabado, R.id.et_refrigerio_fin_sabado)
+                    "D" -> arrayOf(R.id.et_entrada_domingo, R.id.et_salida_domingo, R.id.et_refrigerio_inicio_domingo, R.id.et_refrigerio_fin_domingo)
                     else -> return@forEach
                 }
                 
                 val etEntrada = dialogView.findViewById<EditText>(entradaId)
                 val etSalida = dialogView.findViewById<EditText>(salidaId)
+                val etRefrigerioInicio = dialogView.findViewById<EditText>(refrigerioInicioId)
+                val etRefrigerioFin = dialogView.findViewById<EditText>(refrigerioFinId)
                 
                 val entrada = etEntrada?.text.toString().trim() ?: ""
                 val salida = etSalida?.text.toString().trim() ?: ""
+                val refrigerioInicio = etRefrigerioInicio?.text.toString().trim() ?: ""
+                val refrigerioFin = etRefrigerioFin?.text.toString().trim() ?: ""
                 
                 if (entrada.isNotEmpty() && salida.isNotEmpty()) {
                     horarios[codigo] = Pair(entrada, salida)
                     diasActivos.add(codigo)
+                    
+                    // Guardar horarios de refrigerio si están configurados
+                    if (refrigerioInicio.isNotEmpty() && refrigerioFin.isNotEmpty()) {
+                        refrigerios[codigo] = Pair(refrigerioInicio, refrigerioFin)
+                    }
                 }
                 } catch (e: Exception) {
                     showMessage("Error procesando $nombre: ${e.message}")
@@ -1537,4 +1643,292 @@ class EmpleadosActivityMejorado : AppCompatActivity() {
             println("Message: $message")
         }
     }
+    
+    private fun mostrarDialogoImportarEmpleados() {
+        try {
+            val dialogView = layoutInflater.inflate(R.layout.dialog_importar_empleados, null)
+            
+            // Configurar botón de ejemplo
+            val btnEjemplo = dialogView.findViewById<Button>(R.id.btn_cargar_ejemplo)
+            val etDatos = dialogView.findViewById<EditText>(R.id.et_datos_empleados)
+            
+            btnEjemplo.setOnClickListener {
+                val ejemplo = """12345678,Juan,Pérez,08:00,17:00,12:00,13:00
+87654321,María,González,09:00,18:00,12:30,13:30
+11223344,Carlos,Rodríguez,08:30,17:30,12:15,13:15
+55667788,Ana,Martínez,07:30,16:30,11:45,12:45
+99887766,Luis,Fernández,08:15,17:15,12:00,13:00"""
+                etDatos.setText(ejemplo)
+            }
+            
+            val dialog = AlertDialog.Builder(this)
+                .setTitle("📥 Importar Empleados")
+                .setView(dialogView)
+                .setPositiveButton("Importar") { _, _ ->
+                    procesarImportacion(dialogView)
+                }
+                .setNegativeButton("Cancelar", null)
+                .create()
+            
+            dialog.show()
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al abrir importador: ${e.message}")
+        }
+    }
+    
+    private fun procesarImportacion(dialogView: View) {
+        try {
+            val etDatos = dialogView.findViewById<EditText>(R.id.et_datos_empleados)
+            val datos = etDatos.text.toString().trim()
+            
+            if (datos.isEmpty()) {
+                showMessage("❌ Debe ingresar datos para importar")
+                return
+            }
+            
+            val empleadosImportados = parsearDatosCSV(datos)
+            
+            if (empleadosImportados.isEmpty()) {
+                showMessage("❌ No se encontraron empleados válidos en los datos")
+                return
+            }
+            
+            // Mostrar resumen y confirmar importación
+            mostrarConfirmacionImportacion(empleadosImportados)
+            
+        } catch (e: Exception) {
+            showMessage("❌ Error al procesar importación: ${e.message}")
+        }
+    }
+    
+    private fun parsearDatosCSV(datos: String): List<EmpleadoImportado> {
+        val empleados = mutableListOf<EmpleadoImportado>()
+        val lineas = datos.split("\n")
+        
+        for ((index, linea) in lineas.withIndex()) {
+            try {
+                if (linea.trim().isEmpty()) continue
+                
+                val columnas = linea.split(",").map { it.trim() }
+                
+                if (columnas.size < 3) {
+                    showMessage("⚠️ Línea ${index + 1}: Formato incorrecto (mínimo 3 columnas)")
+                    continue
+                }
+                
+                val dni = columnas[0]
+                val nombres = columnas[1]
+                val apellidos = columnas[2]
+                val horaEntrada = if (columnas.size > 3) columnas[3] else "08:00"
+                val horaSalida = if (columnas.size > 4) columnas[4] else "17:00"
+                val refrigerioInicio = if (columnas.size > 5) columnas[5] else "12:00"
+                val refrigerioFin = if (columnas.size > 6) columnas[6] else "13:00"
+                
+                // Validar DNI
+                if (dni.length != 8 || !dni.all { it.isDigit() }) {
+                    showMessage("⚠️ Línea ${index + 1}: DNI inválido ($dni)")
+                    continue
+                }
+                
+                // Validar nombres
+                if (nombres.isEmpty() || apellidos.isEmpty()) {
+                    showMessage("⚠️ Línea ${index + 1}: Nombres y apellidos son obligatorios")
+                    continue
+                }
+                
+                val empleado = EmpleadoImportado(
+                    dni = dni,
+                    nombres = nombres,
+                    apellidos = apellidos,
+                    horaEntrada = horaEntrada,
+                    horaSalida = horaSalida,
+                    refrigerioInicio = refrigerioInicio,
+                    refrigerioFin = refrigerioFin
+                )
+                
+                empleados.add(empleado)
+                
+            } catch (e: Exception) {
+                showMessage("⚠️ Error en línea ${index + 1}: ${e.message}")
+            }
+        }
+        
+        return empleados
+    }
+    
+    private fun mostrarConfirmacionImportacion(empleados: List<EmpleadoImportado>) {
+        try {
+            val mensaje = buildString {
+                append("📋 Resumen de Importación:\n\n")
+                append("• Total de empleados: ${empleados.size}\n")
+                append("• Formato: DNI, Nombres, Apellidos, Entrada, Salida, Refrigerio Inicio, Refrigerio Fin\n\n")
+                append("Empleados a importar:\n")
+                empleados.take(5).forEach { empleado ->
+                    append("• ${empleado.nombres} ${empleado.apellidos} (${empleado.dni})\n")
+                }
+                if (empleados.size > 5) {
+                    append("• ... y ${empleados.size - 5} más\n")
+                }
+                append("\n¿Desea continuar con la importación?")
+            }
+            
+            AlertDialog.Builder(this)
+                .setTitle("📥 Confirmar Importación")
+                .setMessage(mensaje)
+                .setPositiveButton("Importar") { _, _ ->
+                    ejecutarImportacion(empleados)
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+                
+        } catch (e: Exception) {
+            showMessage("❌ Error al mostrar confirmación: ${e.message}")
+        }
+    }
+    
+    private fun ejecutarImportacion(empleados: List<EmpleadoImportado>) {
+        try {
+            var importados = 0
+            var duplicados = 0
+            var errores = 0
+            
+            // Cargar empleados existentes
+            val empleadosExistentes = cargarEmpleadosSimples()
+            val dnisExistentes = empleadosExistentes.map { it.dni }.toSet()
+            
+            empleados.forEach { empleadoImportado ->
+                try {
+                    // Verificar si ya existe
+                    if (dnisExistentes.contains(empleadoImportado.dni)) {
+                        duplicados++
+                        return@forEach
+                    }
+                    
+                    // Crear empleado simple
+                    val empleadoSimple = EmpleadoSimple(
+                        dni = empleadoImportado.dni,
+                        nombres = empleadoImportado.nombres,
+                        apellidos = empleadoImportado.apellidos,
+                        horaEntrada = empleadoImportado.horaEntrada,
+                        horaSalida = empleadoImportado.horaSalida,
+                        refrigerioInicio = empleadoImportado.refrigerioInicio,
+                        refrigerioFin = empleadoImportado.refrigerioFin,
+                        esFlexible = false,
+                        activo = true
+                    )
+                    
+                    // Guardar empleado
+                    guardarEmpleadoSimple(empleadoSimple)
+                    importados++
+                    
+                } catch (e: Exception) {
+                    errores++
+                    showMessage("⚠️ Error importando ${empleadoImportado.nombres}: ${e.message}")
+                }
+            }
+            
+            // Mostrar resumen final
+            val mensajeFinal = buildString {
+                append("✅ Importación Completada:\n\n")
+                append("• Importados: $importados\n")
+                append("• Duplicados (omitidos): $duplicados\n")
+                append("• Errores: $errores\n\n")
+                if (importados > 0) {
+                    append("Los empleados han sido agregados exitosamente.")
+                }
+            }
+            
+            AlertDialog.Builder(this)
+                .setTitle("📥 Importación Finalizada")
+                .setMessage(mensajeFinal)
+                .setPositiveButton("Aceptar") { _, _ ->
+                    loadEmpleados() // Recargar lista
+                }
+                .show()
+                
+        } catch (e: Exception) {
+            showMessage("❌ Error durante la importación: ${e.message}")
+        }
+    }
+    
+    private fun cargarEmpleadosSimples(): List<EmpleadoSimple> {
+        return try {
+            val empleadosJson = sharedPreferences.getString("empleados_list", "[]")
+            val type = object : TypeToken<List<EmpleadoSimple>>() {}.type
+            gson.fromJson(empleadosJson, type) ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+    
+    private fun guardarEmpleadoSimple(empleado: EmpleadoSimple) {
+        try {
+            val empleados = cargarEmpleadosSimples().toMutableList()
+            empleados.add(empleado)
+            
+            val json = gson.toJson(empleados)
+            sharedPreferences.edit().putString("empleados_list", json).apply()
+            
+        } catch (e: Exception) {
+            throw Exception("Error al guardar empleado: ${e.message}")
+        }
+    }
+    
+    // Clase de datos para empleados importados
+    data class EmpleadoImportado(
+        val dni: String,
+        val nombres: String,
+        val apellidos: String,
+        val horaEntrada: String,
+        val horaSalida: String,
+        val refrigerioInicio: String,
+        val refrigerioFin: String
+    )
+}
+
+// Adapter simple para RecyclerView
+
+class SimpleEmpleadosAdapter(
+    private val empleados: List<Any>,
+    private val onItemClick: (Any) -> Unit
+) : androidx.recyclerview.widget.RecyclerView.Adapter<SimpleEmpleadosAdapter.EmpleadoViewHolder>() {
+    
+    class EmpleadoViewHolder(view: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(view) {
+        val textView: TextView = view.findViewById(R.id.tv_empleado_nombre)
+        val textViewDni: TextView = view.findViewById(R.id.tv_empleado_dni)
+        val textViewTipo: TextView = view.findViewById(R.id.tv_empleado_tipo)
+        val cardView: androidx.cardview.widget.CardView = view.findViewById(R.id.card_empleado)
+    }
+    
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EmpleadoViewHolder {
+        val view = android.view.LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_empleado_simple, parent, false)
+        return EmpleadoViewHolder(view)
+    }
+    
+    override fun onBindViewHolder(holder: EmpleadoViewHolder, position: Int) {
+        val empleado = empleados[position]
+        
+        when (empleado) {
+            is EmpleadoSimple -> {
+                holder.textView.text = "${empleado.nombres} ${empleado.apellidos}"
+                holder.textViewDni.text = "DNI: ${empleado.dni}"
+                holder.textViewTipo.text = "Horario Fijo"
+                holder.cardView.setCardBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+            }
+            is EmpleadoFlexible -> {
+                holder.textView.text = "${empleado.nombres} ${empleado.apellidos}"
+                holder.textViewDni.text = "DNI: ${empleado.dni}"
+                holder.textViewTipo.text = "Horario Flexible"
+                holder.cardView.setCardBackgroundColor(android.graphics.Color.parseColor("#E8F5E9"))
+            }
+        }
+        
+        holder.itemView.setOnClickListener {
+            onItemClick(empleado)
+        }
+    }
+    
+    override fun getItemCount() = empleados.size
 }

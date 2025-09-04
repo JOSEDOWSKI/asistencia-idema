@@ -1029,7 +1029,13 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
         
         // Obtener horario de refrigerio
         val (refrigerioInicio, refrigerioFin) = if (esFlexible && empleadoFlexible != null) {
-            empleadoFlexible.getRefrigerioHoy() ?: Pair(empleado.refrigerioInicio, empleado.refrigerioFin)
+            // Si el empleado flexible tiene refrigerio configurado para hoy, usarlo
+            if (empleadoFlexible.tieneRefrigerioHoy()) {
+                empleadoFlexible.getRefrigerioHoy() ?: Pair(empleado.refrigerioInicio, empleado.refrigerioFin)
+            } else {
+                // Si no tiene refrigerio configurado, usar los valores por defecto del empleado simple
+                Pair(empleado.refrigerioInicio, empleado.refrigerioFin)
+            }
         } else {
             Pair(empleado.refrigerioInicio, empleado.refrigerioFin)
         }
@@ -1287,16 +1293,19 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
         return try {
             // Si no hay registro previo, es ENTRADA_TURNO
             if (ultimoRegistro == null) {
+                println("DEBUG EVENTO: No hay registro previo, es ENTRADA_TURNO")
                 return "ENTRADA_TURNO"
             }
             
             val ultimoTipoEvento = ultimoRegistro["tipoEvento"] ?: ""
+            println("DEBUG EVENTO: Último tipo de evento: $ultimoTipoEvento, Hora actual: $horaActual")
             
             // LÓGICA MEJORADA para determinar el tipo de evento
             when {
                 ultimoTipoEvento.contains("ENTRADA_TURNO") -> {
                     // Si el último fue ENTRADA_TURNO, verificar si está en horario de refrigerio
                     val estaEnRefrigerio = esHorarioDeRefrigerio(horaActual, empleado)
+                    println("DEBUG EVENTO: Después de ENTRADA_TURNO, ¿está en refrigerio? $estaEnRefrigerio")
                     if (estaEnRefrigerio) {
                         "SALIDA_REFRIGERIO"
                     } else {
@@ -1363,7 +1372,13 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
             // Verificar si es empleado flexible
             val empleadoFlexible = buscarEmpleadoFlexible(empleado.dni)
             val (inicioRefrigerio, finRefrigerio) = if (empleadoFlexible != null) {
-                empleadoFlexible.getRefrigerioHoy() ?: Pair(empleado.refrigerioInicio, empleado.refrigerioFin)
+                // Si el empleado flexible tiene refrigerio configurado para hoy, usarlo
+                if (empleadoFlexible.tieneRefrigerioHoy()) {
+                    empleadoFlexible.getRefrigerioHoy() ?: Pair(empleado.refrigerioInicio, empleado.refrigerioFin)
+                } else {
+                    // Si no tiene refrigerio configurado, usar los valores por defecto del empleado simple
+                    Pair(empleado.refrigerioInicio, empleado.refrigerioFin)
+                }
             } else {
                 Pair(empleado.refrigerioInicio, empleado.refrigerioFin)
             }
@@ -1371,9 +1386,25 @@ class ScannerActivity : AppCompatActivity(), ScannerService.ScannerCallback {
             val inicioRefrigerioParsed = formato.parse(inicioRefrigerio)
             val finRefrigerioParsed = formato.parse(finRefrigerio)
             
-            actual != null && inicioRefrigerioParsed != null && finRefrigerioParsed != null &&
-            !actual.before(inicioRefrigerioParsed) && !actual.after(finRefrigerioParsed)
+            // Debug: Log para entender qué está pasando
+            println("DEBUG REFRIGERIO: Hora actual: $horaActual, Inicio: $inicioRefrigerio, Fin: $finRefrigerio")
+            println("DEBUG REFRIGERIO: Actual parsed: $actual, Inicio parsed: $inicioRefrigerioParsed, Fin parsed: $finRefrigerioParsed")
+            
+            val resultado = if (actual != null && inicioRefrigerioParsed != null && finRefrigerioParsed != null) {
+                // Verificar si la hora actual está entre el inicio y fin del refrigerio
+                val estaEnRefrigerio = !actual.before(inicioRefrigerioParsed) && !actual.after(finRefrigerioParsed)
+                println("DEBUG REFRIGERIO: ¿Está en horario de refrigerio? $estaEnRefrigerio")
+                println("DEBUG REFRIGERIO: actual.before(inicio): ${actual.before(inicioRefrigerioParsed)}")
+                println("DEBUG REFRIGERIO: actual.after(fin): ${actual.after(finRefrigerioParsed)}")
+                estaEnRefrigerio
+            } else {
+                println("DEBUG REFRIGERIO: Error en parsing de fechas")
+                false
+            }
+            
+            resultado
         } catch (e: Exception) {
+            println("DEBUG REFRIGERIO: Error: ${e.message}")
             false // En caso de error, asumir que no está en refrigerio
         }
     }

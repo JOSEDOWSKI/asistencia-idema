@@ -43,7 +43,18 @@ data class EmpleadoFlexible(
     // Función para obtener horario de refrigerio del día actual
     fun getRefrigerioHoy(): Pair<String, String>? {
         val codigoDiaHoy = getDiaActualCodigo()
-        return getRefrigerioDia(codigoDiaHoy)
+        val refrigerioDia = getRefrigerioDia(codigoDiaHoy)
+        
+        // Si no hay refrigerio configurado para este día, retornar null
+        // El sistema usará los valores por defecto del EmpleadoSimple
+        return refrigerioDia
+    }
+    
+    // Función para verificar si tiene refrigerio configurado para hoy
+    fun tieneRefrigerioHoy(): Boolean {
+        val codigoDiaHoy = getDiaActualCodigo()
+        return refrigeriosSemanales.containsKey(codigoDiaHoy) && 
+               refrigeriosSemanales[codigoDiaHoy] != null
     }
     
     // Función para verificar si trabaja hoy
